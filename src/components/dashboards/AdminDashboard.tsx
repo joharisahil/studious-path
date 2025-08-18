@@ -2,8 +2,12 @@ import { Users, GraduationCap, BookOpen, DollarSign, TrendingUp, TrendingDown } 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import CreateStudentModal from '@/components/students/CreateStudentModal';
 
 const AdminDashboard = () => {
+  const [createStudentModalOpen, setCreateStudentModalOpen] = useState(false);
+
   // Mock KPI data
   const kpiData = {
     totalStudents: 1247,
@@ -188,7 +192,11 @@ const AdminDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Button variant="outline" className="h-20 flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col gap-2"
+              onClick={() => setCreateStudentModalOpen(true)}
+            >
               <Users className="w-6 h-6" />
               <span className="text-xs">Add Student</span>
             </Button>
@@ -215,6 +223,11 @@ const AdminDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      <CreateStudentModal 
+        open={createStudentModalOpen} 
+        onOpenChange={setCreateStudentModalOpen} 
+      />
     </div>
   );
 };
