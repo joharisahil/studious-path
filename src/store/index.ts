@@ -1,0 +1,48 @@
+import { configureStore } from '@reduxjs/toolkit';
+import { authApi } from './api/authApi';
+import { studentsApi } from './api/studentsApi';
+import { coursesApi } from './api/coursesApi';
+import { attendanceApi } from './api/attendanceApi';
+import { assignmentsApi } from './api/assignmentsApi';
+import { feesApi } from './api/feesApi';
+import { messagesApi } from './api/messagesApi';
+import authSlice from './slices/authSlice';
+import uiSlice from './slices/uiSlice';
+
+export const store = configureStore({
+  reducer: {
+    // RTK Query APIs
+    [authApi.reducerPath]: authApi.reducer,
+    [studentsApi.reducerPath]: studentsApi.reducer,
+    [coursesApi.reducerPath]: coursesApi.reducer,
+    [attendanceApi.reducerPath]: attendanceApi.reducer,
+    [assignmentsApi.reducerPath]: assignmentsApi.reducer,
+    [feesApi.reducerPath]: feesApi.reducer,
+    [messagesApi.reducerPath]: messagesApi.reducer,
+    
+    // Regular slices
+    auth: authSlice,
+    ui: uiSlice,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [
+          'persist/PERSIST',
+          'persist/REHYDRATE',
+          'persist/REGISTER',
+        ],
+      },
+    }).concat(
+      authApi.middleware,
+      studentsApi.middleware,
+      coursesApi.middleware,
+      attendanceApi.middleware,
+      assignmentsApi.middleware,
+      feesApi.middleware,
+      messagesApi.middleware
+    ),
+});
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
