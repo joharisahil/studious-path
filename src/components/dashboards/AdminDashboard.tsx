@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CreateStudentModal from '@/components/students/CreateStudentModal';
 
 const AdminDashboard = () => {
   const [createStudentModalOpen, setCreateStudentModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Mock KPI data
   const kpiData = {
@@ -208,15 +210,27 @@ const AdminDashboard = () => {
               <BookOpen className="w-6 h-6" />
               <span className="text-xs">Create Course</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col gap-2"
+              onClick={() => navigate('/reports/fees')}
+            >
               <DollarSign className="w-6 h-6" />
               <span className="text-xs">Fee Report</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col gap-2"
+              onClick={() => navigate('/analytics')}
+            >
               <TrendingUp className="w-6 h-6" />
               <span className="text-xs">Analytics</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col gap-2"
+              onClick={() => navigate('/attendance')}
+            >
               <Users className="w-6 h-6" />
               <span className="text-xs">Attendance</span>
             </Button>

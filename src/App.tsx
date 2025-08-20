@@ -10,6 +10,9 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { MainLayout } from '@/components/layout/MainLayout';
 import AdminDashboard from '@/components/dashboards/AdminDashboard';
+import FeeReport from '@/components/reports/FeeReport';
+import Analytics from '@/components/analytics/Analytics';
+import AttendanceManagement from '@/components/attendance/AttendanceManagement';
 import { loginSuccess } from '@/store/slices/authSlice';
 
 // App content component (separate to use Redux hooks inside Provider)
@@ -131,6 +134,39 @@ const AppContent = () => {
                     <h2 className="text-2xl font-bold text-gradient-primary mb-4">Student Management</h2>
                     <p className="text-muted-foreground">Coming soon...</p>
                   </div>
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/reports/fees"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <MainLayout>
+                  <FeeReport />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <MainLayout>
+                  <Analytics />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/attendance"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <MainLayout>
+                  <AttendanceManagement />
                 </MainLayout>
               </ProtectedRoute>
             }
