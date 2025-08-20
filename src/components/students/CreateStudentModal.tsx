@@ -4,10 +4,12 @@ import CreateStudentForm from './CreateStudentForm';
 interface CreateStudentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-const CreateStudentModal = ({ open, onOpenChange }: CreateStudentModalProps) => {
+const CreateStudentModal = ({ open, onOpenChange, onSuccess }: CreateStudentModalProps) => {
   const handleSuccess = () => {
+    onSuccess?.();
     onOpenChange(false);
   };
 

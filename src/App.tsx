@@ -13,6 +13,7 @@ import AdminDashboard from '@/components/dashboards/AdminDashboard';
 import FeeReport from '@/components/reports/FeeReport';
 import Analytics from '@/components/analytics/Analytics';
 import AttendanceManagement from '@/components/attendance/AttendanceManagement';
+import StudentsManagement from '@/components/students/StudentsManagement';
 import { loginSuccess } from '@/store/slices/authSlice';
 
 // App content component (separate to use Redux hooks inside Provider)
@@ -130,10 +131,7 @@ const AppContent = () => {
             element={
               <ProtectedRoute allowedRoles={['admin', 'teacher']}>
                 <MainLayout>
-                  <div className="text-center py-12">
-                    <h2 className="text-2xl font-bold text-gradient-primary mb-4">Student Management</h2>
-                    <p className="text-muted-foreground">Coming soon...</p>
-                  </div>
+                  <StudentsManagement />
                 </MainLayout>
               </ProtectedRoute>
             }
