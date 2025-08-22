@@ -26,6 +26,7 @@ export const FeesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [addFeeModalOpen, setAddFeeModalOpen] = useState(false);
   const { toast } = useToast();
   
@@ -42,9 +43,30 @@ export const FeesManagement = () => {
   const totalCollected = feeRecords.reduce((sum, record) => sum + record.paidAmount, 0);
   const totalPending = feeRecords.reduce((sum, record) => sum + record.dueAmount, 0);
   const totalStudents = feeRecords.length;
-  const lateSubmitters = feeRecords.filter(record => 
-    record.status === 'overdue' || (record.dueAmount > 0 && new Date(record.lastPaymentDate || 0) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
-  );
+  // Calculate late submitters based on selected period
+  const calculateLateSubmitters = () => {
+    const now = new Date();
+    return feeRecords.filter(record => {
+      if (record.status === 'paid' || record.dueAmount === 0) return false;
+      
+      if (selectedPeriod === 'all') {
+        // Show overdue or those with no payment for 30+ days
+        return record.status === 'overdue' || 
+               (record.dueAmount > 0 && new Date(record.lastPaymentDate || 0) < new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+      }
+      
+      // Filter by specific collection period
+      if (selectedPeriod !== record.collectionPeriod) return false;
+      
+      if (record.nextDueDate) {
+        return new Date(record.nextDueDate) < now;
+      }
+      
+      return record.status === 'overdue';
+    });
+  };
+
+  const lateSubmitters = calculateLateSubmitters();
 
   // Filter fee records
   const filteredRecords = feeRecords.filter(record => {
@@ -52,8 +74,9 @@ export const FeesManagement = () => {
                          record.studentId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGrade = selectedGrade === 'all' || record.grade === selectedGrade;
     const matchesStatus = selectedStatus === 'all' || record.status === selectedStatus;
+    const matchesPeriod = selectedPeriod === 'all' || record.collectionPeriod === selectedPeriod;
     
-    return matchesSearch && matchesGrade && matchesStatus;
+    return matchesSearch && matchesGrade && matchesStatus && matchesPeriod;
   });
 
   const getStatusColor = (status: string) => {
@@ -189,6 +212,17 @@ export const FeesManagement = () => {
                 />
               </div>
             </div>
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Periods</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="quarterly">Quarterly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={selectedGrade} onValueChange={setSelectedGrade}>
               <SelectTrigger className="w-[140px]">
                 <Filter className="h-4 w-4 mr-2" />
@@ -232,11 +266,12 @@ export const FeesManagement = () => {
                   <TableHead>Student</TableHead>
                   <TableHead>Grade</TableHead>
                   <TableHead>Academic Year</TableHead>
+                  <TableHead>Collection Period</TableHead>
                   <TableHead>Total Fee</TableHead>
                   <TableHead>Paid Amount</TableHead>
                   <TableHead>Due Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Last Payment</TableHead>
+                  <TableHead>Next Due Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -250,6 +285,11 @@ export const FeesManagement = () => {
                     </TableCell>
                     <TableCell>{record.grade}</TableCell>
                     <TableCell>{record.academicYear}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {record.collectionPeriod.charAt(0).toUpperCase() + record.collectionPeriod.slice(1)}
+                      </Badge>
+                    </TableCell>
                     <TableCell>₹{record.totalFee.toLocaleString()}</TableCell>
                     <TableCell className="text-emerald-600">₹{record.paidAmount.toLocaleString()}</TableCell>
                     <TableCell className="text-red-600">₹{record.dueAmount.toLocaleString()}</TableCell>
@@ -259,9 +299,9 @@ export const FeesManagement = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {record.lastPaymentDate 
-                        ? new Date(record.lastPaymentDate).toLocaleDateString()
-                        : 'No payment'
+                      {record.nextDueDate 
+                        ? new Date(record.nextDueDate).toLocaleDateString()
+                        : 'Not set'
                       }
                     </TableCell>
                   </TableRow>

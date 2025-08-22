@@ -254,6 +254,8 @@ export interface FeeRecord {
   totalFee: number;
   paidAmount: number;
   dueAmount: number;
+  collectionPeriod: 'monthly' | 'quarterly' | 'yearly';
+  nextDueDate?: string;
   payments: Payment[];
   status: 'paid' | 'partial' | 'overdue' | 'pending';
   lastPaymentDate?: string;

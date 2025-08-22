@@ -11,6 +11,8 @@ const mockFeeRecords: FeeRecord[] = [
     totalFee: 15000,
     paidAmount: 10000,
     dueAmount: 5000,
+    collectionPeriod: 'monthly',
+    nextDueDate: '2024-03-15T00:00:00Z',
     payments: [
       {
         id: '1',
@@ -24,6 +26,54 @@ const mockFeeRecords: FeeRecord[] = [
     ],
     status: 'partial',
     lastPaymentDate: '2024-01-15T00:00:00Z',
+  },
+  {
+    id: '2',
+    studentId: '2',
+    studentName: 'John Smith',
+    academicYear: '2024-25',
+    grade: '9',
+    totalFee: 12000,
+    paidAmount: 4000,
+    dueAmount: 8000,
+    collectionPeriod: 'quarterly',
+    nextDueDate: '2024-02-10T00:00:00Z',
+    payments: [
+      {
+        id: '2',
+        amount: 4000,
+        paymentDate: '2024-01-10T00:00:00Z',
+        paymentMethod: 'cash',
+        receiptNumber: 'RCP002',
+        collectedBy: 'admin',
+      }
+    ],
+    status: 'overdue',
+    lastPaymentDate: '2024-01-10T00:00:00Z',
+  },
+  {
+    id: '3',
+    studentId: '3',
+    studentName: 'Alice Brown',
+    academicYear: '2024-25',
+    grade: '11',
+    totalFee: 18000,
+    paidAmount: 18000,
+    dueAmount: 0,
+    collectionPeriod: 'yearly',
+    payments: [
+      {
+        id: '3',
+        amount: 18000,
+        paymentDate: '2024-01-05T00:00:00Z',
+        paymentMethod: 'online',
+        receiptNumber: 'RCP003',
+        collectedBy: 'admin',
+        transactionId: 'TXN003',
+      }
+    ],
+    status: 'paid',
+    lastPaymentDate: '2024-01-05T00:00:00Z',
   },
 ];
 

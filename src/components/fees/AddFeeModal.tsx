@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,10 +23,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Student } from '@/types';
 
+const classFees = {
+  '1': 8000, '2': 8500, '3': 9000, '4': 9500, '5': 10000,
+  '6': 11000, '7': 12000, '8': 13000, '9': 14000, '10': 15000,
+  '11': 16000, '12': 17000
+};
+
 const addFeeSchema = z.object({
   studentId: z.string().min(1, 'Please select a student'),
   academicYear: z.string().min(1, 'Academic year is required'),
   totalFee: z.string().min(1, 'Total fee is required'),
+  collectionPeriod: z.enum(['monthly', 'quarterly', 'yearly'], {
+    required_error: 'Please select collection period',
+  }),
   dueDate: z.string().min(1, 'Due date is required'),
   description: z.string().optional(),
 });
@@ -49,10 +58,24 @@ export const AddFeeModal = ({ isOpen, onClose, students }: AddFeeModalProps) => 
       studentId: '',
       academicYear: '2024-25',
       totalFee: '',
+      collectionPeriod: 'monthly',
       dueDate: '',
       description: '',
     },
   });
+
+  const selectedStudent = form.watch('studentId');
+  const selectedStudentData = students.find(s => s.id === selectedStudent);
+
+  // Auto-fill fee based on selected student's grade
+  useEffect(() => {
+    if (selectedStudentData?.grade) {
+      const gradeFee = classFees[selectedStudentData.grade as keyof typeof classFees];
+      if (gradeFee) {
+        form.setValue('totalFee', gradeFee.toString());
+      }
+    }
+  }, [selectedStudentData, form]);
 
   const onSubmit = async (data: AddFeeFormData) => {
     setIsLoading(true);
@@ -149,6 +172,31 @@ export const AddFeeModal = ({ isOpen, onClose, students }: AddFeeModalProps) => 
 
               <FormField
                 control={form.control}
+                name="collectionPeriod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Collection Period</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="totalFee"
                 render={({ field }) => (
                   <FormItem>
@@ -164,24 +212,24 @@ export const AddFeeModal = ({ isOpen, onClose, students }: AddFeeModalProps) => 
                   </FormItem>
                 )}
               />
-            </div>
 
-            <FormField
-              control={form.control}
-              name="dueDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Due Date</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="date" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Due Date</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
