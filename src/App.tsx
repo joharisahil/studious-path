@@ -14,6 +14,7 @@ import FeeReport from '@/components/reports/FeeReport';
 import Analytics from '@/components/analytics/Analytics';
 import AttendanceManagement from '@/components/attendance/AttendanceManagement';
 import StudentsManagement from '@/components/students/StudentsManagement';
+import { FeesManagement } from '@/components/fees';
 import { loginSuccess } from '@/store/slices/authSlice';
 
 // App content component (separate to use Redux hooks inside Provider)
@@ -165,6 +166,17 @@ const AppContent = () => {
               <ProtectedRoute allowedRoles={['admin', 'teacher']}>
                 <MainLayout>
                   <AttendanceManagement />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/fees"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'student', 'parent']}>
+                <MainLayout>
+                  <FeesManagement />
                 </MainLayout>
               </ProtectedRoute>
             }
