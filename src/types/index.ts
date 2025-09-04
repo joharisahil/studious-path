@@ -411,3 +411,47 @@ export interface AssignmentFormData {
   type: Assignment['type'];
   instructions: string;
 }
+
+// Class Management
+export interface Class {
+  id: string;
+  name: string;
+  grade: string;
+  section: string;
+  academicYear: string;
+  classTeacherId?: string;
+  classTeacherName?: string;
+  subjects: string[];
+  students: string[]; // student IDs
+  maxCapacity: number;
+  currentStrength: number;
+  room?: string;
+  schedule: ClassSchedule[];
+  status: 'active' | 'inactive' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClassFormData {
+  name: string;
+  grade: string;
+  section: string;
+  academicYear: string;
+  classTeacherId?: string;
+  subjects: string[];
+  maxCapacity: number;
+  room?: string;
+}
+
+export interface StudentUploadData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  dateOfBirth: string;
+  address: string;
+  parentEmail?: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelation: string;
+}

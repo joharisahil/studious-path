@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { authApi } from './api/authApi';
 import { studentsApi } from './api/studentsApi';
 import { coursesApi } from './api/coursesApi';
+import { classesApi } from './api/classesApi';
 import { attendanceApi } from './api/attendanceApi';
 import { assignmentsApi } from './api/assignmentsApi';
 import { feesApi } from './api/feesApi';
@@ -15,6 +16,7 @@ export const store = configureStore({
     [authApi.reducerPath]: authApi.reducer,
     [studentsApi.reducerPath]: studentsApi.reducer,
     [coursesApi.reducerPath]: coursesApi.reducer,
+    [classesApi.reducerPath]: classesApi.reducer,
     [attendanceApi.reducerPath]: attendanceApi.reducer,
     [assignmentsApi.reducerPath]: assignmentsApi.reducer,
     [feesApi.reducerPath]: feesApi.reducer,
@@ -37,6 +39,7 @@ export const store = configureStore({
       authApi.middleware,
       studentsApi.middleware,
       coursesApi.middleware,
+      classesApi.middleware,
       attendanceApi.middleware,
       assignmentsApi.middleware,
       feesApi.middleware,

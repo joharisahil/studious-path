@@ -61,6 +61,13 @@ const sidebarItems: SidebarItem[] = [
     roles: ['admin', 'teacher', 'student'],
   },
   {
+    id: 'classes',
+    label: 'Classes',
+    icon: Users,
+    path: '/classes',
+    roles: ['admin'],
+  },
+  {
     id: 'attendance',
     label: 'Attendance',
     icon: Calendar,
