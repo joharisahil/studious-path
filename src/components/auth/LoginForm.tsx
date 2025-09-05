@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useLoginMutation } from '@/store/api/authApi';
+import { useLoginAdminMutation } from '@/store/api/authApi';
 import { loginSuccess } from '@/store/slices/authSlice';
 import { LoginCredentials, UserRole } from '@/types';
 
@@ -16,8 +16,8 @@ export const LoginForm = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { toast } = useToast();
-  const [login, { isLoading }] = useLoginMutation();
-  
+  const [login, { isLoading }] = useLoginAdminMutation();
+
   const [formData, setFormData] = useState<LoginCredentials>({
     email: '',
     password: '',
@@ -25,31 +25,47 @@ export const LoginForm = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
+  // Role-based demo credentials
+  const demoCredentials: Record<UserRole, { email: string; password: string }> = {
+    admin: { email: 'admin@school.com', password: 'password123' },
+    teacher: { email: 'teacher@school.com', password: 'password123' },
+    student: { email: 'student@school.com', password: 'password123' },
+    parent: { email: 'parent@school.com', password: 'password123' },
+  };
+
+  const handleRoleChange = (role: UserRole) => {
+    setFormData(prev => ({
+      ...prev,
+      role,
+      ...demoCredentials[role],
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const result = await login(formData).unwrap();
-      
+
       dispatch(loginSuccess({
-        user: result.data.user,
-        token: result.data.token,
+        user: result.user,
+        token: result.token,
       }));
 
       toast({
         title: 'Login Successful',
-        description: `Welcome back, ${result.data.user.firstName}!`,
+        description: `Welcome back, ${result.user.firstName || result.user.email}!`,
       });
 
-      // Redirect to appropriate dashboard based on role
-      const dashboardRoutes = {
+      // Redirect based on role
+      const dashboardRoutes: Record<UserRole, string> = {
         admin: '/dashboard/admin',
-        teacher: '/dashboard/teacher', 
+        teacher: '/dashboard/teacher',
         student: '/dashboard/student',
         parent: '/dashboard/parent',
       };
-      
-      navigate(dashboardRoutes[result.data.user.role]);
+
+      navigate(dashboardRoutes[result.user.role]);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -57,23 +73,6 @@ export const LoginForm = () => {
         description: error.data?.message || 'Please check your credentials and try again.',
       });
     }
-  };
-
-  const handleRoleChange = (role: UserRole) => {
-    setFormData(prev => ({ ...prev, role }));
-    
-    // Set demo credentials based on role
-    const demoCredentials = {
-      admin: { email: 'admin@school.com', password: 'password123' },
-      teacher: { email: 'teacher@school.com', password: 'password123' },
-      student: { email: 'student@school.com', password: 'password123' },
-      parent: { email: 'parent@school.com', password: 'password123' },
-    };
-    
-    setFormData(prev => ({
-      ...prev,
-      ...demoCredentials[role],
-    }));
   };
 
   return (
@@ -87,10 +86,10 @@ export const LoginForm = () => {
             EduManage Pro
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Sign in to your account to continue
+            Sign in to your account
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Role Selection */}
@@ -117,8 +116,7 @@ export const LoginForm = () => {
                 type="email"
                 placeholder="Enter your email"
                 value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="focus-visible-ring"
+                onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 required
               />
             </div>
@@ -132,8 +130,8 @@ export const LoginForm = () => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  className="focus-visible-ring pr-10"
+                  onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  className="pr-10"
                   required
                 />
                 <Button
@@ -143,11 +141,7 @@ export const LoginForm = () => {
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                 </Button>
               </div>
             </div>
@@ -173,10 +167,7 @@ export const LoginForm = () => {
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Link
-                to="/register"
-                className="font-medium text-primary hover:text-primary-hover transition-colors"
-              >
+              <Link to="/register" className="font-medium text-primary hover:text-primary-hover">
                 Register here
               </Link>
             </p>
