@@ -43,7 +43,7 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
   // Filter students not already in class and by grade if selected
   const availableStudents = students.filter(student => {
     const notEnrolled = !enrolledStudentIds.includes(student.id);
-    const matchesGrade = !gradeFilter || student.grade === gradeFilter;
+    const matchesGrade = gradeFilter === 'all' || !gradeFilter || student.grade === gradeFilter;
     return notEnrolled && matchesGrade;
   });
 
@@ -156,7 +156,7 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
                 <SelectValue placeholder="Filter by grade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Grades</SelectItem>
+                <SelectItem value="all">All Grades</SelectItem>
                 <SelectItem value="9">Grade 9</SelectItem>
                 <SelectItem value="10">Grade 10</SelectItem>
                 <SelectItem value="11">Grade 11</SelectItem>
