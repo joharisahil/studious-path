@@ -14,6 +14,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  School,
+  Book,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RootState } from '@/store';
@@ -34,6 +36,8 @@ const sidebarItems: SidebarItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['admin','teacher','student','parent'] },
   { id: 'students', label: 'Students', icon: Users, path: '/students', roles: ['admin','teacher'] },
   { id: 'teachers', label: 'Teachers', icon: UserCheck, path: '/teachers', roles: ['admin'] },
+  { id: 'classes', label: 'Classes', icon: School, path: '/classes', roles: ['admin'] },
+  { id: 'subjects', label: 'Subjects', icon: Book, path: '/subjects', roles: ['admin','teacher'] },
   { id: 'courses', label: 'Courses', icon: BookOpen, path: '/courses', roles: ['admin','teacher','student'] },
   { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin','teacher','student','parent'] },
   { id: 'assignments', label: 'Assignments', icon: FileText, path: '/assignments', roles: ['admin','teacher','student'] },

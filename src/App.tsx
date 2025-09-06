@@ -18,6 +18,7 @@ import StudentsManagement from '@/components/students/StudentsManagement';
 import TeachersManagement from '@/components/teachers/TeachersManagement';
 import { FeesManagement } from '@/components/fees';
 import { ClassManagement } from '@/components/classes';
+import { SubjectManagement } from '@/components/subjects';
 import { loginSuccess } from '@/store/slices/authSlice';
 
 // App content component
@@ -204,6 +205,17 @@ const AppContent = () => {
               <ProtectedRoute allowedRoles={['admin']}>
                 <MainLayout>
                   <ClassManagement />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/subjects"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <MainLayout>
+                  <SubjectManagement />
                 </MainLayout>
               </ProtectedRoute>
             }

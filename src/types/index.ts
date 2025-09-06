@@ -504,3 +504,47 @@ export interface StudentUploadData {
   emergencyContactPhone: string;
   emergencyContactRelation: string;
 }
+
+// Subject Management
+export interface Subject {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  department: string;
+  credits: number;
+  type: 'core' | 'elective' | 'practical' | 'theory';
+  grade: string;
+  teacherId?: string;
+  teacherName?: string;
+  classSchedule?: {
+    dayOfWeek: number; // 0-6 (Sunday-Saturday)
+    startTime: string;
+    endTime: string;
+    room: string;
+  }[];
+  syllabus: string[];
+  resources: string[];
+  prerequisites: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubjectFormData {
+  name: string;
+  code: string;
+  description: string;
+  department: string;
+  credits: number;
+  type: Subject['type'];
+  grade: string;
+  syllabus: string[];
+  prerequisites: string[];
+}
+
+export interface AssignTeacherData {
+  subjectId: string;
+  teacherId: string;
+  classSchedule?: Subject['classSchedule'];
+}

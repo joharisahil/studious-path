@@ -7,6 +7,7 @@ import { attendanceApi } from './api/attendanceApi';
 import { assignmentsApi } from './api/assignmentsApi';
 import { feesApi } from './api/feesApi';
 import { messagesApi } from './api/messagesApi';
+import { subjectsApi } from './api/subjectsApi';
 import authSlice from './slices/authSlice';
 import uiSlice from './slices/uiSlice';
 
@@ -21,6 +22,7 @@ export const store = configureStore({
     [assignmentsApi.reducerPath]: assignmentsApi.reducer,
     [feesApi.reducerPath]: feesApi.reducer,
     [messagesApi.reducerPath]: messagesApi.reducer,
+    [subjectsApi.reducerPath]: subjectsApi.reducer,
     
     // Regular slices
     auth: authSlice,
@@ -43,7 +45,8 @@ export const store = configureStore({
       attendanceApi.middleware,
       assignmentsApi.middleware,
       feesApi.middleware,
-      messagesApi.middleware
+      messagesApi.middleware,
+      subjectsApi.middleware
     ),
 });
 
