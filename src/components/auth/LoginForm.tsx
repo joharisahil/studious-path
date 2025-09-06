@@ -25,19 +25,10 @@ export const LoginForm = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
-  // Role-based demo credentials
-  const demoCredentials: Record<UserRole, { email: string; password: string }> = {
-    admin: { email: 'admin@school.com', password: 'password123' },
-    teacher: { email: 'teacher@school.com', password: 'password123' },
-    student: { email: 'student@school.com', password: 'password123' },
-    parent: { email: 'parent@school.com', password: 'password123' },
-  };
-
   const handleRoleChange = (role: UserRole) => {
     setFormData(prev => ({
       ...prev,
       role,
-      ...demoCredentials[role],
     }));
   };
 
@@ -47,25 +38,28 @@ export const LoginForm = () => {
     try {
       const result = await login(formData).unwrap();
 
-      dispatch(loginSuccess({
-        user: result.user,
-        token: result.token,
-      }));
+      if (result) {
+        dispatch(loginSuccess({
+          user: result.user,
+          token: result.token,
+        }));
 
-      toast({
-        title: 'Login Successful',
-        description: `Welcome back, ${result.user.firstName || result.user.email}!`,
-      });
+        toast({
+          title: 'Login Successful',
+          description: `Welcome back, ${result.user.firstName || result.user.email}!`,
+        });
 
-      // Redirect based on role
-      const dashboardRoutes: Record<UserRole, string> = {
-        admin: '/dashboard/admin',
-        teacher: '/dashboard/teacher',
-        student: '/dashboard/student',
-        parent: '/dashboard/parent',
-      };
-
-      navigate(dashboardRoutes[result.user.role]);
+        // Redirect based on role
+        if (result.user.role === 'admin') {
+          navigate('/dashboard/admin');
+        } else if (result.user.role === 'teacher') {
+          navigate('/dashboard/teacher');
+        } else if (result.user.role === 'student') {
+          navigate('/dashboard/student');
+        } else if (result.user.role === 'parent') {
+          navigate('/dashboard/parent');
+        }
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -144,13 +138,6 @@ export const LoginForm = () => {
                   {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                 </Button>
               </div>
-            </div>
-
-            {/* Demo Credentials Info */}
-            <div className="p-3 bg-info-light rounded-lg border border-info/20">
-              <p className="text-sm text-info text-center font-medium">
-                Demo credentials loaded for {formData.role} role
-              </p>
             </div>
 
             {/* Login Button */}

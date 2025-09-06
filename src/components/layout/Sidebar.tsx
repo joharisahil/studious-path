@@ -16,7 +16,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { RootState } from '@/store';
 import { logout } from '@/store/slices/authSlice';
 import { toggleSidebar } from '@/store/slices/uiSlice';
@@ -32,76 +31,22 @@ interface SidebarItem {
 }
 
 const sidebarItems: SidebarItem[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    path: '/dashboard',
-    roles: ['admin', 'teacher', 'student', 'parent'],
-  },
-  {
-    id: 'students',
-    label: 'Students',
-    icon: Users,
-    path: '/students',
-    roles: ['admin', 'teacher'],
-  },
-  {
-    id: 'teachers',
-    label: 'Teachers',
-    icon: UserCheck,
-    path: '/teachers',
-    roles: ['admin'],
-  },
-  {
-    id: 'courses',
-    label: 'Courses',
-    icon: BookOpen,
-    path: '/courses',
-    roles: ['admin', 'teacher', 'student'],
-  },
-  {
-    id: 'attendance',
-    label: 'Attendance',
-    icon: Calendar,
-    path: '/attendance',
-    roles: ['admin', 'teacher', 'student', 'parent'],
-  },
-  {
-    id: 'assignments',
-    label: 'Assignments',
-    icon: FileText,
-    path: '/assignments',
-    roles: ['admin', 'teacher', 'student'],
-  },
-  {
-    id: 'exams',
-    label: 'Exams',
-    icon: FileText,
-    path: '/exams',
-    roles: ['admin', 'teacher', 'student', 'parent'],
-  },
-  {
-    id: 'fees',
-    label: 'Fees',
-    icon: CreditCard,
-    path: '/fees',
-    roles: ['admin', 'student', 'parent'],
-  },
-  {
-    id: 'messages',
-    label: 'Messages',
-    icon: MessageSquare,
-    path: '/messages',
-    roles: ['admin', 'teacher', 'student', 'parent'],
-  },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['admin','teacher','student','parent'] },
+  { id: 'students', label: 'Students', icon: Users, path: '/students', roles: ['admin','teacher'] },
+  { id: 'teachers', label: 'Teachers', icon: UserCheck, path: '/teachers', roles: ['admin'] },
+  { id: 'courses', label: 'Courses', icon: BookOpen, path: '/courses', roles: ['admin','teacher','student'] },
+  { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin','teacher','student','parent'] },
+  { id: 'assignments', label: 'Assignments', icon: FileText, path: '/assignments', roles: ['admin','teacher','student'] },
+  { id: 'exams', label: 'Exams', icon: FileText, path: '/exams', roles: ['admin','teacher','student','parent'] },
+  { id: 'fees', label: 'Fees', icon: CreditCard, path: '/fees', roles: ['admin','student','parent'] },
+  { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages', roles: ['admin','teacher','student','parent'] },
 ];
 
 export const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  
+
   const { user } = useSelector((state: RootState) => state.auth);
   const { sidebarCollapsed } = useSelector((state: RootState) => state.ui);
 
@@ -121,11 +66,19 @@ export const Sidebar = () => {
     return location.pathname.startsWith(path);
   };
 
+  // --- derive safe initials ---
+  const initials = user
+    ? (user.firstName?.[0] || user.email?.[0] || '').toUpperCase()
+      + (user.lastName?.[0] || '')
+    : '';
+
   return (
-    <aside className={cn(
-      "bg-card border-r border-border flex flex-col transition-all duration-300 relative",
-      sidebarCollapsed ? "w-16" : "w-64"
-    )}>
+    <aside
+      className={cn(
+        "bg-card border-r border-border flex flex-col transition-all duration-300 relative",
+        sidebarCollapsed ? "w-16" : "w-64"
+      )}
+    >
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
@@ -135,7 +88,9 @@ export const Sidebar = () => {
           {!sidebarCollapsed && (
             <div>
               <h1 className="font-bold text-lg text-gradient-primary">EduManage</h1>
-              <p className="text-xs text-muted-foreground capitalize">{user?.role} Portal</p>
+              <p className="text-xs text-muted-foreground capitalize">
+                {user?.role} Portal
+              </p>
             </div>
           )}
         </div>
@@ -151,11 +106,7 @@ export const Sidebar = () => {
           sidebarCollapsed && "right-2"
         )}
       >
-        {sidebarCollapsed ? (
-          <ChevronRight className="w-3 h-3" />
-        ) : (
-          <ChevronLeft className="w-3 h-3" />
-        )}
+        {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
       </Button>
 
       {/* User Info */}
@@ -164,12 +115,14 @@ export const Sidebar = () => {
           <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground font-medium text-sm">
-                {user.firstName[0]}{user.lastName[0]}
+                {initials || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">
-                {user.firstName} {user.lastName}
+                {user.firstName && user.lastName
+                  ? `${user.firstName} ${user.lastName}`
+                  : user.email}
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 {user.email}
@@ -184,7 +137,7 @@ export const Sidebar = () => {
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive = isActivePath(item.path);
-          
+
           return (
             <Button
               key={item.id}
@@ -215,16 +168,13 @@ export const Sidebar = () => {
       <div className="p-4 space-y-2 border-t border-border">
         <Button
           variant="ghost"
-          className={cn(
-            "w-full justify-start h-11",
-            sidebarCollapsed && "justify-center px-2"
-          )}
+          className={cn("w-full justify-start h-11", sidebarCollapsed && "justify-center px-2")}
           onClick={() => navigate('/settings')}
         >
           <Settings className={cn("w-5 h-5", !sidebarCollapsed && "mr-3")} />
           {!sidebarCollapsed && <span>Settings</span>}
         </Button>
-        
+
         <Button
           variant="ghost"
           className={cn(
