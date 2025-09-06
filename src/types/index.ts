@@ -32,8 +32,8 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData extends LoginCredentials {
-  firstName: string;
-  lastName: string;
+  // firstName: string;
+  // lastName: string;
   confirmPassword: string;
 }
 
@@ -138,6 +138,40 @@ export interface ClassSchedule {
   endTime: string;
   room: string;
 }
+
+
+// Teacher Management
+export interface Teacher {
+  id: string;
+  userId: string;
+  teacherId: string; // like studentId
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  address: string;
+  department: string;
+  subjectSpecialization: string[];
+  qualifications: string[];
+  yearsOfExperience: number;
+  dateOfJoining: string;
+  position: string;
+  salary: number;
+  avatar?: string;
+  status: 'active' | 'inactive' | 'terminated' | 'retired';
+  emergencyContact: {
+    name: string;
+    phone: string;
+    relation: string;
+  };
+  courses: string[]; // list of courseIds they teach
+  achievements?: string[];
+  previousInstitutions?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 // Attendance Management
 export interface AttendanceRecord {
@@ -386,6 +420,21 @@ export interface StudentFormData {
   parentEmail?: string;
   grade: string;
   section: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelation: string;
+}
+
+export interface TeacherFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  address: string;
+  subject: string;
+  qualification: string;
+  yearsOfExperience: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
   emergencyContactRelation: string;

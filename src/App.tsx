@@ -8,30 +8,28 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { store } from '@/store';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { RegisterForm } from '@/components/auth/RegisterForm'; // ✅ import register form
 import { MainLayout } from '@/components/layout/MainLayout';
 import AdminDashboard from '@/components/dashboards/AdminDashboard';
 import FeeReport from '@/components/reports/FeeReport';
 import Analytics from '@/components/analytics/Analytics';
 import AttendanceManagement from '@/components/attendance/AttendanceManagement';
 import StudentsManagement from '@/components/students/StudentsManagement';
+import TeachersManagement from '@/components/teachers/TeachersManagement';
 import { FeesManagement } from '@/components/fees';
 import { ClassManagement } from '@/components/classes';
 import { loginSuccess } from '@/store/slices/authSlice';
 
-// App content component (separate to use Redux hooks inside Provider)
+// App content component
 const AppContent = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    // Check for existing token on app load
     const token = localStorage.getItem('token');
     if (token) {
-      // In a real app, you'd verify the token with the backend
-      // For now, we'll just check if it's a valid mock token
       if (token.startsWith('mock-jwt-token-')) {
         const userId = token.replace('mock-jwt-token-', '');
-        
-        // Mock user data based on token
+
         const mockUsers = {
           '1': { id: '1', email: 'admin@school.com', firstName: 'Admin', lastName: 'User', role: 'admin' as const },
           '2': { id: '2', email: 'teacher@school.com', firstName: 'John', lastName: 'Teacher', role: 'teacher' as const },
@@ -73,6 +71,15 @@ const AppContent = () => {
             }
           />
 
+          <Route
+            path="/register"
+            element={
+              <ProtectedRoute requireAuth={false}>
+                <RegisterForm />   {/* ✅ new register route */}
+              </ProtectedRoute>
+            }
+          />
+
           {/* Protected routes with layout */}
           <Route
             path="/dashboard/admin"
@@ -90,10 +97,7 @@ const AppContent = () => {
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <MainLayout>
-                  <div className="text-center py-12">
-                    <h2 className="text-2xl font-bold text-gradient-primary mb-4">Teacher Dashboard</h2>
-                    <p className="text-muted-foreground">Coming soon...</p>
-                  </div>
+                 <TeachersManagement/>
                 </MainLayout>
               </ProtectedRoute>
             }
@@ -112,7 +116,7 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/dashboard/parent"
             element={
@@ -134,6 +138,17 @@ const AppContent = () => {
               <ProtectedRoute allowedRoles={['admin', 'teacher']}>
                 <MainLayout>
                   <StudentsManagement />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/teachers"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <MainLayout>
+                  <TeachersManagement />
                 </MainLayout>
               </ProtectedRoute>
             }
@@ -195,6 +210,7 @@ const AppContent = () => {
           />
 
           {/* Catch all - redirect to appropriate dashboard or login */}
+          {/* Catch all */}
           <Route
             path="*"
             element={

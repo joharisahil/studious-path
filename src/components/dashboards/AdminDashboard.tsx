@@ -2,13 +2,49 @@ import { Users, GraduationCap, BookOpen, DollarSign, TrendingUp, TrendingDown } 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreateStudentModal from '@/components/students/CreateStudentModal';
+import { getAllStudents } from '@/services/GetTotalStudent';
+import { getAllTeachers } from '@/services/GetTotalTeachers';
+
 
 const AdminDashboard = () => {
   const [createStudentModalOpen, setCreateStudentModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [studentsCount, setStudentsCount] = useState<number>(0); // ✅ state for total students
+    const [teachersCount, setTeachersCount] = useState<number>(0);
+
+  // Fetch students on mount
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const students = await getAllStudents();
+        setStudentsCount(students.length); // ✅ update count
+      } catch (error) {
+        console.error("Failed to fetch students", error);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+   // Fetch teachers on mount
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const teachers = await getAllTeachers();
+        setTeachersCount(teachers.length); // ✅ update teachers count
+      } catch (error) {
+        console.error('Failed to fetch teachers', error);
+      }
+    };
+
+    fetchTeachers();
+  }, []);
+
+ 
 
   // Mock KPI data
   const kpiData = {
@@ -77,7 +113,7 @@ const AdminDashboard = () => {
             <Users className="w-5 h-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.totalStudents.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{studentsCount.toLocaleString()}</div>
             <div className="flex items-center text-sm text-success">
               <TrendingUp className="w-4 h-4 mr-1" />
               +{kpiData.recentEnrollments} this month
@@ -93,7 +129,7 @@ const AdminDashboard = () => {
             <GraduationCap className="w-5 h-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.totalTeachers}</div>
+            <div className="text-2xl font-bold">{teachersCount.toLocaleString()}</div>
             <div className="text-sm text-muted-foreground">Active faculty members</div>
           </CardContent>
         </Card>
