@@ -1,303 +1,238 @@
-import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useUpdateStudentMutation } from "@/store/api/studentsApi";
-import { useToast } from "@/hooks/use-toast";
-import { StudentFormData } from "@/types";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar, Mail, Phone, MapPin, User, GraduationCap, Users, Briefcase } from 'lucide-react';
+import { Student } from '@/types';
 
-interface EditStudentModalProps {
+interface StudentDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  student: StudentFormData;
-  onSuccess?: () => void;
+  student: Student | null;
 }
 
-const EditStudentModal = ({
-  open,
-  onOpenChange,
-  student,
-  onSuccess,
-}: EditStudentModalProps) => {
-  const [updateStudent, { isLoading }] = useUpdateStudentMutation();
-  const { toast } = useToast();
-
-const [formData, setFormData] = useState<StudentFormData>({
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",               // optional, but default empty string
-  dateOfBirth: "",         // yyyy-mm-dd format
-  address: "",
-  grade: "",               // e.g., "1", "2", ..., "12"
-  section: "",             // e.g., "A", "B"
-  rollNumber: "",          // optional
-  admissionDate: "",       // yyyy-mm-dd
-  guardian: {
-    name: "",
-    phone: "",
-    relation: "",
-  },
-});
-
-useEffect(() => {
-  if (student && open) {
-    setFormData({
-      firstName: student.firstName,
-      lastName: student.lastName,
-      email: student.email,
-      phone: student.phone || "",
-      dateOfBirth: student.dateOfBirth || "",
-      address: student.address || "",
-      grade: student.grade || "",
-      section: student.section || "",
-      rollNumber: student.rollNumber || "",
-      admissionDate: student.admissionDate || "",
-      guardian: {
-        name: student.guardian?.name || "",
-        phone: student.guardian?.phone || "",
-        relation: student.guardian?.relation || "",
-      },
-    });
-  }
-}, [student, open]);
-
-
-  const handleInputChange = (
-    field: keyof StudentFormData | keyof StudentFormData["guardian"],
-    value: any,
-    isGuardian = false
-  ) => {
-    if (isGuardian) {
-      setFormData((prev) => ({
-        ...prev,
-        guardian: {
-          ...prev.guardian,
-          [field]: value,
-        },
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await updateStudent({
-        id: student.id,
-        ...formData,
-      }).unwrap();
-
-      toast({
-        title: "Student Updated",
-        description: "Student information has been successfully updated.",
-      });
-
-      onSuccess?.();
-      onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update student. Please try again.",
-        variant: "destructive",
-      });
+const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModalProps) => {
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-success/10 text-success">Active</Badge>;
+      case 'inactive':
+        return <Badge variant="secondary">Inactive</Badge>;
+      case 'graduated':
+        return <Badge className="bg-info/10 text-info">Graduated</Badge>;
+      case 'suspended':
+        return <Badge variant="destructive">Suspended</Badge>;
+      default:
+        return null;
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-gradient-primary">Edit Student</DialogTitle>
-          <DialogDescription>
-            Update student personal and academic information
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        {!student ? (
+          <div className="text-center text-muted-foreground py-8">No student selected</div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-gradient-primary">Student Details</DialogTitle>
+              <DialogDescription>
+                Complete information for {student.firstName} {student.lastName}
+              </DialogDescription>
+            </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Personal Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange("firstName", e.target.value)}
-                  required
-                />
+            <div className="space-y-6">
+              {/* Header Section */}
+              <div className="flex items-start gap-6 p-6 bg-accent/50 rounded-lg">
+                <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-primary-foreground text-2xl font-bold">
+                    {(student.firstName?.[0] ?? '')}
+                    {(student.lastName?.[0] ?? '')}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-1">
+                    {student.firstName} {student.lastName}
+                  </h2>
+                  {student.registrationNumber && (
+                    <p className="text-sm font-medium text-blue-600 mb-2">
+                      ID: {student.registrationNumber}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-3">
+                    {student.grade && (
+                      <span>
+                        Grade {student.grade} - Section {student.section ?? '-'}
+                      </span>
+                    )}
+                    {student.enrollmentDate && (
+                      <>
+                        <span>•</span>
+                        <span>
+                          Enrolled: {new Date(student.enrollmentDate).toLocaleDateString()}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">{getStatusBadge(student.status)}</div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange("lastName", e.target.value)}
-                  required
-                />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Personal Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Personal Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {student.email && (
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <div className="text-sm text-muted-foreground">Email</div>
+                          <div className="font-medium">{student.email}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {student.phone && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <div className="text-sm text-muted-foreground">Phone</div>
+                          <div className="font-medium">{student.phone}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {student.dob && (
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <div className="text-sm text-muted-foreground">Date of Birth</div>
+                          <div className="font-medium">
+                            {new Date(student.dob).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {student.address && (
+                      <div className="flex items-start gap-3">
+                        <MapPin className="w-4 h-4 text-muted-foreground mt-1" />
+                        <div>
+                          <div className="text-sm text-muted-foreground">Address</div>
+                          <div className="font-medium">{student.address}</div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Academic Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4" />
+                      Academic Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-muted-foreground">Class</div>
+                        <div className="font-medium">{student.classId ?? '-'}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Section</div>
+                        <div className="font-medium">{student.section ?? '-'}</div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-sm text-muted-foreground">Status</div>
+                      <div className="mt-1">{getStatusBadge(student.status)}</div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
+
+              {/* Parent Contact Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Parent Contact Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Father */}
+                  <div className="space-y-2 p-4 bg-accent/50 rounded-lg">
+                    <h4 className="font-medium">Father</h4>
+                    {student.fatherName && <p><strong>Name:</strong> {student.fatherName}</p>}
+                    {student.fatherEmail && <p><strong>Email:</strong> {student.fatherEmail}</p>}
+                    {student.fatherphone && <p><strong>Phone:</strong> {student.fatherphone}</p>}
+                    {student.fatherOccupation && (
+                      <p className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-muted-foreground" />
+                        {student.fatherOccupation}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Mother */}
+                  <div className="space-y-2 p-4 bg-accent/50 rounded-lg">
+                    <h4 className="font-medium">Mother</h4>
+                    {student.motherName && <p><strong>Name:</strong> {student.motherName}</p>}
+                    {student.motherEmail && <p><strong>Email:</strong> {student.motherEmail}</p>}
+                    {student.motherphone && <p><strong>Phone:</strong> {student.motherphone}</p>}
+                    {student.motherOccupation && (
+                      <p className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-muted-foreground" />
+                        {student.motherOccupation}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Emergency Contact */}
+              {student.contactName && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Emergency Contact
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Name</div>
+                      <div className="font-medium">{student.contactName}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Phone</div>
+                      <div className="font-medium">{student.contactPhone}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Email</div>
+                      <div className="font-medium">{student.contactEmail}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Relation</div>
+                      <div className="font-medium">{student.relation}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rollNumber">Roll Number</Label>
-                <Input
-                  id="rollNumber"
-                  value={formData.rollNumber}
-                  onChange={(e) => handleInputChange("rollNumber", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Address *</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
-                rows={3}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Academic Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Academic Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="grade">Grade *</Label>
-                <Input
-                  id="grade"
-                  value={formData.grade}
-                  onChange={(e) => handleInputChange("grade", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="section">Section *</Label>
-                <Input
-                  id="section"
-                  value={formData.section}
-                  onChange={(e) => handleInputChange("section", e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="admissionDate">Admission Date</Label>
-              <Input
-                id="admissionDate"
-                type="date"
-                value={formData.admissionDate}
-                onChange={(e) => handleInputChange("admissionDate", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Guardian Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Guardian Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="guardianName">Guardian Name *</Label>
-                <Input
-                  id="guardianName"
-                  value={formData.guardian.name}
-                  onChange={(e) => handleInputChange("name", e.target.value, true)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="guardianPhone">Guardian Phone *</Label>
-                <Input
-                  id="guardianPhone"
-                  type="tel"
-                  value={formData.guardian.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value, true)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="guardianRelation">Relationship *</Label>
-              <Input
-                id="guardianRelation"
-                value={formData.guardian.relation}
-                onChange={(e) => handleInputChange("relation", e.target.value, true)}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading} className="flex-1">
-              {isLoading ? "Updating..." : "Update Student"}
-            </Button>
-          </div>
-        </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
 };
 
-export default EditStudentModal;
+export default StudentDetailsModal;

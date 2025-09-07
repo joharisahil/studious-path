@@ -38,38 +38,49 @@ export interface RegisterData extends LoginCredentials {
 }
 
 // Student Management
+// types.ts
+
 export interface Student {
   id: string;
-  userId: string;
-  registrationNumber: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   email: string;
   phone?: string;
-  dateOfBirth: string;
-  address: string;
-  parentId?: string;
-  enrollmentDate: string;
-  status: 'active' | 'inactive' | 'graduated' | 'suspended';
-  grade: string;
-  section: string;
-  avatar?: string;
-  emergencyContact: {
-    name: string;
-    phone: string;
-    relation: string;
-  };
-  academicHistory: AcademicRecord[];
-  createdAt: string;
-  updatedAt: string;
+  dob?: string; // your DB field
+  address?: string;
+
+  // Guardian / Emergency Contact
+  contactEmail?: string;
+  contactName?: string;
+  contactPhone?: string;
+  relation?: string;
+
+  // Father info
+  fatherName?: string;
+  fatherEmail?: string;
+  fatherphone?: string; // kept lowercase to match DB
+  fatherOccupation?: string;
+
+  // Mother info
+  motherName?: string;
+  motherEmail?: string;
+  motherphone?: string;
+  motherOccupation?: string;
+
+  // Academic
+  grade?: string;
+  section?: string;
+  classId?: string;
+  registrationNumber?: string;
+  enrollmentDate?: string;
+
+  // Status
+  status?: "active" | "inactive" | "graduated" | "suspended";
 }
 
-export interface AcademicRecord {
-  year: string;
-  grade: string;
-  gpa: number;
-  subjects: SubjectGrade[];
-}
+  
+
+
 
 export interface SubjectGrade {
   subjectId: string;

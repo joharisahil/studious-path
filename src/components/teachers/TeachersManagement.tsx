@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -49,37 +49,46 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import {
-  useGetTeachersQuery,
-  useDeleteTeacherMutation,
-} from '@/store/api/teachersApi';
 import { useToast } from '@/hooks/use-toast';
 import CreateTeacherModal from './CreateTeacherModal';
 import EditTeacherModal from './EditTeacherModal';
-import TeacherDetailsModal from './TeacherDetailsModal';
-import { Teacher, TeacherFormData } from '@/types';
+// import TeacherDetailsModal from './TeacherDetailsModal';
+import { TeacherFormData } from '@/types';
+import { getAllTeachers } from "@/services/GetTotalTeachers";
 
 const TeachersManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [currentPage, setCurrentPage] = useState(1);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] =
     useState<TeacherFormData | null>(null);
+  const [teachers, setTeachers] = useState<TeacherFormData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const { toast } = useToast();
-  const { data: teachersResponse, isLoading, refetch } = useGetTeachersQuery({
-    page: currentPage,
-    limit: 10,
-    search: searchTerm,
-  });
-  const [deleteTeacher] = useDeleteTeacherMutation();
 
-  const teachers = teachersResponse?.data?.data || [];
-  const totalPages = teachersResponse?.data?.totalPages || 1;
-  const totalTeachers = teachersResponse?.data?.totalCount || 0;
+  // 🔹 Fetch teachers on component mount
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        setLoading(true);
+        const data = await getAllTeachers();
+        setTeachers(data);
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch teachers.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeachers();
+  }, []);
 
   const handleEditTeacher = (teacher: TeacherFormData) => {
     setSelectedTeacher(teacher);
@@ -93,12 +102,12 @@ const TeachersManagement = () => {
 
   const handleDeleteTeacher = async (teacherId: string) => {
     try {
-      await deleteTeacher(teacherId).unwrap();
+      // 👉 You can add delete API call here later
+      setTeachers((prev) => prev.filter((t) => t.id !== teacherId));
       toast({
         title: 'Teacher Deleted',
         description: 'Teacher has been successfully deleted.',
       });
-      refetch();
     } catch (error) {
       toast({
         title: 'Error',
@@ -108,11 +117,22 @@ const TeachersManagement = () => {
     }
   };
 
-  const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
-    const matchesStatus =
-      selectedStatus === 'all' || teacher.status === selectedStatus;
-    return matchesStatus;
-  });
+const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
+  const matchesStatus =
+    selectedStatus === 'all' || teacher.status === selectedStatus;
+
+  const firstName = teacher.firstName || '';
+  const lastName = teacher.lastName || '';
+  const email = teacher.email || '';
+
+  const matchesSearch =
+    firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    email.toLowerCase().includes(searchTerm.toLowerCase());
+
+  return matchesStatus && matchesSearch;
+});
+
 
   return (
     <div className="space-y-6">
@@ -177,13 +197,13 @@ const TeachersManagement = () => {
         <CardHeader>
           <CardTitle className="text-base">Teachers List</CardTitle>
           <CardDescription>
-            {isLoading
+            {loading
               ? 'Loading...'
-              : `Showing ${filteredTeachers.length} of ${totalTeachers} teachers`}
+              : `Showing ${filteredTeachers.length} of ${teachers.length} teachers`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-muted-foreground">Loading teachers...</div>
             </div>
@@ -209,9 +229,10 @@ const TeachersManagement = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                           <span className="text-primary-foreground text-xs font-medium">
-                            {teacher.firstName[0]}
-                            {teacher.lastName[0]}
+                          {(teacher.firstName?.[0] || "").toUpperCase()}
+                          {(teacher.lastName?.[0] || "").toUpperCase()}
                           </span>
+
                         </div>
                         <div>
                           <div className="font-medium">
@@ -289,7 +310,7 @@ const TeachersManagement = () => {
             </Table>
           )}
 
-          {filteredTeachers.length === 0 && !isLoading && (
+          {filteredTeachers.length === 0 && !loading && (
             <div className="text-center py-8">
               <div className="text-muted-foreground mb-2">
                 No teachers found
@@ -302,40 +323,14 @@ const TeachersManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Modals */}
       <CreateTeacherModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={() => refetch()}
+        onSuccess={() => {
+          // refresh list after adding
+          getAllTeachers().then(setTeachers);
+        }}
       />
 
       {selectedTeacher && (
@@ -345,15 +340,10 @@ const TeachersManagement = () => {
             onOpenChange={setEditModalOpen}
             teacher={selectedTeacher}
             onSuccess={() => {
-              refetch();
+              getAllTeachers().then(setTeachers);
               setSelectedTeacher(null);
             }}
           />
-          {/* <TeacherDetailsModal
-            open={detailsModalOpen}
-            onOpenChange={setDetailsModalOpen}
-            teacher={selectedTeacher}
-          /> */}
         </>
       )}
     </div>
