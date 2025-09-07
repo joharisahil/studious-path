@@ -1,75 +1,112 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useUpdateStudentMutation } from '@/store/api/studentsApi';
-import { useToast } from '@/hooks/use-toast';
-import { Student, StudentFormData } from '@/types';
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useUpdateTeacherMutation } from "@/store/api/teachersApi";
+import { useToast } from "@/hooks/use-toast";
+import { TeacherFormData } from "@/types";
 
-interface EditStudentModalProps {
+interface EditTeacherModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  student: Student;
+  teacher: TeacherFormData; 
   onSuccess?: () => void;
 }
 
-const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStudentModalProps) => {
-  const [updateStudent, { isLoading }] = useUpdateStudentMutation();
+const EditTeacherModal = ({
+  open,
+  onOpenChange,
+  teacher,
+  onSuccess,
+}: EditTeacherModalProps) => {
+  const [updateTeacher, { isLoading }] = useUpdateTeacherMutation();
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState<StudentFormData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    dateOfBirth: '',
-    address: '',
-    parentEmail: '',
-    grade: '',
-    section: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
-    emergencyContactRelation: '',
+  // ✅ State is based on TeacherFormData (no id required for form)
+  const [formData, setFormData] = useState<TeacherFormData>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    dateOfBirth: "",
+    address: "",
+    department: "",
+    position: "",
+    dateOfJoining: "",
+    salary: 0,
+    subjectSpecialization: [],
+    qualifications: [],
+    yearsOfExperience: 0,
+    emergencyContact: {
+      name: "",
+      phone: "",
+      relation: "",
+    },
   });
 
+  // ✅ Populate form with teacher’s existing data when modal opens
   useEffect(() => {
-    if (student) {
+    if (teacher) {
       setFormData({
-        firstName: student.firstName,
-        lastName: student.lastName,
-        email: student.email,
-        phone: student.phone || '',
-        dateOfBirth: student.dateOfBirth,
-        address: student.address,
-        parentEmail: student.parentId || '',
-        grade: student.grade,
-        section: student.section,
-        emergencyContactName: student.emergencyContact.name,
-        emergencyContactPhone: student.emergencyContact.phone,
-        emergencyContactRelation: student.emergencyContact.relation,
+        firstName: teacher.firstName,
+        lastName: teacher.lastName,
+        email: teacher.email,
+        phone: teacher.phone || "",
+        dateOfBirth: teacher.dateOfBirth,
+        address: teacher.address,
+        department: teacher.department || "",
+        position: teacher.position || "",
+        dateOfJoining: teacher.dateOfJoining || "",
+        salary: teacher.salary || 0,
+        subjectSpecialization: teacher.subjectSpecialization || [],
+        qualifications: teacher.qualifications || [],
+        yearsOfExperience: teacher.yearsOfExperience || 0,
+        emergencyContact: {
+          name: teacher.emergencyContact?.name || "",
+          phone: teacher.emergencyContact?.phone || "",
+          relation: teacher.emergencyContact?.relation || "",
+        },
       });
     }
-  }, [student]);
+  }, [teacher]);
 
-  const handleInputChange = (field: keyof StudentFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (
+    field: keyof TeacherFormData | keyof TeacherFormData["emergencyContact"],
+    value: any,
+    isEmergency = false
+  ) => {
+    if (isEmergency) {
+      setFormData((prev) => ({
+        ...prev,
+        emergencyContact: {
+          ...prev.emergencyContact,
+          [field]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
-      await updateStudent({
-        id: student.id,
+      await updateTeacher({
+        id: teacher.id, // ✅ use Teacher id for backend update
         ...formData,
       }).unwrap();
 
       toast({
-        title: "Student Updated",
-        description: "Student information has been successfully updated.",
+        title: "Teacher Updated",
+        description: "Teacher information has been successfully updated.",
       });
 
       onSuccess?.();
@@ -77,7 +114,7 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update student. Please try again.",
+        description: "Failed to update teacher. Please try again.",
         variant: "destructive",
       });
     }
@@ -85,11 +122,13 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-gradient-primary">Edit Student</DialogTitle>
+          <DialogTitle className="text-gradient-primary">
+            Edit Teacher
+          </DialogTitle>
           <DialogDescription>
-            Update student information and academic details
+            Update teacher personal and professional information
           </DialogDescription>
         </DialogHeader>
 
@@ -99,24 +138,22 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Personal Information
             </h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
                   required
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name *</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
                   required
                 />
               </div>
@@ -129,18 +166,17 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                   required
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
                 />
               </div>
             </div>
@@ -151,7 +187,9 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
                 id="dateOfBirth"
                 type="date"
                 value={formData.dateOfBirth}
-                onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("dateOfBirth", e.target.value)
+                }
                 required
               />
             </div>
@@ -161,59 +199,106 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
               <Textarea
                 id="address"
                 value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
+                onChange={(e) => handleInputChange("address", e.target.value)}
                 rows={3}
                 required
               />
             </div>
           </div>
 
-          {/* Academic Information */}
+          {/* Professional Information */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Academic Information
+              Professional Information
             </h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="grade">Grade *</Label>
-                <Select value={formData.grade} onValueChange={(value) => handleInputChange('grade', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="9">Grade 9</SelectItem>
-                    <SelectItem value="10">Grade 10</SelectItem>
-                    <SelectItem value="11">Grade 11</SelectItem>
-                    <SelectItem value="12">Grade 12</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  id="department"
+                  value={formData.department}
+                  onChange={(e) =>
+                    handleInputChange("department", e.target.value)
+                  }
+                />
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="section">Section *</Label>
-                <Select value={formData.section} onValueChange={(value) => handleInputChange('section', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="A">Section A</SelectItem>
-                    <SelectItem value="B">Section B</SelectItem>
-                    <SelectItem value="C">Section C</SelectItem>
-                    <SelectItem value="D">Section D</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="position">Position</Label>
+                <Input
+                  id="position"
+                  value={formData.position}
+                  onChange={(e) => handleInputChange("position", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dateOfJoining">Date of Joining</Label>
+                <Input
+                  id="dateOfJoining"
+                  type="date"
+                  value={formData.dateOfJoining}
+                  onChange={(e) =>
+                    handleInputChange("dateOfJoining", e.target.value)
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="salary">Salary</Label>
+                <Input
+                  id="salary"
+                  type="number"
+                  value={formData.salary}
+                  onChange={(e) =>
+                    handleInputChange("salary", Number(e.target.value))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="subjectSpecialization">
+                  Subject Specialization
+                </Label>
+                <Input
+                  id="subjectSpecialization"
+                  value={formData.subjectSpecialization.join(", ")}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "subjectSpecialization",
+                      e.target.value.split(",").map((s) => s.trim())
+                    )
+                  }
+                  placeholder="Comma separated subjects"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="qualifications">Qualifications</Label>
+                <Input
+                  id="qualifications"
+                  value={formData.qualifications.join(", ")}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "qualifications",
+                      e.target.value.split(",").map((q) => q.trim())
+                    )
+                  }
+                  placeholder="Comma separated qualifications"
+                />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="parentEmail">Parent Email</Label>
+              <Label htmlFor="yearsOfExperience">Years of Experience</Label>
               <Input
-                id="parentEmail"
-                type="email"
-                value={formData.parentEmail}
-                onChange={(e) => handleInputChange('parentEmail', e.target.value)}
-                placeholder="parent@example.com"
+                id="yearsOfExperience"
+                type="number"
+                value={formData.yearsOfExperience}
+                onChange={(e) =>
+                  handleInputChange("yearsOfExperience", Number(e.target.value))
+                }
               />
             </div>
           </div>
@@ -223,25 +308,27 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Emergency Contact
             </h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="emergencyContactName">Contact Name *</Label>
                 <Input
                   id="emergencyContactName"
-                  value={formData.emergencyContactName}
-                  onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                  value={formData.emergencyContact.name}
+                  onChange={(e) =>
+                    handleInputChange("name", e.target.value, true)
+                  }
                   required
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="emergencyContactPhone">Contact Phone *</Label>
                 <Input
                   id="emergencyContactPhone"
                   type="tel"
-                  value={formData.emergencyContactPhone}
-                  onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                  value={formData.emergencyContact.phone}
+                  onChange={(e) =>
+                    handleInputChange("phone", e.target.value, true)
+                  }
                   required
                 />
               </div>
@@ -249,20 +336,14 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
 
             <div className="space-y-2">
               <Label htmlFor="emergencyContactRelation">Relationship *</Label>
-              <Select value={formData.emergencyContactRelation} onValueChange={(value) => handleInputChange('emergencyContactRelation', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select relationship" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Father">Father</SelectItem>
-                  <SelectItem value="Mother">Mother</SelectItem>
-                  <SelectItem value="Guardian">Guardian</SelectItem>
-                  <SelectItem value="Uncle">Uncle</SelectItem>
-                  <SelectItem value="Aunt">Aunt</SelectItem>
-                  <SelectItem value="Grandparent">Grandparent</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="emergencyContactRelation"
+                value={formData.emergencyContact.relation}
+                onChange={(e) =>
+                  handleInputChange("relation", e.target.value, true)
+                }
+                required
+              />
             </div>
           </div>
 
@@ -276,12 +357,8 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1"
-            >
-              {isLoading ? 'Updating...' : 'Update Student'}
+            <Button type="submit" disabled={isLoading} className="flex-1">
+              {isLoading ? "Updating..." : "Update Teacher"}
             </Button>
           </div>
         </form>
@@ -290,4 +367,4 @@ const EditStudentModal = ({ open, onOpenChange, student, onSuccess }: EditStuden
   );
 };
 
-export default EditStudentModal;
+export default EditTeacherModal;

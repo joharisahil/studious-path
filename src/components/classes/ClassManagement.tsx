@@ -1,23 +1,58 @@
-import { useState } from 'react';
-import { Plus, Upload, Users, Search, Filter, FileSpreadsheet, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { useGetClassesQuery } from '@/store/api/classesApi';
-import { useGetStudentsQuery } from '@/store/api/studentsApi';
-import { CreateClassModal } from './CreateClassModal';
-import { UploadStudentsModal } from './UploadStudentsModal';
-import { AddStudentsModal } from './AddStudentsModal';
+import { useState } from "react";
+import {
+  Plus,
+  Upload,
+  Users,
+  Search,
+  Filter,
+  FileSpreadsheet,
+  Check,
+  Download,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { useGetClassesQuery } from "@/store/api/classesApi";
+import { useGetStudentsQuery } from "@/store/api/studentsApi";
+import { CreateClassModal } from "./CreateClassModal";
+import { UploadStudentsModal } from "./UploadStudentsModal";
+import { AddStudentsModal } from "./AddStudentsModal";
 
 export const ClassManagement = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterGrade, setFilterGrade] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterGrade, setFilterGrade] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -35,14 +70,14 @@ export const ClassManagement = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'inactive':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case "active":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "inactive":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "archived":
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -58,19 +93,40 @@ export const ClassManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/*Header*/}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Title Section */}
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">Class Management</h1>
-          <p className="text-muted-foreground">Manage classes and student enrollments</p>
+          <h1 className="text-3xl font-bold text-gradient-primary">
+            Class Management
+          </h1>
+          <p className="text-muted-foreground">
+            Manage classes and student enrollments
+          </p>
         </div>
-        <Button 
-          onClick={() => setShowCreateModal(true)}
-          className="bg-gradient-primary hover:bg-gradient-primary/90"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Class
-        </Button>
+
+        {/* Buttons Section */}
+        <div className="flex gap-2">
+          {/* Export Button */}
+          <Button variant="outline" className="gap-2">
+            <Download className="w-4 h-4" />
+            Export
+          </Button>
+
+          {/* Create Class Button */}
+          {/* <Button
+      onClick={() => setShowCreateModal(true)}
+      // className="bg-gradient-primary hover:bg-gradient-primary/90 text-white gap-2 px-4 py-2 rounded"
+      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+    >
+      <Plus className="w-4 h-4" />
+      Create Class
+    </Button> */}
+          <Button onClick={() => setShowCreateModal(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Class
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -85,10 +141,12 @@ export const ClassManagement = () => {
             <p className="text-xs text-muted-foreground">Active classes</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -101,15 +159,19 @@ export const ClassManagement = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Class Size</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Average Class Size
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {classes.length > 0 
-                ? Math.round(classes.reduce((sum, cls) => sum + cls.currentStrength, 0) / classes.length)
-                : 0
-              }
+              {classes.length > 0
+                ? Math.round(
+                    classes.reduce((sum, cls) => sum + cls.currentStrength, 0) /
+                      classes.length
+                  )
+                : 0}
             </div>
             <p className="text-xs text-muted-foreground">Students per class</p>
           </CardContent>
@@ -117,12 +179,17 @@ export const ClassManagement = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Capacity</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Available Capacity
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {classes.reduce((sum, cls) => sum + (cls.maxCapacity - cls.currentStrength), 0)}
+              {classes.reduce(
+                (sum, cls) => sum + (cls.maxCapacity - cls.currentStrength),
+                0
+              )}
             </div>
             <p className="text-xs text-muted-foreground">Remaining seats</p>
           </CardContent>
@@ -184,7 +251,9 @@ export const ClassManagement = () => {
               <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No classes found</h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm ? 'No classes match your search criteria.' : 'Get started by creating your first class.'}
+                {searchTerm
+                  ? "No classes match your search criteria."
+                  : "Get started by creating your first class."}
               </p>
               <Button onClick={() => setShowCreateModal(true)}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -213,7 +282,9 @@ export const ClassManagement = () => {
                         <div>
                           <div className="font-medium">{classItem.name}</div>
                           {classItem.room && (
-                            <div className="text-sm text-muted-foreground">{classItem.room}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {classItem.room}
+                            </div>
                           )}
                         </div>
                       </TableCell>
@@ -221,7 +292,9 @@ export const ClassManagement = () => {
                       <TableCell>{classItem.academicYear}</TableCell>
                       <TableCell>
                         {classItem.classTeacherName || (
-                          <span className="text-muted-foreground">Not assigned</span>
+                          <span className="text-muted-foreground">
+                            Not assigned
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -236,10 +309,14 @@ export const ClassManagement = () => {
                             {classItem.currentStrength}/{classItem.maxCapacity}
                           </div>
                           <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div 
+                            <div
                               className="bg-primary rounded-full h-2"
                               style={{
-                                width: `${(classItem.currentStrength / classItem.maxCapacity) * 100}%`
+                                width: `${
+                                  (classItem.currentStrength /
+                                    classItem.maxCapacity) *
+                                  100
+                                }%`,
                               }}
                             />
                           </div>

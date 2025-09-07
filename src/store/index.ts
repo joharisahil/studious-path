@@ -9,23 +9,30 @@ import { feesApi } from './api/feesApi';
 import { messagesApi } from './api/messagesApi';
 import { subjectsApi } from './api/subjectsApi';
 import { timetableApi } from './api/timetableApi';
+import { teachersApi } from './api/teachersApi';
+
 import authSlice from './slices/authSlice';
 import uiSlice from './slices/uiSlice';
 
 export const store = configureStore({
   reducer: {
-    // RTK Query APIs
+    // RTK Query API reducers
     [authApi.reducerPath]: authApi.reducer,
     [studentsApi.reducerPath]: studentsApi.reducer,
+    [teachersApi.reducerPath]: teachersApi.reducer, // ✅
     [coursesApi.reducerPath]: coursesApi.reducer,
     [classesApi.reducerPath]: classesApi.reducer,
     [attendanceApi.reducerPath]: attendanceApi.reducer,
     [assignmentsApi.reducerPath]: assignmentsApi.reducer,
     [feesApi.reducerPath]: feesApi.reducer,
     [messagesApi.reducerPath]: messagesApi.reducer,
+<<<<<<< HEAD
     [subjectsApi.reducerPath]: subjectsApi.reducer,
     [timetableApi.reducerPath]: timetableApi.reducer,
     
+=======
+
+>>>>>>> temp-01
     // Regular slices
     auth: authSlice,
     ui: uiSlice,
@@ -42,6 +49,7 @@ export const store = configureStore({
     }).concat(
       authApi.middleware,
       studentsApi.middleware,
+      teachersApi.middleware, // ✅ Add middleware here
       coursesApi.middleware,
       classesApi.middleware,
       attendanceApi.middleware,

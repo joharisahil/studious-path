@@ -410,35 +410,42 @@ export interface PaginatedResponse<T> {
 }
 
 // Form Types
-export interface StudentFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
+export interface Guardian {
+  name: string;
   phone: string;
-  dateOfBirth: string;
-  address: string;
-  parentEmail?: string;
-  grade: string;
-  section: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelation: string;
+  relation: string;
 }
 
-export interface TeacherFormData {
+export interface StudentFormData {
+  id?: string;          // optional if not always present
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
+  phone?: string;
   dateOfBirth: string;
   address: string;
-  subject: string;
-  qualification: string;
-  yearsOfExperience: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelation: string;
+  grade: string;
+  section: string;
+  rollNumber?: string;
+  admissionDate?: string;
+  guardian: Guardian;
 }
+
+
+// export interface TeacherFormData {
+//   firstName: string;
+//   lastName: string;
+//   email: string;
+//   phone: string;
+//   dateOfBirth: string;
+//   address: string;
+//   subject: string;
+//   qualification: string;
+//   yearsOfExperience: string;
+//   emergencyContactName: string;
+//   emergencyContactPhone: string;
+//   emergencyContactRelation: string;
+// }
 
 export interface CourseFormData {
   name: string;
@@ -614,3 +621,58 @@ export interface FindFreeTeachersData {
   day: string;
   period: number;
 }
+export type TeacherStatus = "active" | "inactive" | "terminated" | "retired" | "onLeave";
+
+export interface TeacherFormData {
+  // Optional for update, required for creation
+  id?: string;
+  userId?: string;
+  teacherId?: string;
+
+  // Basic info
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  address: string;
+  department?: string; // optional if coming from a form
+  position?: string;
+  dateOfJoining?: string;
+  salary?: number;
+  avatar?: string;
+  status?: TeacherStatus;
+
+  // Arrays
+  subjectSpecialization: string[]; // from form: [subject]
+  qualifications: string[];        // from form: [qualification]
+
+  // Experience
+  yearsOfExperience: number; // convert string from form to number
+
+  // Emergency contact
+  emergencyContact: {
+    name: string;
+    phone: string;
+    relation: string;
+  };
+
+  // Courses taught
+  courses?: string[]; // optional for form
+
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// export interface Teacher extends TeacherFormData {
+//   id: string;
+//   teacherId: string;
+//   userId: string;
+//   status: 'active' | 'inactive' | 'terminated' | 'retired';
+//   createdAt: string;
+//   updatedAt: string;
+// }
+
+
+

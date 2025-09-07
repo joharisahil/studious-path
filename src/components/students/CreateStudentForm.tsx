@@ -4,14 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useCreateStudentMutation } from '@/store/api/studentsApi';
+import { useGetClassesQuery } from '@/store/api/classesApi';
 import { StudentFormData } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { skipToken } from '@reduxjs/toolkit/query/react';
 
 const studentSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -21,8 +22,7 @@ const studentSchema = z.object({
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   address: z.string().min(10, 'Address must be at least 10 characters'),
   parentEmail: z.string().email('Invalid parent email').optional().or(z.literal('')),
-  grade: z.string().min(1, 'Grade is required'),
-  section: z.string().min(1, 'Section is required'),
+  classId: z.string().min(1, 'Class is required'),
   emergencyContactName: z.string().min(2, 'Emergency contact name is required'),
   emergencyContactPhone: z.string().min(10, 'Emergency contact phone is required'),
   emergencyContactRelation: z.string().min(1, 'Emergency contact relation is required'),
@@ -36,6 +36,16 @@ interface CreateStudentFormProps {
 const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
   const { toast } = useToast();
   const [createStudent, { isLoading }] = useCreateStudentMutation();
+  
+  // Pass query params to RTK Query (required)
+  const { data: classesData, isLoading: isClassesLoading } = useGetClassesQuery({
+    page: 1,
+    limit: 100,
+    search: '',
+  });
+
+  // Access the array from paginated response
+  const classes = classesData?.data?.data || [];
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -47,8 +57,7 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
       dateOfBirth: '',
       address: '',
       parentEmail: '',
-      grade: '',
-      section: '',
+      classId: '',
       emergencyContactName: '',
       emergencyContactPhone: '',
       emergencyContactRelation: '',
@@ -57,8 +66,8 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
 
   const onSubmit = async (data: StudentFormData) => {
     try {
-      const result = await createStudent(data).unwrap();
-      
+      await createStudent(data).unwrap();
+
       toast({
         title: 'Success',
         description: 'Student created successfully!',
@@ -173,74 +182,32 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
               />
             </div>
 
-            {/* Academic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Academic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="grade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Grade</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select grade" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => (
-                            <SelectItem key={i + 1} value={(i + 1).toString()}>
-                              Grade {i + 1}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="section"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Section</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select section" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {['A', 'B', 'C', 'D', 'E'].map((section) => (
-                            <SelectItem key={section} value={section}>
-                              Section {section}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            {/* Class Selection */}
+            <FormField
+  control={form.control}
+  name="classId"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Select Class</FormLabel>
+      <FormControl>
+        <Select onValueChange={field.onChange} value={field.value}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select class" />
+          </SelectTrigger>
+          <SelectContent>
+            {Array.from({ length: 12 }, (_, i) => (
+              <SelectItem key={i + 1} value={(i + 1).toString()}>
+                Class {i + 1}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
 
-              <FormField
-                control={form.control}
-                name="parentEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Parent Email (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter parent email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             {/* Emergency Contact */}
             <div className="space-y-4">
@@ -280,22 +247,22 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Relation</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select relation" />
                         </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Father">Father</SelectItem>
-                        <SelectItem value="Mother">Mother</SelectItem>
-                        <SelectItem value="Guardian">Guardian</SelectItem>
-                        <SelectItem value="Uncle">Uncle</SelectItem>
-                        <SelectItem value="Aunt">Aunt</SelectItem>
-                        <SelectItem value="Grandparent">Grandparent</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                        <SelectContent>
+                          <SelectItem value="Father">Father</SelectItem>
+                          <SelectItem value="Mother">Mother</SelectItem>
+                          <SelectItem value="Guardian">Guardian</SelectItem>
+                          <SelectItem value="Uncle">Uncle</SelectItem>
+                          <SelectItem value="Aunt">Aunt</SelectItem>
+                          <SelectItem value="Grandparent">Grandparent</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

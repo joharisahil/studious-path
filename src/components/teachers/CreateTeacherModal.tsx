@@ -1,13 +1,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import CreateStudentForm from './CreateTeacherForm';
+import CreateTeacherForm from './CreateTeacherForm';
 
-interface CreateStudentModalProps {
+interface CreateTeacherModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
-const CreateStudentModal = ({ open, onOpenChange, onSuccess }: CreateStudentModalProps) => {
+const CreateTeacherModal = ({ open, onOpenChange, onSuccess }: CreateTeacherModalProps) => {
   const handleSuccess = () => {
     onSuccess?.();
     onOpenChange(false);
@@ -21,12 +21,12 @@ const CreateStudentModal = ({ open, onOpenChange, onSuccess }: CreateStudentModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Student</DialogTitle>
+          <DialogTitle>Create New Teacher</DialogTitle>
         </DialogHeader>
-        <CreateStudentForm onSuccess={handleSuccess} onCancel={handleCancel} />
+        <CreateTeacherForm onSuccess={handleSuccess} onCancel={handleCancel} />
       </DialogContent>
     </Dialog>
   );
 };
 
-export default CreateStudentModal;
+export default CreateTeacherModal;

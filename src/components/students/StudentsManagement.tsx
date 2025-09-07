@@ -1,24 +1,69 @@
-import { useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, Download, MoreVertical } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useGetStudentsQuery, useDeleteStudentMutation } from '@/store/api/studentsApi';
-import { useToast } from '@/hooks/use-toast';
-import CreateStudentModal from './CreateStudentModal';
-import EditStudentModal from './EditStudentModal';
-import StudentDetailsModal from './StudentDetailsModal';
-import { Student } from '@/types';
+import { useEffect, useState } from "react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  Download,
+  MoreVertical,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import CreateStudentModal from "./CreateStudentModal";
+import EditStudentModal from "./EditStudentModal";
+import StudentDetailsModal from "./StudentDetailsModal";
+import { Student } from "@/types";
+import { getAllStudents } from "@/services/GetTotalStudent";
 
 const StudentsManagement = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedGrade, setSelectedGrade] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -26,16 +71,30 @@ const StudentsManagement = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   const { toast } = useToast();
-  const { data: studentsResponse, isLoading, refetch } = useGetStudentsQuery({
-    page: currentPage,
-    limit: 10,
-    search: searchTerm,
-  });
-  const [deleteStudent] = useDeleteStudentMutation();
 
-  const students = studentsResponse?.data?.data || [];
-  const totalPages = studentsResponse?.data?.totalPages || 1;
-  const totalStudents = studentsResponse?.data?.totalCount || 0;
+  // fetch from API
+  const getStudentsFromAPI = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAllStudents();
+      setStudents(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch students",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getStudentsFromAPI();
+  }, []);
+
+  const totalStudents = students.length;
+  const totalPages = Math.max(1, Math.ceil(totalStudents / 10));
 
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student);
@@ -49,12 +108,12 @@ const StudentsManagement = () => {
 
   const handleDeleteStudent = async (studentId: string) => {
     try {
-      await deleteStudent(studentId).unwrap();
+      // TODO: replace with your delete API
+      setStudents((prev) => prev.filter((s) => s.id !== studentId));
       toast({
         title: "Student Deleted",
         description: "Student has been successfully deleted.",
       });
-      refetch();
     } catch (error) {
       toast({
         title: "Error",
@@ -66,23 +125,39 @@ const StudentsManagement = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return <Badge className="bg-success/10 text-success">Active</Badge>;
-      case 'inactive':
+      case "inactive":
         return <Badge variant="secondary">Inactive</Badge>;
-      case 'graduated':
+      case "graduated":
         return <Badge className="bg-info/10 text-info">Graduated</Badge>;
-      case 'suspended':
+      case "suspended":
         return <Badge variant="destructive">Suspended</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const filteredStudents = students.filter(student => {
-    const matchesGrade = selectedGrade === 'all' || student.grade === selectedGrade;
-    const matchesStatus = selectedStatus === 'all' || student.status === selectedStatus;
-    return matchesGrade && matchesStatus;
+  // Filter students safely
+  const filteredStudents = students.filter((student) => {
+    const matchesGrade =
+      selectedGrade === "all" || student.grade === selectedGrade;
+    const matchesStatus =
+      selectedStatus === "all" || student.status === selectedStatus;
+
+    const matchesSearch =
+      (student.firstName ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.lastName ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.studentId ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.email ?? "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesGrade && matchesStatus && matchesSearch;
   });
 
   return (
@@ -90,7 +165,9 @@ const StudentsManagement = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">Students Management</h1>
+          <h1 className="text-3xl font-bold text-gradient-primary">
+            Students Management
+          </h1>
           <p className="text-muted-foreground mt-1">
             Manage student profiles, enrollment, and academic records
           </p>
@@ -129,9 +206,11 @@ const StudentsManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {filteredStudents.filter(s => s.status === 'active').length}
+              {filteredStudents.filter((s) => s.status === "active").length}
             </div>
-            <div className="text-sm text-muted-foreground">Currently enrolled</div>
+            <div className="text-sm text-muted-foreground">
+              Currently enrolled
+            </div>
           </CardContent>
         </Card>
 
@@ -143,7 +222,9 @@ const StudentsManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">23</div>
-            <div className="text-sm text-muted-foreground">Recent enrollments</div>
+            <div className="text-sm text-muted-foreground">
+              Recent enrollments
+            </div>
           </CardContent>
         </Card>
 
@@ -155,7 +236,9 @@ const StudentsManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">94.2%</div>
-            <div className="text-sm text-muted-foreground">Last academic year</div>
+            <div className="text-sm text-muted-foreground">
+              Last academic year
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -164,7 +247,9 @@ const StudentsManagement = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Search & Filter Students</CardTitle>
-          <CardDescription>Find students by name, ID, grade, or status</CardDescription>
+          <CardDescription>
+            Find students by name, ID, grade, or status
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
@@ -212,7 +297,9 @@ const StudentsManagement = () => {
         <CardHeader>
           <CardTitle className="text-base">Students List</CardTitle>
           <CardDescription>
-            {isLoading ? 'Loading...' : `Showing ${filteredStudents.length} of ${totalStudents} students`}
+            {isLoading
+              ? "Loading..."
+              : `Showing ${filteredStudents.length} of ${totalStudents} students`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -224,30 +311,35 @@ const StudentsManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student ID</TableHead>
+                  <TableHead>Registeration Number</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Grade</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Enrollment Date</TableHead>
+                  <TableHead>Created At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredStudents.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.studentId}</TableCell>
+                    <TableCell className="font-medium">
+                      {student.studentId}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                           <span className="text-primary-foreground text-xs font-medium">
-                            {student.firstName[0]}{student.lastName[0]}
+                            {(student.firstName?.[0] ?? "") +
+                              (student.lastName?.[0] ?? "")}
                           </span>
                         </div>
                         <div>
-                          <div className="font-medium">{student.firstName} {student.lastName}</div>
+                          <div className="font-medium">
+                            {student.firstName} {student.lastName}
+                          </div>
                           <div className="text-sm text-muted-foreground">
-                            Section {student.section}
+                            Section {student.section ?? "-"}
                           </div>
                         </div>
                       </div>
@@ -258,7 +350,9 @@ const StudentsManagement = () => {
                     </TableCell>
                     <TableCell>{getStatusBadge(student.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(student.enrollmentDate).toLocaleDateString()}
+                      {student.enrollmentDate
+                        ? new Date(student.enrollmentDate).toLocaleDateString()
+                        : "-"}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -268,17 +362,21 @@ const StudentsManagement = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewStudent(student)}>
+                          <DropdownMenuItem
+                            onClick={() => handleViewStudent(student)}
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditStudent(student)}>
+                          <DropdownMenuItem
+                            onClick={() => handleEditStudent(student)}
+                          >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onSelect={(e) => e.preventDefault()}
                               >
@@ -288,16 +386,21 @@ const StudentsManagement = () => {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Student</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Delete Student
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete {student.firstName} {student.lastName}? 
-                                  This action cannot be undone.
+                                  Are you sure you want to delete{" "}
+                                  {student.firstName} {student.lastName}? This
+                                  action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleDeleteStudent(student.id)}
+                                  onClick={() =>
+                                    handleDeleteStudent(student.id!)
+                                  }
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete
@@ -316,7 +419,9 @@ const StudentsManagement = () => {
 
           {filteredStudents.length === 0 && !isLoading && (
             <div className="text-center py-8">
-              <div className="text-muted-foreground mb-2">No students found</div>
+              <div className="text-muted-foreground mb-2">
+                No students found
+              </div>
               <div className="text-sm text-muted-foreground">
                 Try adjusting your search terms or filters
               </div>
@@ -324,6 +429,9 @@ const StudentsManagement = () => {
           )}
         </CardContent>
       </Card>
+        
+
+          
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -335,7 +443,7 @@ const StudentsManagement = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
             >
               Previous
@@ -343,7 +451,9 @@ const StudentsManagement = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+              }
               disabled={currentPage === totalPages}
             >
               Next
@@ -353,12 +463,12 @@ const StudentsManagement = () => {
       )}
 
       {/* Modals */}
-      <CreateStudentModal 
-        open={createModalOpen} 
+      <CreateStudentModal
+        open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={() => refetch()}
+        onSuccess={getStudentsFromAPI}
       />
-      
+
       {selectedStudent && (
         <>
           <EditStudentModal
@@ -366,7 +476,7 @@ const StudentsManagement = () => {
             onOpenChange={setEditModalOpen}
             student={selectedStudent}
             onSuccess={() => {
-              refetch();
+              getStudentsFromAPI();
               setSelectedStudent(null);
             }}
           />
