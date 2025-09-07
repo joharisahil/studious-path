@@ -20,6 +20,7 @@ import { FeesManagement } from '@/components/fees';
 import { ClassManagement } from '@/components/classes';
 import { SubjectManagement } from '@/components/subjects';
 import { loginSuccess } from '@/store/slices/authSlice';
+import { TimetableManagement } from './components/timetable/TimetableManagement';
 
 // App content component
 const AppContent = () => {
