@@ -1,27 +1,33 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Calendar, Mail, Phone, MapPin, User, GraduationCap, Users } from 'lucide-react';
-import { Student } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Mail, Phone, MapPin, User, Calendar } from 'lucide-react';
+import { TeacherFormData } from '@/types';
 
-interface StudentDetailsModalProps {
+interface TeacherDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  student: Student;
+  teacher: TeacherFormData & {
+    id: string;
+    teacherId: string;
+    userId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
-const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModalProps) => {
+const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModalProps) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
         return <Badge className="bg-success/10 text-success">Active</Badge>;
       case 'inactive':
         return <Badge variant="secondary">Inactive</Badge>;
-      case 'graduated':
-        return <Badge className="bg-info/10 text-info">Graduated</Badge>;
-      case 'suspended':
-        return <Badge variant="destructive">Suspended</Badge>;
+      case 'onLeave':
+        return <Badge className="bg-warning/10 text-warning">On Leave</Badge>;
+      case 'retired':
+        return <Badge variant="destructive">Retired</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -31,9 +37,9 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-gradient-primary">Student Details</DialogTitle>
+          <DialogTitle className="text-gradient-primary">Teacher Details</DialogTitle>
           <DialogDescription>
-            Complete information for {student.firstName} {student.lastName}
+            Complete information for {teacher.firstName} {teacher.lastName}
           </DialogDescription>
         </DialogHeader>
 
@@ -42,22 +48,22 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
           <div className="flex items-start gap-6 p-6 bg-accent/50 rounded-lg">
             <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground text-2xl font-bold">
-                {student.firstName[0]}{student.lastName[0]}
+                {teacher.firstName[0]}{teacher.lastName[0]}
               </span>
             </div>
             <div className="flex-1">
               <h2 className="text-2xl font-bold mb-2">
-                {student.firstName} {student.lastName}
+                {teacher.firstName} {teacher.lastName}
               </h2>
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                <span className="font-medium">ID: {student.studentId}</span>
+                <span className="font-medium">ID: {teacher.teacherId}</span>
                 <span>•</span>
-                <span>Grade {student.grade} - Section {student.section}</span>
+                <span>{teacher.position} - {teacher.department}</span>
                 <span>•</span>
-                <span>Enrolled: {new Date(student.enrollmentDate).toLocaleDateString()}</span>
+                <span>Joined: {new Date(teacher.dateOfJoining).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center gap-2">
-                {getStatusBadge(student.status)}
+                {getStatusBadge(teacher.status)}
               </div>
             </div>
           </div>
@@ -76,16 +82,16 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   <div>
                     <div className="text-sm text-muted-foreground">Email</div>
-                    <div className="font-medium">{student.email}</div>
+                    <div className="font-medium">{teacher.email}</div>
                   </div>
                 </div>
 
-                {student.phone && (
+                {teacher.phone && (
                   <div className="flex items-center gap-3">
                     <Phone className="w-4 h-4 text-muted-foreground" />
                     <div>
                       <div className="text-sm text-muted-foreground">Phone</div>
-                      <div className="font-medium">{student.phone}</div>
+                      <div className="font-medium">{teacher.phone}</div>
                     </div>
                   </div>
                 )}
@@ -95,7 +101,7 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
                   <div>
                     <div className="text-sm text-muted-foreground">Date of Birth</div>
                     <div className="font-medium">
-                      {new Date(student.dateOfBirth).toLocaleDateString()}
+                      {new Date(teacher.dateOfBirth).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -104,62 +110,49 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
                   <MapPin className="w-4 h-4 text-muted-foreground mt-1" />
                   <div>
                     <div className="text-sm text-muted-foreground">Address</div>
-                    <div className="font-medium">{student.address}</div>
+                    <div className="font-medium">{teacher.address}</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Academic Information */}
+            {/* Professional Information */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4" />
-                  Academic Information
+                  <Users className="w-4 h-4" />
+                  Professional Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Grade</div>
-                    <div className="font-medium">Grade {student.grade}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Section</div>
-                    <div className="font-medium">Section {student.section}</div>
-                  </div>
-                </div>
-
                 <div>
-                  <div className="text-sm text-muted-foreground">Enrollment Date</div>
-                  <div className="font-medium">
-                    {new Date(student.enrollmentDate).toLocaleDateString()}
-                  </div>
+                  <div className="text-sm text-muted-foreground">Department</div>
+                  <div className="font-medium">{teacher.department}</div>
                 </div>
-
                 <div>
-                  <div className="text-sm text-muted-foreground">Status</div>
-                  <div className="mt-1">{getStatusBadge(student.status)}</div>
+                  <div className="text-sm text-muted-foreground">Position</div>
+                  <div className="font-medium">{teacher.position}</div>
                 </div>
-
-                {student.academicHistory.length > 0 && (
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-2">Academic History</div>
-                    <div className="space-y-2">
-                      {student.academicHistory.map((record, index) => (
-                        <div key={index} className="p-3 bg-accent/50 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium">{record.year}</span>
-                            <Badge variant="outline">GPA: {record.gpa}</Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Grade {record.grade}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <div className="text-sm text-muted-foreground">Date of Joining</div>
+                  <div className="font-medium">{new Date(teacher.dateOfJoining).toLocaleDateString()}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Salary</div>
+                  <div className="font-medium">${teacher.salary}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Subject Specialization</div>
+                  <div className="font-medium">{teacher.subjectSpecialization.join(', ')}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Qualifications</div>
+                  <div className="font-medium">{teacher.qualifications.join(', ')}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Years of Experience</div>
+                  <div className="font-medium">{teacher.yearsOfExperience}</div>
+                </div>
               </CardContent>
             </Card>
 
@@ -174,17 +167,15 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
               <CardContent className="space-y-4">
                 <div>
                   <div className="text-sm text-muted-foreground">Name</div>
-                  <div className="font-medium">{student.emergencyContact.name}</div>
+                  <div className="font-medium">{teacher.emergencyContact.name}</div>
                 </div>
-
                 <div>
                   <div className="text-sm text-muted-foreground">Phone</div>
-                  <div className="font-medium">{student.emergencyContact.phone}</div>
+                  <div className="font-medium">{teacher.emergencyContact.phone}</div>
                 </div>
-
                 <div>
                   <div className="text-sm text-muted-foreground">Relationship</div>
-                  <div className="font-medium">{student.emergencyContact.relation}</div>
+                  <div className="font-medium">{teacher.emergencyContact.relation}</div>
                 </div>
               </CardContent>
             </Card>
@@ -196,70 +187,28 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted-foreground">Student ID</div>
-                  <div className="font-medium font-mono">{student.studentId}</div>
+                  <div className="text-sm text-muted-foreground">Teacher ID</div>
+                  <div className="font-medium font-mono">{teacher.teacherId}</div>
                 </div>
-
                 <div>
                   <div className="text-sm text-muted-foreground">User ID</div>
-                  <div className="font-medium font-mono">{student.userId}</div>
+                  <div className="font-medium font-mono">{teacher.userId}</div>
                 </div>
-
                 <div>
                   <div className="text-sm text-muted-foreground">Created At</div>
-                  <div className="font-medium">
-                    {new Date(student.createdAt).toLocaleString()}
-                  </div>
+                  <div className="font-medium">{new Date(teacher.createdAt).toLocaleString()}</div>
                 </div>
-
                 <div>
                   <div className="text-sm text-muted-foreground">Last Updated</div>
-                  <div className="font-medium">
-                    {new Date(student.updatedAt).toLocaleString()}
-                  </div>
+                  <div className="font-medium">{new Date(teacher.updatedAt).toLocaleString()}</div>
                 </div>
               </CardContent>
             </Card>
           </div>
-
-          {/* Academic Performance Placeholder */}
-          {student.academicHistory.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Academic Performance</CardTitle>
-                <CardDescription>
-                  Subject-wise performance and grades
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {student.academicHistory[0]?.subjects?.map((subject, index) => (
-                    <div key={index} className="p-4 bg-accent/50 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium">{subject.subjectName}</span>
-                        <Badge variant={subject.grade === 'A+' ? 'default' : 'secondary'}>
-                          {subject.grade}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {subject.marks}/{subject.totalMarks} marks
-                      </div>
-                      <div className="w-full bg-secondary rounded-full h-2 mt-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${(subject.marks / subject.totalMarks) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default StudentDetailsModal;
+export default TeacherDetailsModal;
