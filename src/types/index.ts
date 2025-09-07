@@ -548,3 +548,69 @@ export interface AssignTeacherData {
   teacherId: string;
   classSchedule?: Subject['classSchedule'];
 }
+
+// Timetable Management
+export interface TimetablePeriod {
+  id: string;
+  classId: string;
+  className: string;
+  day: string; // Monday, Tuesday, etc.
+  dayIndex: number; // 0-5 for Mon-Sat
+  period: number; // 1-8
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+  teacherId: string;
+  teacherName: string;
+  room?: string;
+  color: string; // For UI color coding
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClassTimetable {
+  classId: string;
+  className: string;
+  periods: TimetablePeriod[];
+  totalPeriods: number;
+  totalDays: number;
+}
+
+export interface TeacherTimetable {
+  teacherId: string;
+  teacherName: string;
+  periods: TimetablePeriod[];
+  freePeriods: {
+    day: string;
+    dayIndex: number;
+    period: number;
+  }[];
+}
+
+export interface FreeTeacher {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  subjectSpecialization: string[];
+}
+
+export interface TimetablePeriodFormData {
+  day: string;
+  period: number;
+  classId: string;
+  subjectId: string;
+  teacherId: string;
+  room?: string;
+}
+
+export interface AutoGenerateTimetableData {
+  classId: string;
+  numberOfDays: number;
+  periodsPerDay: number;
+}
+
+export interface FindFreeTeachersData {
+  day: string;
+  period: number;
+}

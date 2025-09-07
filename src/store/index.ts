@@ -8,6 +8,7 @@ import { assignmentsApi } from './api/assignmentsApi';
 import { feesApi } from './api/feesApi';
 import { messagesApi } from './api/messagesApi';
 import { subjectsApi } from './api/subjectsApi';
+import { timetableApi } from './api/timetableApi';
 import authSlice from './slices/authSlice';
 import uiSlice from './slices/uiSlice';
 
@@ -23,6 +24,7 @@ export const store = configureStore({
     [feesApi.reducerPath]: feesApi.reducer,
     [messagesApi.reducerPath]: messagesApi.reducer,
     [subjectsApi.reducerPath]: subjectsApi.reducer,
+    [timetableApi.reducerPath]: timetableApi.reducer,
     
     // Regular slices
     auth: authSlice,
@@ -46,7 +48,8 @@ export const store = configureStore({
       assignmentsApi.middleware,
       feesApi.middleware,
       messagesApi.middleware,
-      subjectsApi.middleware
+      subjectsApi.middleware,
+      timetableApi.middleware
     ),
 });
 

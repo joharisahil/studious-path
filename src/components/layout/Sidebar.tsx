@@ -39,7 +39,7 @@ const sidebarItems: SidebarItem[] = [
   { id: 'classes', label: 'Classes', icon: School, path: '/classes', roles: ['admin'] },
   { id: 'subjects', label: 'Subjects', icon: Book, path: '/subjects', roles: ['admin','teacher'] },
   { id: 'courses', label: 'Courses', icon: BookOpen, path: '/courses', roles: ['admin','teacher','student'] },
-  { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin','teacher','student','parent'] },
+  { id: 'timetable', label: 'Timetable', icon: Calendar, path: '/timetable', roles: ['admin','teacher'] },
   { id: 'assignments', label: 'Assignments', icon: FileText, path: '/assignments', roles: ['admin','teacher','student'] },
   { id: 'exams', label: 'Exams', icon: FileText, path: '/exams', roles: ['admin','teacher','student','parent'] },
   { id: 'fees', label: 'Fees', icon: CreditCard, path: '/fees', roles: ['admin','student','parent'] },

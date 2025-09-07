@@ -221,6 +221,17 @@ const AppContent = () => {
             }
           />
 
+          <Route
+            path="/timetable"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <MainLayout>
+                  <TimetableManagement />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all - redirect to appropriate dashboard or login */}
           {/* Catch all */}
           <Route
