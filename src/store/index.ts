@@ -26,13 +26,10 @@ export const store = configureStore({
     [assignmentsApi.reducerPath]: assignmentsApi.reducer,
     [feesApi.reducerPath]: feesApi.reducer,
     [messagesApi.reducerPath]: messagesApi.reducer,
-<<<<<<< HEAD
     [subjectsApi.reducerPath]: subjectsApi.reducer,
     [timetableApi.reducerPath]: timetableApi.reducer,
     
-=======
 
->>>>>>> temp-01
     // Regular slices
     auth: authSlice,
     ui: uiSlice,
