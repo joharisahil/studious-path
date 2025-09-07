@@ -41,7 +41,7 @@ export interface RegisterData extends LoginCredentials {
 export interface Student {
   id: string;
   userId: string;
-  studentId: string;
+  registrationNumber: string;
   firstName: string;
   lastName: string;
   email: string;

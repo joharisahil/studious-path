@@ -324,7 +324,7 @@ const StudentsManagement = () => {
                 {filteredStudents.map((student) => (
                   <TableRow key={student.id}>
                     <TableCell className="font-medium">
-                      {student.studentId}
+                      {student.registrationNumber}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
