@@ -38,11 +38,14 @@ const studentSchema = z.object({
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   address: z.string().min(10, "Address must be at least 10 characters"),
-  parentEmail: z.string().email("Invalid parent email").optional().or(z.literal("")),
-  classId: z.string().min(1, "Class is required"),
-  emergencyContactName: z.string().min(2, "Emergency contact name is required"),
-  emergencyContactPhone: z.string().min(10, "Emergency contact phone is required"),
-  emergencyContactRelation: z.string().min(1, "Emergency contact relation is required"),
+  grade: z.string().min(1, "Grade is required"),
+  section: z.string().min(1, "Section is required"),
+  classId: z.string().min(1, "Class is required").optional(),
+  guardian: z.object({
+    name: z.string().min(2, "Guardian name is required"),
+    phone: z.string().min(10, "Guardian phone is required"),
+    relation: z.string().min(1, "Guardian relation is required"),
+  }),
 });
 
 interface CreateStudentFormProps {
@@ -63,11 +66,14 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
       phone: "",
       dateOfBirth: "",
       address: "",
-      parentEmail: "",
+      grade: "",
+      section: "",
       classId: "",
-      emergencyContactName: "",
-      emergencyContactPhone: "",
-      emergencyContactRelation: "",
+      guardian: {
+        name: "",
+        phone: "",
+        relation: "",
+      },
     },
   });
 
@@ -208,6 +214,35 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="grade"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Grade</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter grade" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="section"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Section</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter section" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Class Selection */}
@@ -242,18 +277,18 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
               )}
             />
 
-            {/* Emergency Contact */}
+            {/* Guardian Contact */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Emergency Contact</h3>
+              <h3 className="text-lg font-semibold">Guardian Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="emergencyContactName"
+                  name="guardian.name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Name</FormLabel>
+                      <FormLabel>Guardian Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter emergency contact name" {...field} />
+                        <Input placeholder="Enter guardian name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -261,12 +296,12 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                 />
                 <FormField
                   control={form.control}
-                  name="emergencyContactPhone"
+                  name="guardian.phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Phone</FormLabel>
+                      <FormLabel>Guardian Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter emergency contact phone" {...field} />
+                        <Input placeholder="Enter guardian phone" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -276,7 +311,7 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
 
               <FormField
                 control={form.control}
-                name="emergencyContactRelation"
+                name="guardian.relation"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Relation</FormLabel>

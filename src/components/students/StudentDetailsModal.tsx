@@ -107,13 +107,13 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
                       </div>
                     )}
 
-                    {student.dob && (
+                    {student.dateOfBirth && (
                       <div className="flex items-center gap-3">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <div>
                           <div className="text-sm text-muted-foreground">Date of Birth</div>
                           <div className="font-medium">
-                            {new Date(student.dob).toLocaleDateString()}
+                            {new Date(student.dateOfBirth).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
@@ -201,7 +201,7 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
               </Card>
 
               {/* Emergency Contact */}
-              {student.contactName && (
+              {student.emergencyContact && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -212,19 +212,15 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
                   <CardContent className="space-y-4">
                     <div>
                       <div className="text-sm text-muted-foreground">Name</div>
-                      <div className="font-medium">{student.contactName}</div>
+                      <div className="font-medium">{student.emergencyContact.name}</div>
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">Phone</div>
-                      <div className="font-medium">{student.contactPhone}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Email</div>
-                      <div className="font-medium">{student.contactEmail}</div>
+                      <div className="font-medium">{student.emergencyContact.phone}</div>
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">Relation</div>
-                      <div className="font-medium">{student.relation}</div>
+                      <div className="font-medium">{student.emergencyContact.relation}</div>
                     </div>
                   </CardContent>
                 </Card>

@@ -126,13 +126,13 @@ export const studentsApi = createApi({
 
         const newStudent: Student = {
           id: (mockStudents.length + 1).toString(),
-          userId: `user_${Date.now()}`,
           studentId: `STU${String(mockStudents.length + 1).padStart(3, '0')}`,
+          userId: `user_${Date.now()}`,
           ...studentData,
           emergencyContact: {
-            name: studentData.emergencyContactName,
-            phone: studentData.emergencyContactPhone,
-            relation: studentData.emergencyContactRelation,
+            name: studentData.guardian.name,
+            phone: studentData.guardian.phone,
+            relation: studentData.guardian.relation,
           },
           enrollmentDate: new Date().toISOString(),
           status: 'active',

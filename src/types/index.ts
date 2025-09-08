@@ -47,25 +47,29 @@ export interface Student {
   lastName?: string;
   email: string;
   phone?: string;
-  dob?: string; // your DB field
+  dateOfBirth?: string;
   address?: string;
 
   // Guardian / Emergency Contact
-  contactEmail?: string;
-  contactName?: string;
-  contactPhone?: string;
-  relation?: string;
+  guardian?: Guardian;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relation: string; 
+  };
 
   // Father info
   fatherName?: string;
   fatherEmail?: string;
   fatherphone?: string; // kept lowercase to match DB
+  fatherContact?: string;
   fatherOccupation?: string;
 
   // Mother info
   motherName?: string;
   motherEmail?: string;
   motherphone?: string;
+  motherContact?: string;
   motherOccupation?: string;
 
   // Academic
@@ -73,10 +77,19 @@ export interface Student {
   section?: string;
   classId?: string;
   registrationNumber?: string;
+  rollNumber?: string;
+  admissionDate?: string;
   enrollmentDate?: string;
+  academicHistory?: any[];
 
   // Status
   status?: "active" | "inactive" | "graduated" | "suspended";
+  
+  // System fields
+  userId?: string;
+  avatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
   
@@ -429,18 +442,31 @@ export interface Guardian {
 }
 
 export interface StudentFormData {
-  id?: string;          // optional if not always present
+  id?: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   email: string;
   phone?: string;
-  dateOfBirth: string;
-  address: string;
-  grade: string;
-  section: string;
+  dateOfBirth?: string;
+  address?: string; // Make optional
+  grade?: string; // Make optional
+  section?: string; // Make optional
   rollNumber?: string;
   admissionDate?: string;
-  guardian: Guardian;
+  classId?: string;
+  
+  // Guardian info
+  guardian?: Guardian; // Make optional for compatibility
+  
+  // Parent info (for compatibility with EditStudentModal)
+  fatherName?: string;
+  fatherEmail?: string;
+  fatherContact?: string;
+  fatherOccupation?: string;
+  motherName?: string;
+  motherEmail?: string;
+  motherContact?: string;
+  motherOccupation?: string;
 }
 
 

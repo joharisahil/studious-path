@@ -241,8 +241,8 @@ const StudentsManagement = () => {
                     </TableCell>
                     <TableCell>{getStatusBadge(student.section)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {student.dob
-                        ? new Date(student.dob).toLocaleDateString()
+                      {student.dateOfBirth
+                        ? new Date(student.dateOfBirth).toLocaleDateString()
                         : "-"}
                     </TableCell>
                     <TableCell className="text-right">
