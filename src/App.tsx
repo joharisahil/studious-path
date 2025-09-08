@@ -21,7 +21,7 @@ import { ClassManagement } from '@/components/classes';
 import { SubjectManagement } from '@/components/subjects';
 import { loginSuccess } from '@/store/slices/authSlice';
 import { TimetableManagement } from './components/timetable/TimetableManagement';
-import MessageCenter from  "@/components/messages/MessageCenter";
+import MessageCenter from './components/Messages/MessageCenter';
 
 // App content component
 const AppContent = () => {
