@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useCreateSubjectMutation } from '@/store/api/subjectsApi';
 import { useToast } from '@/hooks/use-toast';
 import { SubjectFormData } from '@/types';
+import { createSubject } from "@/services/subject";
 
 const formSchema = z.object({
   name: z.string().min(2, 'Subject name must be at least 2 characters'),
@@ -50,40 +51,37 @@ const CreateSubjectModal = ({ open, onOpenChange, onSuccess }: CreateSubjectModa
   });
 
   const { toast } = useToast();
-  const [createSubject, { isLoading }] = useCreateSubjectMutation();
+  const [createSubjectState, { isLoading }] = useCreateSubjectMutation();
 
   const departments = ['Mathematics', 'Science', 'English', 'Computer Science', 'History', 'Geography'];
   const grades = ['9', '10', '11', '12'];
 
-  const onSubmit = async (data: SubjectFormData) => {
-    try {
-      const syllabus = syllabusInput.split(',').map(item => item.trim()).filter(item => item);
-      const prerequisites = prerequisitesInput.split(',').map(item => item.trim()).filter(item => item);
+const onSubmit = async (data: SubjectFormData) => {
+  try {
+    await createSubject({
+      name: data.name,
+      code: data.code,
+    });
 
-      await createSubject({
-        ...data,
-        syllabus,
-        prerequisites,
-      }).unwrap();
+    toast({
+      title: "Subject Created",
+      description: "Subject has been successfully created.",
+    });
 
-      toast({
-        title: "Subject Created",
-        description: "Subject has been successfully created.",
-      });
+    form.reset();
+    setSyllabusInput("");
+    setPrerequisitesInput("");
+    onSuccess();
+    onOpenChange(false);
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to create subject. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
 
-      form.reset();
-      setSyllabusInput('');
-      setPrerequisitesInput('');
-      onSuccess();
-      onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create subject. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
