@@ -4,7 +4,7 @@ import { RegisterData, LoginCredentials } from '@/types';
 // Create API
 export const authApi = createApi({
   reducerPath: 'authApi',
-  baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:4000/api/v1' }), // your backend URL
+  baseQuery: fetchBaseQuery({ baseUrl: 'https://school-erp-backend-kxsv.onrender.com/api/v1' }), // your backend URL
   endpoints: (builder) => ({
     // Admin Registration
     registerAdmin: builder.mutation<{ success: boolean; message: string }, RegisterData>({
