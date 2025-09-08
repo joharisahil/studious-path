@@ -14,7 +14,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -144,7 +144,7 @@ const TeachersManagement = () => {
             Teachers Management
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage teacher profiles, departments, and employment status
+            Manage teacher profiles, details, and status
           </p>
         </div>
         <div className="flex gap-2">
@@ -159,6 +159,80 @@ const TeachersManagement = () => {
         </div>
       </div>
 
+         {/* Teacher Stats Cards */}
+<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+  {/* Total Teachers */}
+  <Card className="kpi-card">
+    <CardHeader className="pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        Total Teachers
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{teachers.length}</div>
+      <div className="text-sm text-muted-foreground">All registered</div>
+    </CardContent>
+  </Card>
+
+  {/* Teachers with 0–5 years of experience */}
+  <Card className="kpi-card">
+    <CardHeader className="pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        Junior Teachers
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-warning">
+        {teachers.filter((t) => t.experienceYears <= 5).length}
+      </div>
+      <div className="text-sm text-muted-foreground">
+        0–5 years of experience
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Teachers with 6+ years of experience */}
+  <Card className="kpi-card">
+    <CardHeader className="pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        Senior Teachers
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-success">
+        {teachers.filter((t) => t.experienceYears > 5).length}
+      </div>
+      <div className="text-sm text-muted-foreground">
+        6+ years of experience
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Average Experience */}
+  <Card className="kpi-card">
+    <CardHeader className="pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        Avg. Experience
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">
+        {String(
+          Math.round(
+            teachers.reduce((sum, t) => sum + t.experienceYears, 0) /
+              (teachers.length || 1)
+          )
+        ).padStart(2, "0")}{" "}
+        yrs
+      </div>
+      <div className="text-sm text-muted-foreground">
+        Across all teachers
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+      
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -217,8 +291,8 @@ const TeachersManagement = () => {
                   <TableHead>Teacher ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Phone No.</TableHead>
+                  <TableHead>Experience</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -240,15 +314,19 @@ const TeachersManagement = () => {
                           <div className="font-medium">
                             {teacher.firstName} {teacher.lastName}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {teacher.department || 'N/A'}
-                          </div>
+                          {/* <div className="text-sm text-muted-foreground">
+                            {teacher.phone || 'N/A'}
+                          </div> */}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{teacher.email}</TableCell>
-                    <TableCell>{teacher.department || '-'}</TableCell>
-                    <TableCell className="text-sm">{teacher.status}</TableCell>
+                    <TableCell>{teacher.phone || '-'}</TableCell>
+                    <TableCell className="text-sm">
+  {String(teacher.experienceYears || 0).padStart(2, "0")}
+</TableCell>
+
+                    {/* <TableCell className="text-sm">{teacher.experienceYears || 0}</TableCell> */}
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -353,7 +431,7 @@ const TeachersManagement = () => {
               ...selectedTeacher,
               id: selectedTeacher.id!,
               teacherId: selectedTeacher.teacherId || '',
-              userId: selectedTeacher.userId || '',
+              //userId: selectedTeacher.userId || '',
               status: selectedTeacher.status || 'active',
               createdAt: selectedTeacher.createdAt || new Date().toISOString(),
               updatedAt: selectedTeacher.updatedAt || new Date().toISOString(),
