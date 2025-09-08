@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Plus,
   Search,
@@ -7,16 +7,16 @@ import {
   Eye,
   Download,
   MoreVertical,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -24,20 +24,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,70 +48,89 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import {
-  useGetTeachersQuery,
-  useDeleteTeacherMutation,
-} from '@/store/api/teachersApi';
-import { useToast } from '@/hooks/use-toast';
-import CreateTeacherModal from './CreateTeacherModal';
-import EditTeacherModal from './EditTeacherModal';
-import TeacherDetailsModal from './TeacherDetailsModal';
-import { Teacher, TeacherFormData } from '@/types';
+} from "@/components/ui/alert-dialog";
+
+import { useToast } from "@/hooks/use-toast";
+import CreateTeacherModal from "./CreateTeacherModal";
+import EditTeacherModal from "./EditTeacherModal";
+import TeacherDetailsModal from "./TeacherDetailsModal";
+import { Teacher } from "@/types";
+import { getAllTeachers } from "@/services/TeachersApi";
 
 const TeachersManagement = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] =
-    useState<TeacherFormData | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
 
   const { toast } = useToast();
-  const { data: teachersResponse, isLoading, refetch } = useGetTeachersQuery({
-    page: currentPage,
-    limit: 10,
-    search: searchTerm,
-  });
-  const [deleteTeacher] = useDeleteTeacherMutation();
 
-  const teachers = teachersResponse?.data?.data || [];
-  const totalPages = teachersResponse?.data?.totalPages || 1;
-  const totalTeachers = teachersResponse?.data?.totalCount || 0;
+  // Fetch teachers from API
+  const fetchTeachers = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAllTeachers();
+      setTeachers(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch teachers",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const handleEditTeacher = (teacher: TeacherFormData) => {
+  useEffect(() => {
+    fetchTeachers();
+  }, []);
+
+  const totalTeachers = teachers.length;
+  const totalPages = Math.max(1, Math.ceil(totalTeachers / 10));
+
+  const handleEditTeacher = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setEditModalOpen(true);
   };
 
-  const handleViewTeacher = (teacher: TeacherFormData) => {
+  const handleViewTeacher = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setDetailsModalOpen(true);
   };
 
   const handleDeleteTeacher = async (teacherId: string) => {
     try {
-      await deleteTeacher(teacherId).unwrap();
+      // TODO: replace with your delete API
+      setTeachers((prev) => prev.filter((t) => t.id !== teacherId));
       toast({
-        title: 'Teacher Deleted',
-        description: 'Teacher has been successfully deleted.',
+        title: "Teacher Deleted",
+        description: "Teacher has been successfully deleted.",
       });
-      refetch();
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to delete teacher. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to delete teacher. Please try again.",
+        variant: "destructive",
       });
     }
   };
 
-  const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
+  const filteredTeachers = teachers.filter((teacher: Teacher) => {
     const matchesStatus =
-      selectedStatus === 'all' || teacher.status === selectedStatus;
-    return matchesStatus;
+      selectedStatus === "all" || teacher.status === selectedStatus;
+    const matchesSearch =
+      teacher.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.email.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
   });
 
   return (
@@ -178,7 +197,7 @@ const TeachersManagement = () => {
           <CardTitle className="text-base">Teachers List</CardTitle>
           <CardDescription>
             {isLoading
-              ? 'Loading...'
+              ? "Loading..."
               : `Showing ${filteredTeachers.length} of ${totalTeachers} teachers`}
           </CardDescription>
         </CardHeader>
@@ -200,7 +219,7 @@ const TeachersManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTeachers.map((teacher: TeacherFormData) => (
+                {filteredTeachers.map((teacher) => (
                   <TableRow key={teacher.id}>
                     <TableCell className="font-medium">
                       {teacher.teacherId}
@@ -218,13 +237,13 @@ const TeachersManagement = () => {
                             {teacher.firstName} {teacher.lastName}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {teacher.department || 'N/A'}
+                            {teacher.department || "N/A"}
                           </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{teacher.email}</TableCell>
-                    <TableCell>{teacher.department || '-'}</TableCell>
+                    <TableCell>{teacher.department || "-"}</TableCell>
                     <TableCell className="text-sm">{teacher.status}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -262,7 +281,7 @@ const TeachersManagement = () => {
                                   Delete Teacher
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete{' '}
+                                  Are you sure you want to delete{" "}
                                   {teacher.firstName} {teacher.lastName}? This
                                   action cannot be undone.
                                 </AlertDialogDescription>
@@ -335,7 +354,7 @@ const TeachersManagement = () => {
       <CreateTeacherModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={() => refetch()}
+        onSuccess={fetchTeachers}
       />
 
       {selectedTeacher && (
@@ -345,15 +364,15 @@ const TeachersManagement = () => {
             onOpenChange={setEditModalOpen}
             teacher={selectedTeacher}
             onSuccess={() => {
-              refetch();
+              fetchTeachers();
               setSelectedTeacher(null);
             }}
           />
-          {/* <TeacherDetailsModal
+          <TeacherDetailsModal
             open={detailsModalOpen}
             onOpenChange={setDetailsModalOpen}
             teacher={selectedTeacher}
-          /> */}
+          />
         </>
       )}
     </div>

@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreateStudentModal from '@/components/students/CreateStudentModal';
-import { getAllStudents } from '@/services/GetTotalStudent';
-import { getAllTeachers } from '@/services/GetTotalTeachers';
+import { getAllStudents } from '@/services/StudentsApi.ts';
+import { getAllTeachers } from '@/services/TeachersApi';
 
 
 const AdminDashboard = () => {

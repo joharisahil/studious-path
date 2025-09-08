@@ -55,12 +55,12 @@ import CreateStudentModal from "./CreateStudentModal";
 import EditStudentModal from "./EditStudentModal";
 import StudentDetailsModal from "./StudentDetailsModal";
 import { Student } from "@/types";
-import { getAllStudents } from "@/services/GetTotalStudent";
+import { getAllStudents } from "@/services/StudentsApi.ts";
+import { getAllClasses } from "@/services/ClassesApi";
 
 const StudentsManagement = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -70,9 +70,12 @@ const StudentsManagement = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
+  const [classList, setClassList] = useState<any[]>([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
+
   const { toast } = useToast();
 
-  // fetch from API
+   // ✅ Fetch students from StudentsApi.ts
   const getStudentsFromAPI = async () => {
     setIsLoading(true);
     try {
@@ -91,6 +94,23 @@ const StudentsManagement = () => {
 
   useEffect(() => {
     getStudentsFromAPI();
+  }, []);
+  
+  // ✅ Fetch classes once on mount
+  useEffect(() => {
+    const fetchClasses = async () => {
+      setLoadingClasses(true);
+      try {
+        const data = await getAllClasses();
+        setClassList(data || []);
+      } catch (err) {
+        console.error("Failed to fetch classes:", err);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+
+    fetchClasses();
   }, []);
 
   const totalStudents = students.length;
@@ -144,7 +164,6 @@ const StudentsManagement = () => {
       selectedGrade === "all" || student.grade === selectedGrade;
     const matchesStatus =
       selectedStatus === "all" || student.status === selectedStatus;
-
     const matchesSearch =
       (student.firstName ?? "")
         .toLowerCase()
@@ -156,7 +175,6 @@ const StudentsManagement = () => {
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       (student.email ?? "").toLowerCase().includes(searchTerm.toLowerCase());
-
     return matchesGrade && matchesStatus && matchesSearch;
   });
 
@@ -197,7 +215,6 @@ const StudentsManagement = () => {
             <div className="text-sm text-muted-foreground">All enrollments</div>
           </CardContent>
         </Card>
-
         <Card className="kpi-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -213,7 +230,6 @@ const StudentsManagement = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card className="kpi-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -227,7 +243,6 @@ const StudentsManagement = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card className="kpi-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -253,29 +268,42 @@ const StudentsManagement = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search by name, email, or student ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Search by name, email, or student ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
+
+            {/* Grade Select */}
             <Select value={selectedGrade} onValueChange={setSelectedGrade}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select Grade" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Grades</SelectItem>
-                <SelectItem value="9">Grade 9</SelectItem>
-                <SelectItem value="10">Grade 10</SelectItem>
-                <SelectItem value="11">Grade 11</SelectItem>
-                <SelectItem value="12">Grade 12</SelectItem>
+                {loadingClasses ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : classList.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No classes found
+                  </SelectItem>
+                ) : (
+                  classList.map((cls) => (
+                    <SelectItem key={cls._id} value={cls.name}>
+                      {cls.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
+
+            {/* Status Select */}
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select Status" />
@@ -316,7 +344,7 @@ const StudentsManagement = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Grade</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Created At</TableHead>
+                  <TableHead className="text-sm">Enrollment Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -386,9 +414,7 @@ const StudentsManagement = () => {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Delete Student
-                                </AlertDialogTitle>
+                                <AlertDialogTitle>Delete Student</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Are you sure you want to delete{" "}
                                   {student.firstName} {student.lastName}? This
@@ -398,9 +424,7 @@ const StudentsManagement = () => {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() =>
-                                    handleDeleteStudent(student.id!)
-                                  }
+                                  onClick={() => handleDeleteStudent(student.id!)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete
@@ -429,9 +453,6 @@ const StudentsManagement = () => {
           )}
         </CardContent>
       </Card>
-        
-
-          
 
       {/* Pagination */}
       {totalPages > 1 && (

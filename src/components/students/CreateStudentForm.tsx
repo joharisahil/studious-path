@@ -1,31 +1,48 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
-import { useCreateStudentMutation } from '@/store/api/studentsApi';
-import { useGetClassesQuery } from '@/store/api/classesApi';
-import { StudentFormData } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-import { skipToken } from '@reduxjs/toolkit/query/react';
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import { useCreateStudentMutation } from "@/store/api/studentsApi";
+import { StudentFormData } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import { getAllClasses } from "@/services/ClassesApi";
 
 const studentSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  address: z.string().min(10, 'Address must be at least 10 characters'),
-  parentEmail: z.string().email('Invalid parent email').optional().or(z.literal('')),
-  classId: z.string().min(1, 'Class is required'),
-  emergencyContactName: z.string().min(2, 'Emergency contact name is required'),
-  emergencyContactPhone: z.string().min(10, 'Emergency contact phone is required'),
-  emergencyContactRelation: z.string().min(1, 'Emergency contact relation is required'),
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  address: z.string().min(10, "Address must be at least 10 characters"),
+  parentEmail: z.string().email("Invalid parent email").optional().or(z.literal("")),
+  classId: z.string().min(1, "Class is required"),
+  emergencyContactName: z.string().min(2, "Emergency contact name is required"),
+  emergencyContactPhone: z.string().min(10, "Emergency contact phone is required"),
+  emergencyContactRelation: z.string().min(1, "Emergency contact relation is required"),
 });
 
 interface CreateStudentFormProps {
@@ -36,50 +53,61 @@ interface CreateStudentFormProps {
 const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
   const { toast } = useToast();
   const [createStudent, { isLoading }] = useCreateStudentMutation();
-  
-  // Pass query params to RTK Query (required)
-  const { data: classesData, isLoading: isClassesLoading } = useGetClassesQuery({
-    page: 1,
-    limit: 100,
-    search: '',
-  });
-
-  // Access the array from paginated response
-  const classes = classesData?.data?.data || [];
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      dateOfBirth: '',
-      address: '',
-      parentEmail: '',
-      classId: '',
-      emergencyContactName: '',
-      emergencyContactPhone: '',
-      emergencyContactRelation: '',
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      dateOfBirth: "",
+      address: "",
+      parentEmail: "",
+      classId: "",
+      emergencyContactName: "",
+      emergencyContactPhone: "",
+      emergencyContactRelation: "",
     },
   });
 
+  // ✅ Classes state
+  const [classList, setClassList] = useState<any[]>([]);
+  const [isFetchingClasses, setIsFetchingClasses] = useState(false);
+
+  // ✅ Fetch classes once when form mounts
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        setIsFetchingClasses(true);
+        const data = await getAllClasses();
+        setClassList(data || []);
+      } catch (error) {
+        console.error("Failed to fetch classes:", error);
+      } finally {
+        setIsFetchingClasses(false);
+      }
+    };
+    fetchClasses();
+  }, []);
+
+  // Submit student form
   const onSubmit = async (data: StudentFormData) => {
     try {
       await createStudent(data).unwrap();
 
       toast({
-        title: 'Success',
-        description: 'Student created successfully!',
+        title: "Success",
+        description: "Student created successfully!",
       });
 
       form.reset();
       onSuccess?.();
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to create student. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to create student. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -184,30 +212,35 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
 
             {/* Class Selection */}
             <FormField
-  control={form.control}
-  name="classId"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Select Class</FormLabel>
-      <FormControl>
-        <Select onValueChange={field.onChange} value={field.value}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select class" />
-          </SelectTrigger>
-          <SelectContent>
-            {Array.from({ length: 12 }, (_, i) => (
-              <SelectItem key={i + 1} value={(i + 1).toString()}>
-                Class {i + 1}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
-
+              control={form.control}
+              name="classId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Select Class</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isFetchingClasses ? (
+                          <div className="p-2 text-center text-sm">Loading...</div>
+                        ) : classList.length > 0 ? (
+                          classList.map((cls) => (
+                            <SelectItem key={cls._id} value={cls._id}>
+                              {cls.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-2 text-center text-sm">No classes found</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Emergency Contact */}
             <div className="space-y-4">

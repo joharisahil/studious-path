@@ -39,6 +39,7 @@ export interface RegisterData extends LoginCredentials {
 
 // Student Management
 export interface Student {
+  studentId: string;
   id: string;
   userId: string;
   registrationNumber: string;
