@@ -21,6 +21,7 @@ import { ClassManagement } from '@/components/classes';
 import { SubjectManagement } from '@/components/subjects';
 import { loginSuccess } from '@/store/slices/authSlice';
 import { TimetableManagement } from './components/timetable/TimetableManagement';
+import MessageCenter from  "@/components/messages/MessageCenter";
 
 // App content component
 const AppContent = () => {
@@ -232,6 +233,17 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'student', 'parent']}>
+                 <MainLayout>
+                  <MessageCenter />
+                </MainLayout>
+             </ProtectedRoute>
+              }
+             />
+
 
           {/* Catch all - redirect to appropriate dashboard or login */}
           {/* Catch all */}
