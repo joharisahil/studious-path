@@ -10,3 +10,26 @@ export const getAllTeachers = async () => {
     throw error;
   }
 };
+
+export const createTeacher = async (teacherData) => {
+  try {
+    const res = await axios.post(`${API_BASE_URL}/teachers/create`, teacherData, {
+      withCredentials: true, // 🔹 ensures cookies (JWT/session) are sent
+    });
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || { error: "Something went wrong" };
+  }
+};
+
+
+export const updateTeacher = async (id: string, teacherData: any) => {
+  try {
+    const res = await axios.put(`${API_BASE_URL}/teachers/${id}`, teacherData, {
+      withCredentials: true, // ✅ if you are using cookies for auth
+    });
+    return res.data;
+  } catch (error: any) {
+    throw error.response?.data || { error: "Something went wrong" };
+  }
+};

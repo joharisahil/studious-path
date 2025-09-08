@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,8 +14,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
-import { useCreateTeacherMutation } from "@/store/api/teachersApi"; 
 import { useToast } from "@/hooks/use-toast";
+import { createTeacher } from "@/services/TeachersApi"; // ✅ service function
 
 // Validation schema
 const teacherSchema = z.object({
@@ -22,14 +23,12 @@ const teacherSchema = z.object({
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  phone2: z.string().optional(), // alternate phone
+  dob: z.string().min(1, "Date of birth is required"),
   address: z.string().min(10, "Address must be at least 10 characters"),
   subject: z.string().min(2, "Subject is required"),
   qualification: z.string().min(2, "Qualification is required"),
   experience: z.string().min(1, "Experience is required"),
-  emergencyContactName: z.string().min(2, "Emergency contact name is required"),
-  emergencyContactPhone: z.string().min(10, "Emergency contact phone is required"),
-  emergencyContactRelation: z.string().min(1, "Emergency contact relation is required"),
 });
 
 type TeacherFormFlat = z.infer<typeof teacherSchema>;
@@ -41,7 +40,7 @@ interface CreateTeacherFormProps {
 
 const CreateTeacherForm = ({ onSuccess, onCancel }: CreateTeacherFormProps) => {
   const { toast } = useToast();
-  const [createTeacher, { isLoading }] = useCreateTeacherMutation();
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<TeacherFormFlat>({
     resolver: zodResolver(teacherSchema),
@@ -50,46 +49,33 @@ const CreateTeacherForm = ({ onSuccess, onCancel }: CreateTeacherFormProps) => {
       lastName: "",
       email: "",
       phone: "",
-      dateOfBirth: "",
+      phone2: "",
+      dob: "",
       address: "",
       subject: "",
       qualification: "",
       experience: "",
-      emergencyContactName: "",
-      emergencyContactPhone: "",
-      emergencyContactRelation: "",
     },
   });
 
   const onSubmit = async (data: TeacherFormFlat) => {
     try {
-      // Transform flat form data to match TeacherFormData expected by API
+      setLoading(true);
+
       const payload = {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
         phone: data.phone,
-        dateOfBirth: data.dateOfBirth,
+        phone2: data.phone2,
+        dob: data.dob,
         address: data.address,
-        subjectSpecialization: [data.subject],
-        qualifications: [data.qualification],
-        yearsOfExperience: Number(data.experience),
-        emergencyContact: {
-          name: data.emergencyContactName,
-          phone: data.emergencyContactPhone,
-          relation: data.emergencyContactRelation,
-        },
-        // Optional defaults
-        department: "General",
-        position: "Teacher",
-        dateOfJoining: new Date().toISOString(),
-        salary: 0,
-        avatar: "",
-        status: "active" as const,
-        courses: [],
+        subjects: [data.subject],              // backend expects array
+        qualifications: [data.qualification],  // backend expects array
+        experienceYears: Number(data.experience), // backend expects number
       };
 
-      await createTeacher(payload).unwrap();
+      await createTeacher(payload); // ✅ call service function
 
       toast({
         title: "Success",
@@ -97,12 +83,14 @@ const CreateTeacherForm = ({ onSuccess, onCancel }: CreateTeacherFormProps) => {
       });
       form.reset();
       onSuccess?.();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create teacher. Please try again.",
+        description: error.error || "Failed to create teacher",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,7 +147,17 @@ const CreateTeacherForm = ({ onSuccess, onCancel }: CreateTeacherFormProps) => {
                 )}/>
               </div>
 
-              <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
+              <FormField control={form.control} name="phone2" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Alternate Phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter alternate phone" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}/>
+
+              <FormField control={form.control} name="dob" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Date of Birth</FormLabel>
                   <FormControl>
@@ -212,41 +210,6 @@ const CreateTeacherForm = ({ onSuccess, onCancel }: CreateTeacherFormProps) => {
               )}/>
             </div>
 
-            {/* Emergency Contact */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Emergency Contact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="emergencyContactName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter emergency contact name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-                <FormField control={form.control} name="emergencyContactPhone" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter emergency contact phone" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-              </div>
-
-              <FormField control={form.control} name="emergencyContactRelation" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Relation</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter relation (e.g., Spouse, Friend)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
-            </div>
-
             {/* Form Actions */}
             <div className="flex justify-end gap-4 pt-6">
               {onCancel && (
@@ -254,8 +217,8 @@ const CreateTeacherForm = ({ onSuccess, onCancel }: CreateTeacherFormProps) => {
                   Cancel
                 </Button>
               )}
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Create Teacher
               </Button>
             </div>

@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTeacherMutation } from "@/store/api/teachersApi";
 import { useToast } from "@/hooks/use-toast";
 import { TeacherFormData } from "@/types";
+import { updateTeacher } from "@/services/TeachersApi";
 
 interface EditTeacherModalProps {
   open: boolean;
@@ -27,84 +27,53 @@ const EditTeacherModal = ({
   teacher,
   onSuccess,
 }: EditTeacherModalProps) => {
-  const [updateTeacher, { isLoading }] = useUpdateTeacherMutation();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ Add phone2 to formData
   const [formData, setFormData] = useState<TeacherFormData>({
     firstName: "",
     lastName: "",
+    registrationNumber: "",
     email: "",
     phone: "",
     phone2: "",
-    dateOfBirth: "",
+    dob: "",
     address: "",
-    department: "",
-    position: "",
-    dateOfJoining: "",
-    salary: 0,
-    subjectSpecialization: [],
+    subjects: [],
     qualifications: [],
-    yearsOfExperience: 0,
-    emergencyContact: {
-      name: "",
-      phone: "",
-      relation: "",
-    },
+    experienceYears: 0,
   });
 
-  // ✅ Populate teacher data
+  // Populate form when teacher changes
   useEffect(() => {
     if (teacher) {
       setFormData({
-        firstName: teacher.firstName,
-        lastName: teacher.lastName,
-        email: teacher.email,
+        firstName: teacher.firstName || "",
+        lastName: teacher.lastName || "",
+        registrationNumber: teacher.registrationNumber || "",
+        email: teacher.email || "",
         phone: teacher.phone || "",
         phone2: teacher.phone2 || "",
-        dateOfBirth: teacher.dateOfBirth,
-        address: teacher.address,
-        department: teacher.department || "",
-        position: teacher.position || "",
-        dateOfJoining: teacher.dateOfJoining || "",
-        salary: teacher.salary || 0,
-        subjectSpecialization: teacher.subjectSpecialization || [],
+        dob: teacher.dob ? teacher.dob.slice(0, 10) : "",
+        address: teacher.address || "",
+        subjects: teacher.subjects || [],
         qualifications: teacher.qualifications || [],
-        yearsOfExperience: teacher.yearsOfExperience || 0,
-        emergencyContact: {
-          name: teacher.emergencyContact?.name || "",
-          phone: teacher.emergencyContact?.phone || "",
-          relation: teacher.emergencyContact?.relation || "",
-        },
+        experienceYears: teacher.experienceYears || 0,
       });
     }
   }, [teacher]);
 
-  const handleInputChange = (
-    field: keyof TeacherFormData | keyof TeacherFormData["emergencyContact"],
-    value: any,
-    isEmergency = false
-  ) => {
-    if (isEmergency) {
-      setFormData((prev) => ({
-        ...prev,
-        emergencyContact: {
-          ...prev.emergencyContact,
-          [field]: value,
-        },
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    }
+  // Handle input changes dynamically
+  const handleInputChange = (field: keyof TeacherFormData, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Submit form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-      await updateTeacher({
-        id: teacher.id,
-        ...formData,
-      }).unwrap();
+      await updateTeacher(teacher._id, formData);
 
       toast({
         title: "Teacher Updated",
@@ -113,12 +82,14 @@ const EditTeacherModal = ({
 
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update teacher. Please try again.",
+        description: error?.error || "Failed to update teacher.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -126,220 +97,141 @@ const EditTeacherModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-gradient-primary">Edit Teacher</DialogTitle>
+          <DialogTitle>Edit Teacher</DialogTitle>
           <DialogDescription>
-            Update teacher personal and professional information
+            Update teacher personal information
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Personal Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange("firstName", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange("lastName", e.target.value)}
-                  required
-                />
-              </div>
+          {/* Name Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name *</Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                required
+              />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name *</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                required
+              />
             </div>
+          </div>
 
-            {/* ✅ Alternate phone */}
+          {/* Email */}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Phone Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="phone2">Alternate Phone</Label>
               <Input
                 id="phone2"
                 type="tel"
-                value={formData.phone2}
+                value={formData.phone2 || ""}
                 onChange={(e) => handleInputChange("phone2", e.target.value)}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Address *</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
-                rows={3}
-                required
-              />
-            </div>
           </div>
 
-          {/* Professional Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Professional Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Input
-                  id="department"
-                  value={formData.department}
-                  onChange={(e) => handleInputChange("department", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="position">Position</Label>
-                <Input
-                  id="position"
-                  value={formData.position}
-                  onChange={(e) => handleInputChange("position", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dateOfJoining">Date of Joining</Label>
-                <Input
-                  id="dateOfJoining"
-                  type="date"
-                  value={formData.dateOfJoining}
-                  onChange={(e) => handleInputChange("dateOfJoining", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="salary">Salary</Label>
-                <Input
-                  id="salary"
-                  type="number"
-                  value={formData.salary}
-                  onChange={(e) => handleInputChange("salary", Number(e.target.value))}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="subjectSpecialization">Subject Specialization</Label>
-                <Input
-                  id="subjectSpecialization"
-                  value={formData.subjectSpecialization.join(", ")}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "subjectSpecialization",
-                      e.target.value.split(",").map((s) => s.trim())
-                    )
-                  }
-                  placeholder="Comma separated subjects"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="qualifications">Qualifications</Label>
-                <Input
-                  id="qualifications"
-                  value={formData.qualifications.join(", ")}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "qualifications",
-                      e.target.value.split(",").map((q) => q.trim())
-                    )
-                  }
-                  placeholder="Comma separated qualifications"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="yearsOfExperience">Years of Experience</Label>
-              <Input
-                id="yearsOfExperience"
-                type="number"
-                value={formData.yearsOfExperience}
-                onChange={(e) =>
-                  handleInputChange("yearsOfExperience", Number(e.target.value))
-                }
-              />
-            </div>
+          {/* DOB */}
+          <div className="space-y-2">
+            <Label htmlFor="dob">Date of Birth *</Label>
+            <Input
+              id="dob"
+              type="date"
+              value={formData.dob}
+              onChange={(e) => handleInputChange("dob", e.target.value)}
+              required
+            />
           </div>
 
-          {/* Emergency Contact */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Emergency Contact
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="emergencyContactName">Contact Name *</Label>
-                <Input
-                  id="emergencyContactName"
-                  value={formData.emergencyContact.name}
-                  onChange={(e) => handleInputChange("name", e.target.value, true)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="emergencyContactPhone">Contact Phone *</Label>
-                <Input
-                  id="emergencyContactPhone"
-                  type="tel"
-                  value={formData.emergencyContact.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value, true)}
-                  required
-                />
-              </div>
-            </div>
+          {/* Address */}
+          <div className="space-y-2">
+            <Label htmlFor="address">Address *</Label>
+            <Textarea
+              id="address"
+              value={formData.address}
+              onChange={(e) => handleInputChange("address", e.target.value)}
+              rows={3}
+              required
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactRelation">Relationship *</Label>
-              <Input
-                id="emergencyContactRelation"
-                value={formData.emergencyContact.relation}
-                onChange={(e) => handleInputChange("relation", e.target.value, true)}
-                required
-              />
-            </div>
+          {/* Subjects */}
+          <div className="space-y-2">
+            <Label htmlFor="subjects">Subjects *</Label>
+            <Input
+              id="subjects"
+              value={formData.subjects.join(", ")}
+              onChange={(e) =>
+                handleInputChange(
+                  "subjects",
+                  e.target.value.split(",").map((s) => s.trim())
+                )
+              }
+              placeholder="Comma separated subjects"
+              required
+            />
+          </div>
+
+          {/* Qualifications */}
+          <div className="space-y-2">
+            <Label htmlFor="qualifications">Qualifications *</Label>
+            <Input
+              id="qualifications"
+              value={formData.qualifications.join(", ")}
+              onChange={(e) =>
+                handleInputChange(
+                  "qualifications",
+                  e.target.value.split(",").map((q) => q.trim())
+                )
+              }
+              placeholder="Comma separated qualifications"
+              required
+            />
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-2">
+            <Label htmlFor="experienceYears">Years of Experience *</Label>
+            <Input
+              id="experienceYears"
+              type="number"
+              value={formData.experienceYears}
+              onChange={(e) =>
+                handleInputChange("experienceYears", Number(e.target.value))
+              }
+              min={0}
+              required
+            />
           </div>
 
           {/* Action Buttons */}

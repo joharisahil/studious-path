@@ -161,10 +161,10 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
                   <div className="text-sm text-muted-foreground">Teacher ID</div>
                   <div className="font-medium font-mono">{teacher.registrationNumber}</div>
                 </div>
-                <div>
+                {/* <div>
                   <div className="text-sm text-muted-foreground">User ID</div>
                   <div className="font-medium font-mono">{teacher.userId}</div>
-                </div>
+                </div> */}
                 <div>
                   <div className="text-sm text-muted-foreground">Created At</div>
                   <div className="font-medium">{new Date(teacher.createdAt).toLocaleString()}</div>
