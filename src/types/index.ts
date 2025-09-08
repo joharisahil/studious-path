@@ -41,6 +41,7 @@ export interface RegisterData extends LoginCredentials {
 // types.ts
 
 export interface Student {
+  studentId: string;
   id: string;
   firstName: string;
   lastName?: string;

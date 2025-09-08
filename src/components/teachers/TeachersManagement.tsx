@@ -50,11 +50,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+
 import CreateTeacherModal from './CreateTeacherModal';
 import EditTeacherModal from './EditTeacherModal';
-// import TeacherDetailsModal from './TeacherDetailsModal';
+import TeacherDetailsModal from './TeacherDetailsModal'; // ✅ bring back details modal
 import { TeacherFormData } from '@/types';
-import { getAllTeachers } from "@/services/GetTotalTeachers";
+import { getAllTeachers } from '@/services/GetTotalTeachers';
 
 const TeachersManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,7 +70,7 @@ const TeachersManagement = () => {
 
   const { toast } = useToast();
 
-  // 🔹 Fetch teachers on component mount
+  // 🔹 Fetch teachers
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
@@ -102,7 +103,7 @@ const TeachersManagement = () => {
 
   const handleDeleteTeacher = async (teacherId: string) => {
     try {
-      // 👉 You can add delete API call here later
+      // 👉 Add delete API later
       setTeachers((prev) => prev.filter((t) => t.id !== teacherId));
       toast({
         title: 'Teacher Deleted',
@@ -117,22 +118,22 @@ const TeachersManagement = () => {
     }
   };
 
-const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
-  const matchesStatus =
-    selectedStatus === 'all' || teacher.status === selectedStatus;
+  // 🔎 Search + Filter
+  const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
+    const matchesStatus =
+      selectedStatus === 'all' || teacher.status === selectedStatus;
 
-  const firstName = teacher.firstName || '';
-  const lastName = teacher.lastName || '';
-  const email = teacher.email || '';
+    const firstName = teacher.firstName || '';
+    const lastName = teacher.lastName || '';
+    const email = teacher.email || '';
 
-  const matchesSearch =
-    firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase());
 
-  return matchesStatus && matchesSearch;
-});
-
+    return matchesStatus && matchesSearch;
+  });
 
   return (
     <div className="space-y-6">
@@ -158,11 +159,13 @@ const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
         </div>
       </div>
 
-      {/* Filters and Search */}
+      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Search & Filter Teachers</CardTitle>
-          <CardDescription>Find teachers by name, ID, or status</CardDescription>
+          <CardDescription>
+            Find teachers by name, ID, or status
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
@@ -223,16 +226,15 @@ const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
                 {filteredTeachers.map((teacher: TeacherFormData) => (
                   <TableRow key={teacher.id}>
                     <TableCell className="font-medium">
-                      {teacher.teacherId}
+                      {teacher.registrationNumber}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                           <span className="text-primary-foreground text-xs font-medium">
-                          {(teacher.firstName?.[0] || "").toUpperCase()}
-                          {(teacher.lastName?.[0] || "").toUpperCase()}
+                            {(teacher.firstName?.[0] || '').toUpperCase()}
+                            {(teacher.lastName?.[0] || '').toUpperCase()}
                           </span>
-
                         </div>
                         <div>
                           <div className="font-medium">
@@ -292,7 +294,7 @@ const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() =>
-                                    handleDeleteTeacher(teacher.id!)
+                                    handleDeleteTeacher(teacher.registrationNumber)
                                   }
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
@@ -328,7 +330,6 @@ const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
         onSuccess={() => {
-          // refresh list after adding
           getAllTeachers().then(setTeachers);
         }}
       />
@@ -342,6 +343,20 @@ const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
             onSuccess={() => {
               getAllTeachers().then(setTeachers);
               setSelectedTeacher(null);
+            }}
+          />
+
+          <TeacherDetailsModal
+            open={detailsModalOpen}
+            onOpenChange={setDetailsModalOpen}
+            teacher={{
+              ...selectedTeacher,
+              id: selectedTeacher.id!,
+              teacherId: selectedTeacher.teacherId || '',
+              userId: selectedTeacher.userId || '',
+              status: selectedTeacher.status || 'active',
+              createdAt: selectedTeacher.createdAt || new Date().toISOString(),
+              updatedAt: selectedTeacher.updatedAt || new Date().toISOString(),
             }}
           />
         </>

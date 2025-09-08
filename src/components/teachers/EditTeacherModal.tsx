@@ -17,7 +17,7 @@ import { TeacherFormData } from "@/types";
 interface EditTeacherModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  teacher: TeacherFormData; 
+  teacher: TeacherFormData;
   onSuccess?: () => void;
 }
 
@@ -30,12 +30,13 @@ const EditTeacherModal = ({
   const [updateTeacher, { isLoading }] = useUpdateTeacherMutation();
   const { toast } = useToast();
 
-  // ✅ State is based on TeacherFormData (no id required for form)
+  // ✅ Add phone2 to formData
   const [formData, setFormData] = useState<TeacherFormData>({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
+    phone2: "",
     dateOfBirth: "",
     address: "",
     department: "",
@@ -52,7 +53,7 @@ const EditTeacherModal = ({
     },
   });
 
-  // ✅ Populate form with teacher’s existing data when modal opens
+  // ✅ Populate teacher data
   useEffect(() => {
     if (teacher) {
       setFormData({
@@ -60,6 +61,7 @@ const EditTeacherModal = ({
         lastName: teacher.lastName,
         email: teacher.email,
         phone: teacher.phone || "",
+        phone2: teacher.phone2 || "",
         dateOfBirth: teacher.dateOfBirth,
         address: teacher.address,
         department: teacher.department || "",
@@ -100,7 +102,7 @@ const EditTeacherModal = ({
     e.preventDefault();
     try {
       await updateTeacher({
-        id: teacher.id, // ✅ use Teacher id for backend update
+        id: teacher.id,
         ...formData,
       }).unwrap();
 
@@ -124,9 +126,7 @@ const EditTeacherModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-gradient-primary">
-            Edit Teacher
-          </DialogTitle>
+          <DialogTitle className="text-gradient-primary">Edit Teacher</DialogTitle>
           <DialogDescription>
             Update teacher personal and professional information
           </DialogDescription>
@@ -181,15 +181,24 @@ const EditTeacherModal = ({
               </div>
             </div>
 
+            {/* ✅ Alternate phone */}
+            <div className="space-y-2">
+              <Label htmlFor="phone2">Alternate Phone</Label>
+              <Input
+                id="phone2"
+                type="tel"
+                value={formData.phone2}
+                onChange={(e) => handleInputChange("phone2", e.target.value)}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="dateOfBirth">Date of Birth *</Label>
               <Input
                 id="dateOfBirth"
                 type="date"
                 value={formData.dateOfBirth}
-                onChange={(e) =>
-                  handleInputChange("dateOfBirth", e.target.value)
-                }
+                onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
                 required
               />
             </div>
@@ -217,9 +226,7 @@ const EditTeacherModal = ({
                 <Input
                   id="department"
                   value={formData.department}
-                  onChange={(e) =>
-                    handleInputChange("department", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("department", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -239,9 +246,7 @@ const EditTeacherModal = ({
                   id="dateOfJoining"
                   type="date"
                   value={formData.dateOfJoining}
-                  onChange={(e) =>
-                    handleInputChange("dateOfJoining", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("dateOfJoining", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -250,18 +255,14 @@ const EditTeacherModal = ({
                   id="salary"
                   type="number"
                   value={formData.salary}
-                  onChange={(e) =>
-                    handleInputChange("salary", Number(e.target.value))
-                  }
+                  onChange={(e) => handleInputChange("salary", Number(e.target.value))}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="subjectSpecialization">
-                  Subject Specialization
-                </Label>
+                <Label htmlFor="subjectSpecialization">Subject Specialization</Label>
                 <Input
                   id="subjectSpecialization"
                   value={formData.subjectSpecialization.join(", ")}
@@ -314,9 +315,7 @@ const EditTeacherModal = ({
                 <Input
                   id="emergencyContactName"
                   value={formData.emergencyContact.name}
-                  onChange={(e) =>
-                    handleInputChange("name", e.target.value, true)
-                  }
+                  onChange={(e) => handleInputChange("name", e.target.value, true)}
                   required
                 />
               </div>
@@ -326,9 +325,7 @@ const EditTeacherModal = ({
                   id="emergencyContactPhone"
                   type="tel"
                   value={formData.emergencyContact.phone}
-                  onChange={(e) =>
-                    handleInputChange("phone", e.target.value, true)
-                  }
+                  onChange={(e) => handleInputChange("phone", e.target.value, true)}
                   required
                 />
               </div>
@@ -339,9 +336,7 @@ const EditTeacherModal = ({
               <Input
                 id="emergencyContactRelation"
                 value={formData.emergencyContact.relation}
-                onChange={(e) =>
-                  handleInputChange("relation", e.target.value, true)
-                }
+                onChange={(e) => handleInputChange("relation", e.target.value, true)}
                 required
               />
             </div>
