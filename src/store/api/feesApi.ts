@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { FeeRecord, Payment, ApiResponse } from '../../types';
+import { FeeRecord, Payment, ApiResponse, FeeStructure } from '../../types';
 
 const mockFeeRecords: FeeRecord[] = [
   {
@@ -123,10 +123,113 @@ export const feesApi = createApi({
       },
       invalidatesTags: ['Fee', 'Payment'],
     }),
+
+    getFeeStructure: builder.query<ApiResponse<FeeStructure[]>, { grade?: string }>({
+      async queryFn({ grade }) {
+        await mockApiDelay();
+        
+        const allStructures = [
+          {
+            id: '1',
+            grade: '9',
+            academicYear: '2024-25',
+            tuitionFee: 12000,
+            labFee: 1500,
+            libraryFee: 800,
+            transportFee: 2000,
+            otherFees: { 'Activity Fee': 500, 'Sports Fee': 300 },
+            totalFee: 17100,
+            paymentSchedule: [
+              { installment: 1, dueDate: '2024-04-15T00:00:00Z', amount: 8550, description: 'First Installment' },
+              { installment: 2, dueDate: '2024-08-15T00:00:00Z', amount: 8550, description: 'Second Installment' }
+            ]
+          },
+          {
+            id: '2', 
+            grade: '10',
+            academicYear: '2024-25',
+            tuitionFee: 15000,
+            labFee: 2000,
+            libraryFee: 1000,
+            transportFee: 2500,
+            otherFees: { 'Exam Fee': 800, 'Computer Fee': 1200 },
+            totalFee: 22500,
+            paymentSchedule: [
+              { installment: 1, dueDate: '2024-04-15T00:00:00Z', amount: 11250, description: 'First Installment' },
+              { installment: 2, dueDate: '2024-08-15T00:00:00Z', amount: 11250, description: 'Second Installment' }
+            ]
+          }
+        ];
+
+        const filteredStructures = grade && grade !== 'all' 
+          ? allStructures.filter(s => s.grade === grade)
+          : allStructures;
+        
+        return {
+          data: {
+            success: true,
+            message: 'Fee structures retrieved successfully',
+            data: filteredStructures,
+          },
+        };
+      },
+      providesTags: ['Fee'],
+    }),
+
+    updateFeeStructure: builder.mutation<ApiResponse<FeeStructure>, Partial<FeeStructure> & { id: string }>({
+      async queryFn(feeStructure) {
+        await mockApiDelay(600);
+
+        return {
+          data: {
+            success: true,
+            message: 'Fee structure updated successfully',
+            data: feeStructure as FeeStructure,
+          },
+        };
+      },
+      invalidatesTags: ['Fee'],
+    }),
+
+    collectFee: builder.mutation<ApiResponse<Payment>, { 
+      studentId: string; 
+      amount: number; 
+      paymentMethod: Payment['paymentMethod']; 
+      month: string;
+      transactionId?: string;
+      notes?: string;
+    }>({
+      async queryFn({ studentId, amount, paymentMethod, month, transactionId, notes }) {
+        await mockApiDelay(600);
+
+        const payment: Payment = {
+          id: Date.now().toString(),
+          amount,
+          paymentDate: new Date().toISOString(),
+          paymentMethod,
+          transactionId,
+          receiptNumber: `RCP${Date.now()}`,
+          collectedBy: 'current-user',
+          notes: `Fee collection for ${month}${notes ? ' - ' + notes : ''}`,
+        };
+
+        return {
+          data: {
+            success: true,
+            message: `Fee of ₹${amount} collected successfully for ${month}`,
+            data: payment,
+          },
+        };
+      },
+      invalidatesTags: ['Fee', 'Payment'],
+    }),
   }),
 });
 
 export const {
   useGetFeeRecordsQuery,
   useRecordPaymentMutation,
+  useGetFeeStructureQuery,
+  useUpdateFeeStructureMutation,
+  useCollectFeeMutation,
 } = feesApi;

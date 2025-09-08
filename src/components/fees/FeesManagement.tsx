@@ -9,6 +9,9 @@ import {
   DollarSign,
   Users,
   TrendingUp,
+  CreditCard,
+  Settings,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +24,9 @@ import { useGetFeeRecordsQuery } from '@/store/api/feesApi';
 import { useGetStudentsQuery } from '@/store/api/studentsApi';
 import { RootState } from '@/store';
 import { AddFeeModal } from './AddFeeModal';
+import { CollectFeeModal } from './CollectFeeModal';
+import { FeeStructureModal } from './FeeStructureModal';
+import { ClassFeeStructureModal } from './ClassFeeStructureModal';
 
 export const FeesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,6 +34,9 @@ export const FeesManagement = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [addFeeModalOpen, setAddFeeModalOpen] = useState(false);
+  const [collectFeeModalOpen, setCollectFeeModalOpen] = useState(false);
+  const [feeStructureModalOpen, setFeeStructureModalOpen] = useState(false);
+  const [classFeeStructureModalOpen, setClassFeeStructureModalOpen] = useState(false);
   const { toast } = useToast();
   
   const { user } = useSelector((state: RootState) => state.auth);
@@ -110,11 +119,25 @@ export const FeesManagement = () => {
             <Download className="w-4 h-4 mr-2" />
             Export Report
           </Button>
+          <Button onClick={() => setClassFeeStructureModalOpen(true)} variant="outline">
+            <Eye className="w-4 h-4 mr-2" />
+            View Fee Structure
+          </Button>
           {isAdmin && (
-            <Button onClick={() => setAddFeeModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Fee
-            </Button>
+            <>
+              <Button onClick={() => setCollectFeeModalOpen(true)} variant="outline">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Collect Fee
+              </Button>
+              <Button onClick={() => setFeeStructureModalOpen(true)} variant="outline">
+                <Settings className="w-4 h-4 mr-2" />
+                Manage Structure
+              </Button>
+              <Button onClick={() => setAddFeeModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Fee
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -318,14 +341,29 @@ export const FeesManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Add Fee Modal */}
+      {/* Modals */}
       {isAdmin && (
-        <AddFeeModal 
-          isOpen={addFeeModalOpen}
-          onClose={() => setAddFeeModalOpen(false)}
-          students={students}
-        />
+        <>
+          <AddFeeModal 
+            isOpen={addFeeModalOpen}
+            onClose={() => setAddFeeModalOpen(false)}
+            students={students}
+          />
+          <CollectFeeModal 
+            isOpen={collectFeeModalOpen}
+            onClose={() => setCollectFeeModalOpen(false)}
+            students={students}
+          />
+          <FeeStructureModal 
+            isOpen={feeStructureModalOpen}
+            onClose={() => setFeeStructureModalOpen(false)}
+          />
+        </>
       )}
+      <ClassFeeStructureModal 
+        isOpen={classFeeStructureModalOpen}
+        onClose={() => setClassFeeStructureModalOpen(false)}
+      />
     </div>
   );
 };
