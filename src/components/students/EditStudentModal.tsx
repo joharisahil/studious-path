@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpdateStudentMutation } from "@/store/api/studentsApi";
 import { useToast } from "@/hooks/use-toast";
 import { StudentFormData } from "@/types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 interface EditStudentModalProps {
   open: boolean;
@@ -20,6 +23,38 @@ interface EditStudentModalProps {
   student: StudentFormData;
   onSuccess?: () => void;
 }
+
+// ✅ Zod Validation Schema
+const studentEditSchema = z.object({
+  firstName: z.string().min(2, "First name is required"),
+  lastName: z.string().optional().or(z.literal("")),
+  email: z.string().email("Invalid email"),
+  phone: z.string().min(10, "Phone must be at least 10 digits"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  address: z.string().min(10, "Address must be at least 10 characters"),
+  grade: z.string().min(1, "Grade is required"),
+  section: z.string().min(1, "Section is required"),
+  rollNumber: z.string().optional(),
+  admissionDate: z.string().optional(),
+
+  guardian: z.object({
+    name: z.string().min(2, "Guardian name is required"),
+    phone: z.string().min(10, "Guardian phone must be at least 10 digits"),
+    relation: z.string().min(1, "Relation is required"),
+  }),
+
+  fatherName: z.string().min(2, "Father name is required"),
+  fatherContact: z.string().min(10, "Father contact number is required"),
+  fatherOccupation: z.string().min(2, "Father occupation is required"),
+  fatherEmail: z.string().email("Invalid father email").optional().or(z.literal("")),
+
+  motherName: z.string().min(2, "Mother name is required"),
+  motherContact: z.string().min(10, "Mother contact number is required"),
+  motherOccupation: z.string().min(2, "Mother occupation is required"),
+  motherEmail: z.string().email("Invalid mother email").optional().or(z.literal("")),
+});
+
+type StudentEditFormData = z.infer<typeof studentEditSchema>;
 
 const EditStudentModal = ({
   open,
@@ -30,71 +65,71 @@ const EditStudentModal = ({
   const [updateStudent, { isLoading }] = useUpdateStudentMutation();
   const { toast } = useToast();
 
-const [formData, setFormData] = useState<StudentFormData>({
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",               // optional, but default empty string
-  dateOfBirth: "",         // yyyy-mm-dd format
-  address: "",
-  grade: "",               // e.g., "1", "2", ..., "12"
-  section: "",             // e.g., "A", "B"
-  rollNumber: "",          // optional
-  admissionDate: "",       // yyyy-mm-dd
-  guardian: {
-    name: "",
-    phone: "",
-    relation: "",
-  },
-});
+  const form = useForm<StudentEditFormData>({
+    resolver: zodResolver(studentEditSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      dateOfBirth: "",
+      address: "",
+      grade: "",
+      section: "",
+      rollNumber: "",
+      admissionDate: "",
+      guardian: { name: "", phone: "", relation: "" },
+      fatherName: "",
+      fatherContact: "",
+      fatherOccupation: "",
+      fatherEmail: "",
+      motherName: "",
+      motherContact: "",
+      motherOccupation: "",
+      motherEmail: "",
+    },
+  });
 
-useEffect(() => {
-  if (student && open) {
-    setFormData({
-      firstName: student.firstName,
-      lastName: student.lastName,
-      email: student.email,
-      phone: student.phone || "",
-      dateOfBirth: student.dateOfBirth || "",
-      address: student.address || "",
-      grade: student.grade || "",
-      section: student.section || "",
-      rollNumber: student.rollNumber || "",
-      admissionDate: student.admissionDate || "",
-      guardian: {
-        name: student.guardian?.name || "",
-        phone: student.guardian?.phone || "",
-        relation: student.guardian?.relation || "",
-      },
-    });
-  }
-}, [student, open]);
-
-
-  const handleInputChange = (
-    field: keyof StudentFormData | keyof StudentFormData["guardian"],
-    value: any,
-    isGuardian = false
-  ) => {
-    if (isGuardian) {
-      setFormData((prev) => ({
-        ...prev,
+  useEffect(() => {
+    if (student && open) {
+      form.reset({
+        firstName: student.firstName,
+        lastName: student.lastName || "",
+        email: student.email,
+        phone: student.phone || "",
+        dateOfBirth: student.dateOfBirth || "",
+        address: student.address || "",
+        grade: student.grade || "",
+        section: student.section || "",
+        rollNumber: student.rollNumber || "",
+        admissionDate: student.admissionDate || "",
         guardian: {
-          ...prev.guardian,
-          [field]: value,
+          name: student.guardian?.name || "",
+          phone: student.guardian?.phone || "",
+          relation: student.guardian?.relation || "",
         },
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value }));
+        fatherName: student.fatherName || "",
+        fatherContact: student.fatherContact || "",
+        fatherOccupation: student.fatherOccupation || "",
+        fatherEmail: student.fatherEmail || "",
+        motherName: student.motherName || "",
+        motherContact: student.motherContact || "",
+        motherOccupation: student.motherOccupation || "",
+        motherEmail: student.motherEmail || "",
+      });
     }
-  };
+  }, [student, open, form]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: StudentEditFormData) => {
     try {
       await updateStudent({
         id: student.id,
-        ...formData,
+        ...data,
+        guardian: {
+          name: data.guardian.name,
+          phone: data.guardian.phone,
+          relation: data.guardian.relation,
+        },
       }).unwrap();
 
       toast({
@@ -119,168 +154,183 @@ useEffect(() => {
         <DialogHeader>
           <DialogTitle className="text-gradient-primary">Edit Student</DialogTitle>
           <DialogDescription>
-            Update student personal and academic information
+            Update student personal, academic, and parent information
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Personal Information */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Personal Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange("firstName", e.target.value)}
-                  required
-                />
+              <div>
+                <Label>
+                  First Name <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("firstName")} />
+                {form.formState.errors.firstName && (
+                  <p className="text-red-500 text-sm">{form.formState.errors.firstName.message}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange("lastName", e.target.value)}
-                  required
-                />
+              <div>
+                <Label>Last Name</Label>
+                <Input {...form.register("lastName")} />
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  required
-                />
+              <div>
+                <Label>
+                  Email <span className="text-red-500">*</span>
+                </Label>
+                <Input type="email" {...form.register("email")} />
+                {form.formState.errors.email && (
+                  <p className="text-red-500 text-sm">{form.formState.errors.email.message}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                />
+              <div>
+                <Label>
+                  Phone <span className="text-red-500">*</span>
+                </Label>
+                <Input type="tel" {...form.register("phone")} />
+                {form.formState.errors.phone && (
+                  <p className="text-red-500 text-sm">{form.formState.errors.phone.message}</p>
+                )}
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                  required
-                />
+              <div>
+                <Label>
+                  Date of Birth <span className="text-red-500">*</span>
+                </Label>
+                <Input type="date" {...form.register("dateOfBirth")} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="rollNumber">Roll Number</Label>
-                <Input
-                  id="rollNumber"
-                  value={formData.rollNumber}
-                  onChange={(e) => handleInputChange("rollNumber", e.target.value)}
-                />
+              <div>
+                <Label>Roll Number</Label>
+                <Input {...form.register ("rollNumber")} />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Address *</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
-                rows={3}
-                required
-              />
+            <div>
+              <Label>
+                Address <span className="text-red-500">*</span>
+              </Label>
+              <Textarea rows={3} {...form.register("address")} />
             </div>
           </div>
 
-          {/* Academic Information */}
+          {/* Academic Info */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Academic Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="grade">Grade *</Label>
-                <Input
-                  id="grade"
-                  value={formData.grade}
-                  onChange={(e) => handleInputChange("grade", e.target.value)}
-                  required
-                />
+              <div>
+                <Label>
+                  Grade <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("grade")} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="section">Section *</Label>
-                <Input
-                  id="section"
-                  value={formData.section}
-                  onChange={(e) => handleInputChange("section", e.target.value)}
-                  required
-                />
+              <div>
+                <Label>
+                  Section <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("section")} />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="admissionDate">Admission Date</Label>
-              <Input
-                id="admissionDate"
-                type="date"
-                value={formData.admissionDate}
-                onChange={(e) => handleInputChange("admissionDate", e.target.value)}
-              />
+            <div>
+              <Label>Admission Date</Label>
+              <Input type="date" {...form.register("admissionDate")} />
             </div>
           </div>
 
-          {/* Guardian Information */}
+          {/* Parent Info */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Parent Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>
+                  Father Name <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("fatherName")} />
+              </div>
+              <div>
+                <Label>
+                  Father Contact <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("fatherContact")} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>
+                  Father Occupation <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("fatherOccupation")} />
+              </div>
+              <div>
+                <Label>Father Email</Label>
+                <Input type="email" {...form.register("fatherEmail")} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>
+                  Mother Name <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("motherName")} />
+              </div>
+              <div>
+                <Label>
+                  Mother Contact <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("motherContact")} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>
+                  Mother Occupation <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("motherOccupation")} />
+              </div>
+              <div>
+                <Label>Mother Email</Label>
+                <Input type="email" {...form.register("motherEmail")} />
+              </div>
+            </div>
+          </div>
+
+          {/* Guardian Info */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Guardian Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="guardianName">Guardian Name *</Label>
-                <Input
-                  id="guardianName"
-                  value={formData.guardian.name}
-                  onChange={(e) => handleInputChange("name", e.target.value, true)}
-                  required
-                />
+              <div>
+                <Label>
+                  Guardian Name <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("guardian.name")} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="guardianPhone">Guardian Phone *</Label>
-                <Input
-                  id="guardianPhone"
-                  type="tel"
-                  value={formData.guardian.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value, true)}
-                  required
-                />
+              <div>
+                <Label>
+                  Guardian Phone <span className="text-red-500">*</span>
+                </Label>
+                <Input {...form.register("guardian.phone")} />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="guardianRelation">Relationship *</Label>
-              <Input
-                id="guardianRelation"
-                value={formData.guardian.relation}
-                onChange={(e) => handleInputChange("relation", e.target.value, true)}
-                required
-              />
+            <div>
+              <Label>
+                Relationship <span className="text-red-500">*</span>
+              </Label>
+              <Input {...form.register("guardian.relation")} />
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button
               type="button"

@@ -1,7 +1,13 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Mail, Phone, MapPin, User, Calendar } from 'lucide-react';
+import { Mail, Phone, MapPin, User, Calendar, BookOpen, Award, Briefcase } from 'lucide-react';
 import { TeacherFormData } from '@/types';
 
 interface TeacherDetailsModalProps {
@@ -9,7 +15,7 @@ interface TeacherDetailsModalProps {
   onOpenChange: (open: boolean) => void;
   teacher: TeacherFormData & {
     id: string;
-    teacherId: string;
+    registrationNumber: string;
     userId: string;
     status: string;
     createdAt: string;
@@ -48,7 +54,8 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
           <div className="flex items-start gap-6 p-6 bg-accent/50 rounded-lg">
             <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground text-2xl font-bold">
-                {teacher.firstName[0]}{teacher.lastName[0]}
+                {teacher.firstName[0]}
+                {teacher.lastName[0]}
               </span>
             </div>
             <div className="flex-1">
@@ -56,15 +63,9 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
                 {teacher.firstName} {teacher.lastName}
               </h2>
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                <span className="font-medium">ID: {teacher.teacherId}</span>
-                <span>•</span>
-                <span>{teacher.position} - {teacher.department}</span>
-                <span>•</span>
-                <span>Joined: {new Date(teacher.dateOfJoining).toLocaleDateString()}</span>
+                <span className="font-medium">Teacher ID: {teacher.registrationNumber}</span>
               </div>
-              <div className="flex items-center gap-2">
-                {getStatusBadge(teacher.status)}
-              </div>
+              <div className="flex items-center gap-2">{getStatusBadge(teacher.status)}</div>
             </div>
           </div>
 
@@ -96,12 +97,22 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
                   </div>
                 )}
 
+                {teacher.phone2 && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <div className="text-sm text-muted-foreground">Alternate Phone</div>
+                      <div className="font-medium">{teacher.phone2}</div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <div>
                     <div className="text-sm text-muted-foreground">Date of Birth</div>
                     <div className="font-medium">
-                      {new Date(teacher.dateOfBirth).toLocaleDateString()}
+                      {new Date(teacher.dob).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
@@ -120,75 +131,35 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-4 h-4" />
+                  <Briefcase className="w-4 h-4" />
                   Professional Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted-foreground">Department</div>
-                  <div className="font-medium">{teacher.department}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Position</div>
-                  <div className="font-medium">{teacher.position}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Date of Joining</div>
-                  <div className="font-medium">{new Date(teacher.dateOfJoining).toLocaleDateString()}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Salary</div>
-                  <div className="font-medium">${teacher.salary}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Subject Specialization</div>
-                  <div className="font-medium">{teacher.subjectSpecialization.join(', ')}</div>
+                  <div className="text-sm text-muted-foreground">Subjects</div>
+                  <div className="font-medium">{teacher.subjects?.join(', ')}</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Qualifications</div>
-                  <div className="font-medium">{teacher.qualifications.join(', ')}</div>
+                  <div className="font-medium">{teacher.qualifications?.join(', ')}</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Years of Experience</div>
-                  <div className="font-medium">{teacher.yearsOfExperience}</div>
+                  <div className="font-medium">{teacher.experienceYears}</div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Emergency Contact */}
+            {/* profile Information */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Emergency Contact
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">Name</div>
-                  <div className="font-medium">{teacher.emergencyContact.name}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Phone</div>
-                  <div className="font-medium">{teacher.emergencyContact.phone}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Relationship</div>
-                  <div className="font-medium">{teacher.emergencyContact.relation}</div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* System Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">System Information</CardTitle>
+                <CardTitle className="text-base">Profile Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <div className="text-sm text-muted-foreground">Teacher ID</div>
-                  <div className="font-medium font-mono">{teacher.teacherId}</div>
+                  <div className="font-medium font-mono">{teacher.registrationNumber}</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">User ID</div>

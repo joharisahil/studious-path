@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, User } from '../../types';
 
+// Load from localStorage (fallback if cookie not parsed on frontend)
 const storedUser = localStorage.getItem('user');
 const storedToken = localStorage.getItem('token');
 
@@ -27,9 +28,14 @@ const authSlice = createSlice({
       state.isLoading = false;
       state.error = null;
 
-      // Persist both user and token
+      // 🔹 Persist in localStorage
       localStorage.setItem('user', JSON.stringify(action.payload.user));
       localStorage.setItem('token', action.payload.token);
+
+      // 🔹 Also set cookie manually (non-httpOnly for frontend use)
+      // 👉 If backend already sets HttpOnly cookie, you don’t need this part,
+      // but keeping it allows Redux to read the token directly.
+      document.cookie = `token=${action.payload.token}; path=/; SameSite=Lax`;
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
@@ -42,8 +48,10 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
 
+      // Clear storage + cookie
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      document.cookie = "token=; Max-Age=0; path=/; SameSite=Lax"; // expire cookie
     },
     clearError: (state) => {
       state.error = null;
