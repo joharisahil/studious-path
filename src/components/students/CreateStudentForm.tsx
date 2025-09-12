@@ -8,27 +8,35 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
-import { useCreateStudentMutation } from '@/store/api/studentsApi';
-import { useGetClassesQuery } from '@/store/api/classesApi';
 import { StudentFormData } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { getAllClasses } from '@/services/ClassesApi';
+import { createStudentApi } from '@/services/StudentsApi';
 
 const studentSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  address: z.string().min(10, "Address must be at least 10 characters"),
-  grade: z.string().min(1, "Grade is required"),
-  section: z.string().min(1, "Section is required"),
-  classId: z.string().min(1, "Class is required").optional(),
-  guardian: z.object({
-    name: z.string().min(2, "Guardian name is required"),
-    phone: z.string().min(10, "Guardian phone is required"),
-    relation: z.string().min(1, "Guardian relation is required"),
-  }),
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().optional().or(z.literal('')),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
+  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  address: z.string().min(10, 'Address must be at least 10 characters'),
+  parentEmail: z.string().email('Invalid parent email').optional().or(z.literal('')),
+  classId: z.string().min(1, 'Class is required'),
+
+  fatherName: z.string().min(2, 'Father name is required'),
+  fatherContact: z.string().min(10, 'Father contact number is required'),
+  fatherOccupation: z.string().min(2, 'Father occupation is required'),
+  fatherEmail: z.string().email('Invalid father email').optional().or(z.literal('')),
+
+  motherName: z.string().min(2, 'Mother name is required'),
+  motherContact: z.string().min(10, 'Mother contact number is required'),
+  motherOccupation: z.string().min(2, 'Mother occupation is required'),
+  motherEmail: z.string().email('Invalid mother email').optional().or(z.literal('')),
+
+  emergencyContactName: z.string().min(2, 'Emergency contact name is required'),
+  emergencyContactPhone: z.string().min(10, 'Emergency contact phone is required'),
+  emergencyContactRelation: z.string().min(1, 'Emergency contact relation is required'),
+  emergencyContactEmail: z.string().email('Invalid contact email').optional().or(z.literal('')),
 });
 
 interface CreateStudentFormProps {
@@ -38,39 +46,39 @@ interface CreateStudentFormProps {
 
 const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
   const { toast } = useToast();
-  const [createStudent, { isLoading }] = useCreateStudentMutation();
 
-  const { data: classesData, isLoading: isClassesLoading } = useGetClassesQuery({
-    page: 1,
-    limit: 100,
-    search: '',
-  });
-
-  const classes = classesData?.data?.data || [];
+  const [classList, setClassList] = useState<any[]>([]);
+  const [isFetchingClasses, setIsFetchingClasses] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
-      address: "",
-      grade: "",
-      section: "",
-      classId: "",
-      guardian: {
-        name: "",
-        phone: "",
-        relation: "",
-      },
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      dateOfBirth: '',
+      address: '',
+      parentEmail: '',
+      classId: '',
+
+      fatherName: '',
+      fatherContact: '',
+      fatherOccupation: '',
+      fatherEmail: '',
+
+      motherName: '',
+      motherContact: '',
+      motherOccupation: '',
+      motherEmail: '',
+
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      emergencyContactRelation: '',
+      emergencyContactEmail: '',
     },
   });
-
-  // ✅ Classes state
-  const [classList, setClassList] = useState<any[]>([]);
-  const [isFetchingClasses, setIsFetchingClasses] = useState(false);
 
   // ✅ Fetch classes once when form mounts
   useEffect(() => {
@@ -88,23 +96,28 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
     fetchClasses();
   }, []);
 
+  // ✅ Single onSubmit function
   const onSubmit = async (data: StudentFormData) => {
     try {
-      await createStudent(data).unwrap();
+      setIsLoading(true);
+      await createStudentApi(data);
       toast({
         title: 'Success',
         description: 'Student created successfully!',
       });
       form.reset();
       onSuccess?.();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to create student. Please try again.',
+        description: error.response?.data?.error || error.message || 'Failed to create student',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -118,14 +131,13 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* First Name */}
                 <FormField
                   control={form.control}
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        First Name <span className="text-red-500">*</span>
-                      </FormLabel>
+                      <FormLabel>First Name <span className="text-red-500">*</span></FormLabel>
                       <FormControl>
                         <Input placeholder="Enter first name" {...field} />
                       </FormControl>
@@ -133,6 +145,7 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                     </FormItem>
                   )}
                 />
+                {/* Last Name */}
                 <FormField
                   control={form.control}
                   name="lastName"
@@ -147,16 +160,14 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                   )}
                 />
               </div>
-
+              {/* Email & Phone */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Email <span className="text-red-500">*</span>
-                      </FormLabel>
+                      <FormLabel>Email <span className="text-red-500">*</span></FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="Enter email address" {...field} />
                       </FormControl>
@@ -169,9 +180,7 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Phone <span className="text-red-500">*</span>
-                      </FormLabel>
+                      <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
                       <FormControl>
                         <Input placeholder="Enter phone number" {...field} />
                       </FormControl>
@@ -180,15 +189,13 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                   )}
                 />
               </div>
-
+              {/* DOB & Address */}
               <FormField
                 control={form.control}
                 name="dateOfBirth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Date of Birth <span className="text-red-500">*</span>
-                    </FormLabel>
+                    <FormLabel>Date of Birth <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -196,15 +203,12 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Address <span className="text-red-500">*</span>
-                    </FormLabel>
+                    <FormLabel>Address <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
                       <Input placeholder="Enter full address" {...field} />
                     </FormControl>
@@ -212,35 +216,6 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                   </FormItem>
                 )}
               />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="grade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Grade</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter grade" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="section"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Section</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter section" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
 
             {/* Class Selection */}
@@ -249,20 +224,22 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
               name="classId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Select Class <span className="text-red-500">*</span>
-                  </FormLabel>
+                  <FormLabel>Select Class <span className="text-red-500">*</span></FormLabel>
                   <FormControl>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select class" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <SelectItem key={i + 1} value={(i + 1).toString()}>
-                            Class {i + 1}
-                          </SelectItem>
-                        ))}
+                        {isFetchingClasses ? (
+                          <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        ) : (
+                          classList.map((cls: any, index: number) => {
+                            const value = `${cls.grade}-${cls.section}`;
+                            const label = `Class ${cls.grade} (${cls.section})`;
+                            return <SelectItem key={index} value={value}>{label}</SelectItem>;
+                          })
+                        )}
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -270,6 +247,7 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                 </FormItem>
               )}
             />
+
 
             {/* Parent Contact Information */}
             <div className="space-y-4">
@@ -401,18 +379,20 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
               </div>
             </div>
 
-            {/* Guardian Contact */}
+            {/* Emergency Contact */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Guardian Information</h3>
+              <h3 className="text-lg font-semibold">Emergency Contact</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="guardian.name"
+                  name="emergencyContactName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Guardian Name</FormLabel>
+                      <FormLabel>
+                        Contact Name <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter guardian name" {...field} />
+                        <Input placeholder="Enter emergency contact name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -435,45 +415,48 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="guardian.phone"
+                  name="emergencyContactPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Guardian Phone</FormLabel>
+                      <FormLabel>
+                        Contact Phone <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter guardian phone" {...field} />
+                        <Input placeholder="Enter emergency contact phone" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emergencyContactRelation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Relation <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select relation" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Father">Father</SelectItem>
+                            <SelectItem value="Mother">Mother</SelectItem>
+                            <SelectItem value="Guardian">Guardian</SelectItem>
+                            <SelectItem value="Uncle">Uncle</SelectItem>
+                            <SelectItem value="Aunt">Aunt</SelectItem>
+                            <SelectItem value="Grandparent">Grandparent</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="guardian.relation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Relation</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select relation" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Father">Father</SelectItem>
-                          <SelectItem value="Mother">Mother</SelectItem>
-                          <SelectItem value="Guardian">Guardian</SelectItem>
-                          <SelectItem value="Uncle">Uncle</SelectItem>
-                          <SelectItem value="Aunt">Aunt</SelectItem>
-                          <SelectItem value="Grandparent">Grandparent</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             {/* Form Actions */}

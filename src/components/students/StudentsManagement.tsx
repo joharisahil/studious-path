@@ -159,24 +159,30 @@ const StudentsManagement = () => {
   };
 
   // Filter students safely
-  const filteredStudents = students.filter((student) => {
-    const matchesGrade =
-      selectedGrade === "all" || student.grade === selectedGrade;
-    const matchesStatus =
-      selectedStatus === "all" || student.status === selectedStatus;
-    const matchesSearch =
-      (student.firstName ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (student.lastName ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (student.studentId ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (student.email ?? "").toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesGrade && matchesStatus && matchesSearch;
-  });
+  // Filter students safely
+const filteredStudents = students.filter((student) => {
+  const studentClassValue = `${student.grade}-${student.section}`;
+
+  const matchesGrade =
+    selectedGrade === "all" || studentClassValue === selectedGrade;
+
+  const matchesStatus =
+    selectedStatus === "all" || student.status === selectedStatus;
+
+  const matchesSearch =
+    (student.firstName ?? "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase()) ||
+    (student.lastName ?? "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase()) ||
+    (student.studentId ?? "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase()) ||
+    (student.email ?? "").toLowerCase().includes(searchTerm.toLowerCase());
+
+  return matchesGrade && matchesStatus && matchesSearch;
+});
 
   return (
     <div className="space-y-6">
@@ -279,29 +285,35 @@ const StudentsManagement = () => {
             </div>
 
             {/* Grade Select */}
-            <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select Grade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Grades</SelectItem>
-                {loadingClasses ? (
-                  <SelectItem value="loading" disabled>
-                    Loading...
-                  </SelectItem>
-                ) : classList.length === 0 ? (
-                  <SelectItem value="none" disabled>
-                    No classes found
-                  </SelectItem>
-                ) : (
-                  classList.map((cls) => (
-                    <SelectItem key={cls._id} value={cls.grade}>
-                      {cls.grade}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            
+<Select value={selectedGrade} onValueChange={setSelectedGrade}>
+  <SelectTrigger className="w-48">
+    <SelectValue placeholder="Select Grade" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="all">All Grades</SelectItem>
+    {loadingClasses ? (
+      <SelectItem value="loading" disabled>
+        Loading...
+      </SelectItem>
+    ) : classList.length === 0 ? (
+      <SelectItem value="none" disabled>
+        No classes found
+      </SelectItem>
+    ) : (
+      classList.map((cls, index) => {
+        const value = `${cls.grade}-${cls.section}`;
+        const label = `Class ${cls.grade} (${cls.section})`;
+        return (
+          <SelectItem key={index} value={value}>
+            {label}
+          </SelectItem>
+        );
+      })
+    )}
+  </SelectContent>
+</Select>
+
 
             {/* Status Select */}
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -342,9 +354,9 @@ const StudentsManagement = () => {
                   <TableHead>Registeration Number</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-sm">Enrollment Date</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Section</TableHead>
+                  <TableHead>DOB</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -378,8 +390,8 @@ const StudentsManagement = () => {
                     </TableCell>
                     <TableCell>{getStatusBadge(student.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {student.dateOfBirth
-                        ? new Date(student.dateOfBirth).toLocaleDateString()
+                      {student.dob
+                        ? new Date(student.dob).toLocaleDateString()
                         : "-"}
                     </TableCell>
                     <TableCell className="text-right">

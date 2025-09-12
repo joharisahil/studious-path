@@ -13,9 +13,19 @@ export const getAllTeachers = async () => {
 
 export const createTeacher = async (teacherData) => {
   try {
-    const res = await axios.post(`${API_BASE_URL}/teachers/create`, teacherData, {
-      withCredentials: true, // 🔹 ensures cookies (JWT/session) are sent
-    });
+    const token = localStorage.getItem("token"); // 👈 stored after login
+
+    const res = await axios.post(
+      `${API_BASE_URL}/teachers/create`,
+      teacherData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // 👈 required for verifyToken
+        },
+        withCredentials: true, // keep if you also rely on cookies
+      }
+    );
+
     return res.data;
   } catch (error) {
     throw error.response?.data || { error: "Something went wrong" };
