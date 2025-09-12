@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import CreateStudentForm from './CreateStudentForm';
+import { CreateStudentForm } from './CreateStudentForm';
 
 interface CreateStudentModalProps {
   open: boolean;
@@ -23,7 +23,7 @@ const CreateStudentModal = ({ open, onOpenChange, onSuccess }: CreateStudentModa
         <DialogHeader>
           <DialogTitle>Create New Student</DialogTitle>
         </DialogHeader>
-        <CreateStudentForm onSuccess={handleSuccess} onCancel={handleCancel} />
+        <CreateStudentForm onClose={handleCancel} onStudentCreated={handleSuccess} />
       </DialogContent>
     </Dialog>
   );

@@ -15,41 +15,33 @@ import { createStudentApi } from '@/services/StudentsApi';
 
 const studentSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().optional().or(z.literal('')),
+  lastName: z.string().optional(),
   email: z.string().email('Invalid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  address: z.string().min(10, 'Address must be at least 10 characters'),
+  phone: z.string().min(10, 'Phone number must be at least 10 digits').optional(),
+  dateOfBirth: z.string().min(1, 'Date of birth is required').optional(),
+  address: z.string().min(10, 'Address must be at least 10 characters').optional(),
   parentEmail: z.string().email('Invalid parent email').optional().or(z.literal('')),
-  classId: z.string().min(1, 'Class is required'),
+  classId: z.string().min(1, 'Class is required').optional(),
 
-  fatherName: z.string().min(2, 'Father name is required'),
-  fatherContact: z.string().min(10, 'Father contact number is required'),
-  fatherOccupation: z.string().min(2, 'Father occupation is required'),
+  fatherName: z.string().min(2, 'Father name is required').optional(),
+  fatherContact: z.string().min(10, 'Father contact number is required').optional(),
+  fatherOccupation: z.string().min(2, 'Father occupation is required').optional(),
   fatherEmail: z.string().email('Invalid father email').optional().or(z.literal('')),
 
-  motherName: z.string().min(2, 'Mother name is required'),
-  motherContact: z.string().min(10, 'Mother contact number is required'),
-  motherOccupation: z.string().min(2, 'Mother occupation is required'),
-  motherEmail: z.string().email('Invalid mother email').optional().or(z.literal('')),
-
-  emergencyContactName: z.string().min(2, 'Emergency contact name is required'),
-  emergencyContactPhone: z.string().min(10, 'Emergency contact phone is required'),
-  emergencyContactRelation: z.string().min(1, 'Emergency contact relation is required'),
-  emergencyContactEmail: z.string().email('Invalid contact email').optional().or(z.literal('')),
+  motherName: z.string().min(2, 'Mother name is required').optional(),
+  motherContact: z.string().min(10, 'Mother contact number is required').optional(),
+  motherOccupation: z.string().min(2, 'Mother occupation is required').optional(),
 });
 
 interface CreateStudentFormProps {
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  onClose: () => void;
+  onStudentCreated: () => void;
 }
 
-const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
+export function CreateStudentForm({ onClose, onStudentCreated }: CreateStudentFormProps) {
+  const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState<any[]>([]);
   const { toast } = useToast();
-
-  const [classList, setClassList] = useState<any[]>([]);
-  const [isFetchingClasses, setIsFetchingClasses] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -62,140 +54,141 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
       address: '',
       parentEmail: '',
       classId: '',
-
       fatherName: '',
       fatherContact: '',
       fatherOccupation: '',
       fatherEmail: '',
-
       motherName: '',
       motherContact: '',
       motherOccupation: '',
-      motherEmail: '',
-
-      emergencyContactName: '',
-      emergencyContactPhone: '',
-      emergencyContactRelation: '',
-      emergencyContactEmail: '',
     },
   });
 
-  // ✅ Fetch classes once when form mounts
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        setIsFetchingClasses(true);
-        const data = await getAllClasses();
-        setClassList(data || []);
-      } catch (error) {
-        console.error("Failed to fetch classes:", error);
-      } finally {
-        setIsFetchingClasses(false);
-      }
-    };
     fetchClasses();
   }, []);
 
-  // ✅ Single onSubmit function
-  const onSubmit = async (data: StudentFormData) => {
+  const fetchClasses = async () => {
     try {
-      setIsLoading(true);
-      await createStudentApi(data);
-      toast({
-        title: 'Success',
-        description: 'Student created successfully!',
-      });
-      form.reset();
-      onSuccess?.();
-    } catch (error: any) {
+      const response = await getAllClasses();
+      if (response.data && Array.isArray(response.data)) {
+        setClasses(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.error || error.message || 'Failed to create student',
+        description: 'Failed to fetch classes',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  const onSubmit = async (data: StudentFormData) => {
+    try {
+      setLoading(true);
+      
+      const studentData = {
+        ...data,
+        status: 'active',
+        admissionDate: new Date().toISOString(),
+      };
+
+      const response = await createStudentApi(studentData);
+      
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: 'Student created successfully',
+        });
+        onStudentCreated();
+        onClose();
+      } else {
+        throw new Error(response.message || 'Failed to create student');
+      }
+    } catch (error) {
+      console.error('Error creating student:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create student',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Create New Student</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* First Name */}
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name <span className="text-red-500">*</span></FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter first name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {/* Last Name */}
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter last name (optional)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {/* Email & Phone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email <span className="text-red-500">*</span></FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter email address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter phone number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {/* DOB & Address */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter first name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter last name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Enter email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="dateOfBirth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date of Birth <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -203,64 +196,58 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
-                name="address"
+                name="classId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address <span className="text-red-500">*</span></FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter full address" {...field} />
-                    </FormControl>
+                    <FormLabel>Class</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a class" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {classes.map((classItem) => (
+                          <SelectItem key={classItem.id} value={classItem.id}>
+                            {classItem.name} - {classItem.section}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            {/* Class Selection */}
             <FormField
               control={form.control}
-              name="classId"
+              name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Select Class <span className="text-red-500">*</span></FormLabel>
+                  <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {isFetchingClasses ? (
-                          <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : (
-                          classList.map((cls: any, index: number) => {
-                            const value = `${cls.grade}-${cls.section}`;
-                            const label = `Class ${cls.grade} (${cls.section})`;
-                            return <SelectItem key={index} value={value}>{label}</SelectItem>;
-                          })
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <Input placeholder="Enter full address" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-
-            {/* Parent Contact Information */}
+            {/* Parent Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Parent Contact Information</h3>
+              <h3 className="text-lg font-semibold">Parent/Guardian Information</h3>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="fatherName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Father Name <span className="text-red-500">*</span>
-                      </FormLabel>
+                      <FormLabel>Father's Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter father's name" {...field} />
                       </FormControl>
@@ -268,62 +255,27 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="fatherContact"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Father Contact No <span className="text-red-500">*</span>
-                      </FormLabel>
+                      <FormLabel>Father's Contact</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter father's contact number" {...field} />
+                        <Input placeholder="Enter father's contact" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="fatherOccupation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Father Occupation <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter father's occupation" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="fatherEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Father Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter father's email (optional)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="motherName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Mother Name <span className="text-red-500">*</span>
-                      </FormLabel>
+                      <FormLabel>Mother's Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter mother's name" {...field} />
                       </FormControl>
@@ -331,46 +283,15 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="motherContact"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Mother Contact No <span className="text-red-500">*</span>
-                      </FormLabel>
+                      <FormLabel>Mother's Contact</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter mother's contact number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="motherOccupation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Mother Occupation <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter mother's occupation" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="motherEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mother Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter mother's email (optional)" {...field} />
+                        <Input placeholder="Enter mother's contact" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -379,95 +300,12 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
               </div>
             </div>
 
-            {/* Emergency Contact */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Emergency Contact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="emergencyContactName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Contact Name <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter emergency contact name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="emergencyContactEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter emergency contact email (optional)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="emergencyContactPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Contact Phone <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter emergency contact phone" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="emergencyContactRelation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Relation <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select relation" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Father">Father</SelectItem>
-                            <SelectItem value="Mother">Mother</SelectItem>
-                            <SelectItem value="Guardian">Guardian</SelectItem>
-                            <SelectItem value="Uncle">Uncle</SelectItem>
-                            <SelectItem value="Aunt">Aunt</SelectItem>
-                            <SelectItem value="Grandparent">Grandparent</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex justify-end gap-4 pt-6">
-              {onCancel && (
-                <Button type="button" variant="outline" onClick={onCancel}>
-                  Cancel
-                </Button>
-              )}
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Student
               </Button>
             </div>
@@ -476,6 +314,4 @@ const CreateStudentForm = ({ onSuccess, onCancel }: CreateStudentFormProps) => {
       </CardContent>
     </Card>
   );
-};
-
-export default CreateStudentForm;
+}

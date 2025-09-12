@@ -449,6 +449,7 @@ export interface StudentFormData {
   phone?: string;
   dateOfBirth?: string;
   address?: string; // Make optional
+  parentEmail?: string; // Add parentEmail
   grade?: string; // Make optional
   section?: string; // Make optional
   rollNumber?: string;

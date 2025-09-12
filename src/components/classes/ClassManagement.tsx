@@ -82,10 +82,10 @@ useEffect(() => {
     try {
       const students = await getAllStudents();
 
-      // group students by class _id
+      // group students by class id
       const studentsMap: { [key: string]: any[] } = {};
       students.forEach((student) => {
-        const classId = student.classId?._id; // use the _id from classId object
+        const classId = student.classId; // classId is already a string
         if (!classId) return; // skip if no classId
         if (!studentsMap[classId]) studentsMap[classId] = [];
         studentsMap[classId].push(student);
