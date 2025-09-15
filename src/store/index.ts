@@ -13,6 +13,7 @@ import { teachersApi } from './api/teachersApi';
 
 import authSlice from './slices/authSlice';
 import uiSlice from './slices/uiSlice';
+import { timetableApi } from './api/timetableApi';
 
 // ✅ import our messages slice
 
@@ -31,6 +32,7 @@ export const store = configureStore({
     [messagesApi.reducerPath]: messagesApi.reducer,
     [subjectsApi.reducerPath]: subjectsApi.reducer,
     [examsApi.reducerPath]: examsApi.reducer,
+    [timetableApi.reducerPath]: timetableApi.reducer,
 
     // Regular slices
     auth: authSlice,
@@ -56,7 +58,8 @@ export const store = configureStore({
       feesApi.middleware,
       messagesApi.middleware,
       subjectsApi.middleware,
-      examsApi.middleware
+      examsApi.middleware,
+      timetableApi.middleware,
     ),
 });
 
