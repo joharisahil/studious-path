@@ -22,11 +22,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useGetFeeRecordsQuery } from '@/store/api/feesApi';
 import { useGetStudentsQuery } from '@/store/api/studentsApi';
+import { Student, Payment } from '@/types';
 import { RootState } from '@/store';
 import { AddFeeModal } from './AddFeeModal';
 import { CollectFeeModal } from './CollectFeeModal';
 import { FeeStructureModal } from './FeeStructureModal';
 import { ClassFeeStructureModal } from './ClassFeeStructureModal';
+import { PrintReceiptModal } from './PrintReceiptModal';
 
 export const FeesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,6 +39,8 @@ export const FeesManagement = () => {
   const [collectFeeModalOpen, setCollectFeeModalOpen] = useState(false);
   const [feeStructureModalOpen, setFeeStructureModalOpen] = useState(false);
   const [classFeeStructureModalOpen, setClassFeeStructureModalOpen] = useState(false);
+  const [printReceiptModalOpen, setPrintReceiptModalOpen] = useState(false);
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<Payment | null>(null);
   const { toast } = useToast();
   
   const { user } = useSelector((state: RootState) => state.auth);
@@ -295,6 +299,7 @@ export const FeesManagement = () => {
                   <TableHead>Due Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Next Due Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -326,6 +331,30 @@ export const FeesManagement = () => {
                         ? new Date(record.nextDueDate).toLocaleDateString()
                         : 'Not set'
                       }
+                    </TableCell>
+                    <TableCell>
+                      {record.payments.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const latestPayment = record.payments[record.payments.length - 1];
+                            setSelectedPaymentForReceipt({
+                              id: latestPayment.id,
+                              amount: latestPayment.amount,
+                              paymentDate: latestPayment.paymentDate,
+                              paymentMethod: latestPayment.paymentMethod,
+                              receiptNumber: latestPayment.receiptNumber,
+                              collectedBy: latestPayment.collectedBy,
+                              transactionId: latestPayment.transactionId,
+                              notes: latestPayment.notes
+                            });
+                            setPrintReceiptModalOpen(true);
+                          }}
+                        >
+                          Print Receipt
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -363,6 +392,17 @@ export const FeesManagement = () => {
       <ClassFeeStructureModal 
         isOpen={classFeeStructureModalOpen}
         onClose={() => setClassFeeStructureModalOpen(false)}
+      />
+
+      <PrintReceiptModal
+        isOpen={printReceiptModalOpen}
+        onClose={() => {
+          setPrintReceiptModalOpen(false);
+          setSelectedPaymentForReceipt(null);
+        }}
+        payment={selectedPaymentForReceipt}
+        studentName={feeRecords.find(r => r.payments.some(p => p.id === selectedPaymentForReceipt?.id))?.studentName || ''}
+        className={feeRecords.find(r => r.payments.some(p => p.id === selectedPaymentForReceipt?.id))?.grade || ''}
       />
     </div>
   );
