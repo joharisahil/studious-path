@@ -37,11 +37,19 @@ const EditTeacherModal = ({
     email: "",
     phone: "",
     phone2: "",
+    dateOfBirth: "",
     dob: "",
     address: "",
+    subjectSpecialization: [],
     subjects: [],
     qualifications: [],
+    yearsOfExperience: 0,
     experienceYears: 0,
+    emergencyContact: {
+      name: "",
+      phone: "",
+      relation: "",
+    },
   });
 
   // Populate form when teacher changes
@@ -54,11 +62,19 @@ const EditTeacherModal = ({
         email: teacher.email || "",
         phone: teacher.phone || "",
         phone2: teacher.phone2 || "",
+        dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.slice(0, 10) : "",
         dob: teacher.dob ? teacher.dob.slice(0, 10) : "",
         address: teacher.address || "",
+        subjectSpecialization: teacher.subjectSpecialization || [],
         subjects: teacher.subjects || [],
         qualifications: teacher.qualifications || [],
+        yearsOfExperience: teacher.yearsOfExperience || 0,
         experienceYears: teacher.experienceYears || 0,
+        emergencyContact: {
+          name: teacher.emergencyContact?.name || "",
+          phone: teacher.emergencyContact?.phone || "",
+          relation: teacher.emergencyContact?.relation || "",
+        },
       });
     }
   }, [teacher]);

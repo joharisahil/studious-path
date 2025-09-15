@@ -315,3 +315,5 @@ export function CreateStudentForm({ onClose, onStudentCreated }: CreateStudentFo
     </Card>
   );
 }
+
+export default CreateStudentForm;

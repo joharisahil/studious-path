@@ -390,8 +390,8 @@ const filteredStudents = students.filter((student) => {
                     </TableCell>
                     <TableCell>{getStatusBadge(student.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {student.dob
-                        ? new Date(student.dob).toLocaleDateString()
+                      {student.dateOfBirth
+                        ? new Date(student.dateOfBirth).toLocaleDateString()
                         : "-"}
                     </TableCell>
                     <TableCell className="text-right">

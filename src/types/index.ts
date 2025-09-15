@@ -331,6 +331,21 @@ export interface Payment {
   notes?: string;
 }
 
+export interface FeeReceipt {
+  receiptNumber: string;
+  studentName: string;
+  className: string;
+  paymentDate: string;
+  academicYear: string;
+  month: string;
+  feeType: string;
+  amount: number;
+  paymentMethod: string;
+  transactionId?: string;
+  notes?: string;
+  collectedBy: string;
+}
+
 // Communication
 export interface Announcement {
   id: string;
@@ -667,13 +682,16 @@ export interface TeacherFormData {
   id?: string;
   userId?: string;
   teacherId?: string;
+  registrationNumber?: string; // Add this missing property
 
   // Basic info
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  phone2?: string; // Add this missing property
   dateOfBirth: string;
+  dob?: string; // Add this alias for backward compatibility
   address: string;
   department?: string; // optional if coming from a form
   position?: string;
@@ -684,10 +702,12 @@ export interface TeacherFormData {
 
   // Arrays
   subjectSpecialization: string[]; // from form: [subject]
+  subjects?: string[]; // Add this alias for backward compatibility
   qualifications: string[];        // from form: [qualification]
 
   // Experience
   yearsOfExperience: number; // convert string from form to number
+  experienceYears?: number; // Add this alias for backward compatibility
 
   // Emergency contact
   emergencyContact: {
@@ -698,6 +718,7 @@ export interface TeacherFormData {
 
   // Courses taught
   courses?: string[]; // optional for form
+  _id?: string; // Add this for MongoDB compatibility
 
   // Timestamps
   createdAt?: string;
