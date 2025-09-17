@@ -22,6 +22,7 @@ import { SubjectManagement } from '@/components/subjects';
 import { loginSuccess } from '@/store/slices/authSlice';
 import { TimetableManagement } from './components/timetable/TimetableManagement';
 import MessageCenter from './components/Messages/MessageCenter';
+import { ExamManagement } from '@/components/exams';
 
 // App content component
 const AppContent = () => {
@@ -233,6 +234,18 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/exams"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <MainLayout>
+                  <ExamManagement />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/messages"
             element={
