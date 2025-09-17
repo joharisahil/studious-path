@@ -89,7 +89,7 @@ export function ViewExamTimetableModal({
             
             {exam.schedules.length > 0 ? (
               <div className="space-y-3">
-                {exam.schedules
+                {[...exam.schedules]
                   .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                   .map((schedule) => (
                     <Card key={schedule.id} className="border-l-4 border-l-primary">
