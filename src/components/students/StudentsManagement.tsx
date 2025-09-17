@@ -75,7 +75,7 @@ const StudentsManagement = () => {
 
   const { toast } = useToast();
 
-   // ✅ Fetch students from StudentsApi.ts
+  // ✅ Fetch students from StudentsApi.ts
   const getStudentsFromAPI = async () => {
     setIsLoading(true);
     try {
@@ -95,7 +95,7 @@ const StudentsManagement = () => {
   useEffect(() => {
     getStudentsFromAPI();
   }, []);
-  
+
   // ✅ Fetch classes once on mount
   useEffect(() => {
     const fetchClasses = async () => {
@@ -114,7 +114,7 @@ const StudentsManagement = () => {
   }, []);
 
   const totalStudents = students.length;
-  const totalPages = Math.max(1, Math.ceil(totalStudents / 10));
+  const studentsPerPage = 10;
 
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student);
@@ -158,31 +158,42 @@ const StudentsManagement = () => {
     }
   };
 
-  // Filter students safely
-  // Filter students safely
-const filteredStudents = students.filter((student) => {
-  const studentClassValue = `${student.grade}-${student.section}`;
+  // ✅ Filter students
+  const filteredStudents = students.filter((student) => {
+    const studentClassValue = `${student.grade}-${student.section}`;
 
-  const matchesGrade =
-    selectedGrade === "all" || studentClassValue === selectedGrade;
+    const matchesGrade =
+      selectedGrade === "all" || studentClassValue === selectedGrade;
 
-  const matchesStatus =
-    selectedStatus === "all" || student.status === selectedStatus;
+    const matchesStatus =
+      selectedStatus === "all" || student.status === selectedStatus;
 
-  const matchesSearch =
-    (student.firstName ?? "")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase()) ||
-    (student.lastName ?? "")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase()) ||
-    (student.studentId ?? "")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase()) ||
-    (student.email ?? "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      (student.firstName ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.lastName ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.studentId ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.email ?? "").toLowerCase().includes(searchTerm.toLowerCase());
 
-  return matchesGrade && matchesStatus && matchesSearch;
-});
+    return matchesGrade && matchesStatus && matchesSearch;
+  });
+
+  // ✅ Paginate filtered students
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / studentsPerPage));
+  const indexOfLastStudent = currentPage * studentsPerPage;
+  const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
+  const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
+
+  // Reset to page 1 when filters/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedGrade, selectedStatus]);
+
 
   return (
     <div className="space-y-6">
@@ -285,35 +296,33 @@ const filteredStudents = students.filter((student) => {
             </div>
 
             {/* Grade Select */}
-            
-<Select value={selectedGrade} onValueChange={setSelectedGrade}>
-  <SelectTrigger className="w-48">
-    <SelectValue placeholder="Select Grade" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="all">All Grades</SelectItem>
-    {loadingClasses ? (
-      <SelectItem value="loading" disabled>
-        Loading...
-      </SelectItem>
-    ) : classList.length === 0 ? (
-      <SelectItem value="none" disabled>
-        No classes found
-      </SelectItem>
-    ) : (
-      classList.map((cls, index) => {
-        const value = `${cls.grade}-${cls.section}`;
-        const label = `Class ${cls.grade} (${cls.section})`;
-        return (
-          <SelectItem key={index} value={value}>
-            {label}
-          </SelectItem>
-        );
-      })
-    )}
-  </SelectContent>
-</Select>
-
+            <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select Grade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Grades</SelectItem>
+                {loadingClasses ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : classList.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No classes found
+                  </SelectItem>
+                ) : (
+                  classList.map((cls, index) => {
+                    const value = `${cls.grade}-${cls.section}`;
+                    const label = `Class ${cls.grade} (${cls.section})`;
+                    return (
+                      <SelectItem key={index} value={value}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })
+                )}
+              </SelectContent>
+            </Select>
 
             {/* Status Select */}
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -339,7 +348,7 @@ const filteredStudents = students.filter((student) => {
           <CardDescription>
             {isLoading
               ? "Loading..."
-              : `Showing ${filteredStudents.length} of ${totalStudents} students`}
+              : `Showing ${currentStudents.length} of ${filteredStudents.length} students`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -361,7 +370,7 @@ const filteredStudents = students.filter((student) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents.map((student) => (
+                {currentStudents.map((student) => (
                   <TableRow key={student.id}>
                     <TableCell className="font-medium">
                       {student.registrationNumber}
@@ -466,34 +475,80 @@ const filteredStudents = students.filter((student) => {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* ✅ Updated Pagination with Ellipsis */}
+{totalPages > 1 && (
+  <div className="flex justify-center items-center gap-2 mt-6">
+    {/* Previous Button */}
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+      disabled={currentPage === 1}
+    >
+      Previous
+    </Button>
+
+    {/* Page Numbers with Ellipsis */}
+    {(() => {
+      const pages: (number | string)[] = [];
+      const maxVisible = 3; // how many pages to show around current
+
+      if (totalPages <= 7) {
+        // Show all pages if total small
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        // Always show first page
+        pages.push(1);
+
+        if (currentPage > maxVisible + 1) {
+          pages.push("...");
+        }
+
+        const start = Math.max(2, currentPage - 1);
+        const end = Math.min(totalPages - 1, currentPage + 1);
+
+        for (let i = start; i <= end; i++) {
+          pages.push(i);
+        }
+
+        if (currentPage < totalPages - maxVisible) {
+          pages.push("...");
+        }
+
+        // Always show last page
+        pages.push(totalPages);
+      }
+
+      return pages.map((p, index) =>
+        p === "..." ? (
+          <span key={index} className="px-2 text-muted-foreground">
+            ...
+          </span>
+        ) : (
+          <Button
+            key={index}
+            size="sm"
+            variant={currentPage === p ? "default" : "outline"}
+            onClick={() => setCurrentPage(Number(p))}
+          >
+            {p}
+          </Button>
+        )
+      );
+    })()}
+
+    {/* Next Button */}
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+      disabled={currentPage === totalPages}
+    >
+      Next
+    </Button>
+  </div>
+)}
+
 
       {/* Modals */}
       <CreateStudentModal
