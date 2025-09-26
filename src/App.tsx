@@ -24,6 +24,11 @@ import { TimetableManagement } from './components/timetable/TimetableManagement'
 import MessageCenter from './components/Messages/MessageCenter';
 import { ExamManagement } from '@/components/exams';
 
+//temporary
+import ReportCard from './components/reportCard/reportcard'
+
+//temporary closed
+
 // App content component
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -256,7 +261,27 @@ const AppContent = () => {
              </ProtectedRoute>
               }
              />
+          {/* <Route
+            path="/reportcard"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'student', 'parent']}>
+                 <MainLayout>
+                  <ReportCard />
+                </MainLayout>
+             </ProtectedRoute>
+              }
+             /> */}
 
+             <Route
+  path="/reportcard"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "teacher", "student", "parent"]}>
+      <MainLayout>
+        <ReportCard/>
+      </MainLayout>
+    </ProtectedRoute>
+  }
+/>
 
           {/* Catch all - redirect to appropriate dashboard or login */}
           {/* Catch all */}
