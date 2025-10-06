@@ -234,3 +234,6 @@ const StudentDetailsModal = ({ open, onOpenChange, student }: StudentDetailsModa
 };
 
 export default StudentDetailsModal;
+
+
+
