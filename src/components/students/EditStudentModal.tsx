@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateStudentMutation } from "@/store/api/studentsApi";
 import { useToast } from "@/hooks/use-toast";
-import { StudentFormData } from "@/types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { updateStudentService } from "@/services/StudentsApi";
+import { StudentFormData } from "@/types";
 
 interface EditStudentModalProps {
   open: boolean;
@@ -24,7 +24,7 @@ interface EditStudentModalProps {
   onSuccess?: () => void;
 }
 
-// ✅ Zod Validation Schema
+// Schema
 const studentEditSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().optional().or(z.literal("")),
@@ -56,13 +56,21 @@ const studentEditSchema = z.object({
 
 type StudentEditFormData = z.infer<typeof studentEditSchema>;
 
+// Utility to format ISO date to YYYY-MM-DD
+const formatDateForInput = (isoDate?: string) => {
+  if (!isoDate) return "";
+  const date = new Date(isoDate);
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+
 const EditStudentModal = ({
   open,
   onOpenChange,
   student,
   onSuccess,
 }: EditStudentModalProps) => {
-  const [updateStudent, { isLoading }] = useUpdateStudentMutation();
   const { toast } = useToast();
 
   const form = useForm<StudentEditFormData>({
@@ -88,6 +96,7 @@ const EditStudentModal = ({
       motherOccupation: "",
       motherEmail: "",
     },
+    mode: "onChange", // ✅ important for isDirty to work
   });
 
   useEffect(() => {
@@ -97,23 +106,23 @@ const EditStudentModal = ({
         lastName: student.lastName || "",
         email: student.email,
         phone: student.phone || "",
-        dateOfBirth: student.dateOfBirth || "",
+        dateOfBirth: formatDateForInput(student.dob),
         address: student.address || "",
-        grade: student.grade || "",
-        section: student.section || "",
+        grade: student.classId?.grade || "",
+        section: student.classId?.section || "",
         rollNumber: student.rollNumber || "",
-        admissionDate: student.admissionDate || "",
+        admissionDate: formatDateForInput(student.admissionDate),
         guardian: {
-          name: student.guardian?.name || "",
-          phone: student.guardian?.phone || "",
-          relation: student.guardian?.relation || "",
+          name: student.contactName || "",
+          phone: student.contactPhone || "",
+          relation: student.relation || "",
         },
         fatherName: student.fatherName || "",
-        fatherContact: student.fatherContact || "",
+        fatherContact: student.fatherphone || "",
         fatherOccupation: student.fatherOccupation || "",
         fatherEmail: student.fatherEmail || "",
         motherName: student.motherName || "",
-        motherContact: student.motherContact || "",
+        motherContact: student.motherphone || "",
         motherOccupation: student.motherOccupation || "",
         motherEmail: student.motherEmail || "",
       });
@@ -121,32 +130,53 @@ const EditStudentModal = ({
   }, [student, open, form]);
 
   const onSubmit = async (data: StudentEditFormData) => {
-    try {
-      await updateStudent({
-        id: student.id,
-        ...data,
-        guardian: {
-          name: data.guardian.name,
-          phone: data.guardian.phone,
-          relation: data.guardian.relation,
-        },
-      }).unwrap();
+  try {
+    // Construct payload exactly as backend expects
+    const payload = {
+      firstName: data.firstName,
+      lastName: data.lastName || "",
+      email: data.email,
+      phone: data.phone,
+      dob: data.dateOfBirth, // make sure backend accepts YYYY-MM-DD
+      address: data.address,
+      classId: {
+        grade: data.grade,
+        section: data.section,
+      },
+      rollNumber: data.rollNumber || "",
+      admissionDate: data.admissionDate || "",
+      contactName: data.guardian.name,
+      contactPhone: data.guardian.phone,
+      relation: data.guardian.relation,
+      fatherName: data.fatherName,
+      fatherphone: data.fatherContact,
+      fatherOccupation: data.fatherOccupation,
+      fatherEmail: data.fatherEmail || "",
+      motherName: data.motherName,
+      motherphone: data.motherContact,
+      motherOccupation: data.motherOccupation,
+      motherEmail: data.motherEmail || "",
+    };
 
-      toast({
-        title: "Student Updated",
-        description: "Student information has been successfully updated.",
-      });
+    await updateStudentService(student._id, payload);
 
-      onSuccess?.();
-      onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update student. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+    toast({
+      title: "Student Updated",
+      description: "Student information has been successfully updated.",
+    });
+
+    onSuccess?.();
+    onOpenChange(false);
+  } catch (err: any) {
+    console.error("Update error:", err.response?.data || err.message);
+    toast({
+      title: "Error",
+      description: err.response?.data?.message || "Failed to update student",
+      variant: "destructive",
+    });
+  }
+};
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -166,9 +196,7 @@ const EditStudentModal = ({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  First Name <span className="text-red-500">*</span>
-                </Label>
+                <Label>First Name *</Label>
                 <Input {...form.register("firstName")} />
                 {form.formState.errors.firstName && (
                   <p className="text-red-500 text-sm">{form.formState.errors.firstName.message}</p>
@@ -179,42 +207,31 @@ const EditStudentModal = ({
                 <Input {...form.register("lastName")} />
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  Email <span className="text-red-500">*</span>
-                </Label>
+                <Label>Email *</Label>
                 <Input type="email" {...form.register("email")} />
-                {form.formState.errors.email && (
-                  <p className="text-red-500 text-sm">{form.formState.errors.email.message}</p>
-                )}
               </div>
               <div>
-                <Label>
-                  Phone <span className="text-red-500">*</span>
-                </Label>
+                <Label>Phone *</Label>
                 <Input type="tel" {...form.register("phone")} />
-                {form.formState.errors.phone && (
-                  <p className="text-red-500 text-sm">{form.formState.errors.phone.message}</p>
-                )}
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  Date of Birth <span className="text-red-500">*</span>
-                </Label>
+                <Label>Date of Birth *</Label>
                 <Input type="date" {...form.register("dateOfBirth")} />
               </div>
               <div>
                 <Label>Roll Number</Label>
-                <Input {...form.register ("rollNumber")} />
+                <Input {...form.register("rollNumber")} />
               </div>
             </div>
+
             <div>
-              <Label>
-                Address <span className="text-red-500">*</span>
-              </Label>
+              <Label>Address *</Label>
               <Textarea rows={3} {...form.register("address")} />
             </div>
           </div>
@@ -226,15 +243,11 @@ const EditStudentModal = ({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  Grade <span className="text-red-500">*</span>
-                </Label>
+                <Label>Grade *</Label>
                 <Input {...form.register("grade")} />
               </div>
               <div>
-                <Label>
-                  Section <span className="text-red-500">*</span>
-                </Label>
+                <Label>Section *</Label>
                 <Input {...form.register("section")} />
               </div>
             </div>
@@ -251,23 +264,17 @@ const EditStudentModal = ({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  Father Name <span className="text-red-500">*</span>
-                </Label>
+                <Label>Father Name *</Label>
                 <Input {...form.register("fatherName")} />
               </div>
               <div>
-                <Label>
-                  Father Contact <span className="text-red-500">*</span>
-                </Label>
+                <Label>Father Contact *</Label>
                 <Input {...form.register("fatherContact")} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  Father Occupation <span className="text-red-500">*</span>
-                </Label>
+                <Label>Father Occupation *</Label>
                 <Input {...form.register("fatherOccupation")} />
               </div>
               <div>
@@ -277,23 +284,17 @@ const EditStudentModal = ({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  Mother Name <span className="text-red-500">*</span>
-                </Label>
+                <Label>Mother Name *</Label>
                 <Input {...form.register("motherName")} />
               </div>
               <div>
-                <Label>
-                  Mother Contact <span className="text-red-500">*</span>
-                </Label>
+                <Label>Mother Contact *</Label>
                 <Input {...form.register("motherContact")} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  Mother Occupation <span className="text-red-500">*</span>
-                </Label>
+                <Label>Mother Occupation *</Label>
                 <Input {...form.register("motherOccupation")} />
               </div>
               <div>
@@ -310,22 +311,16 @@ const EditStudentModal = ({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>
-                  Guardian Name <span className="text-red-500">*</span>
-                </Label>
+                <Label>Guardian Name *</Label>
                 <Input {...form.register("guardian.name")} />
               </div>
               <div>
-                <Label>
-                  Guardian Phone <span className="text-red-500">*</span>
-                </Label>
+                <Label>Guardian Phone *</Label>
                 <Input {...form.register("guardian.phone")} />
               </div>
             </div>
             <div>
-              <Label>
-                Relationship <span className="text-red-500">*</span>
-              </Label>
+              <Label>Relationship *</Label>
               <Input {...form.register("guardian.relation")} />
             </div>
           </div>
@@ -340,8 +335,12 @@ const EditStudentModal = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading} className="flex-1">
-              {isLoading ? "Updating..." : "Update Student"}
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting || !form.formState.isDirty}
+              className="flex-1"
+            >
+              {form.formState.isSubmitting ? "Updating..." : "Update Student"}
             </Button>
           </div>
         </form>

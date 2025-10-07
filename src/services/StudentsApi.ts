@@ -20,6 +20,7 @@ export const getAllStudents = async (): Promise<Student[]> => {
 };
 
 
+
 // Create a new student
 export const createStudentApi = async (studentData: StudentFormData) => {
   const res = await axios.post(`${API_BASE_URL}/students/create`, studentData, {
@@ -29,4 +30,77 @@ export const createStudentApi = async (studentData: StudentFormData) => {
     },
   });
   return res.data;
+};
+
+export interface UpdateStudentPayload {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  address?: string;
+  grade?: string;
+  section?: string;
+  rollNumber?: string;
+  admissionDate?: string;
+  guardian?: {
+    name?: string;
+    phone?: string;
+    relation?: string;
+  };
+  fatherName?: string;
+  fatherContact?: string;
+  fatherOccupation?: string;
+  fatherEmail?: string;
+  motherName?: string;
+  motherContact?: string;
+  motherOccupation?: string;
+  motherEmail?: string;
+  registrationNumber?: string;
+  classId?: { grade: string; section: string };
+  contactName?: string;
+  contactPhone?: string;
+  relation?: string;
+  fatherphone?: string;
+  motherphone?: string;
+}
+
+export const updateStudentService = async (
+  studentId: string,
+  payload: UpdateStudentPayload
+) => {
+  try {
+    const response = await axios.put(`/api/students/${studentId}`, payload);
+    return response.data; // { message, student }
+  } catch (error: any) {
+    // Optional: extract backend error message
+    const msg =
+      error.response?.data?.error || "Failed to update student. Please try again.";
+    throw new Error(msg);
+  }
+};
+
+
+interface Pagination {
+  total: number;
+  currentPage: number;
+  totalPages: number;
+  limit: number;
+}
+
+interface GetStudentsResponse {
+  success: boolean;
+  students: Student[];
+  pagination: Pagination;
+}
+
+// Renamed function to avoid confusion
+export const fetchPaginatedStudents = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<GetStudentsResponse> => {
+  const { data } = await axios.get("/api/students", {
+    params: { page, limit },
+  });
+  return data;
 };

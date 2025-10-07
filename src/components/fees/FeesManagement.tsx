@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Plus,
   Search,
@@ -19,76 +19,159 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
-import { useGetFeeRecordsQuery } from '@/store/api/feesApi';
-import { useGetStudentsQuery } from '@/store/api/studentsApi';
-import { Student, Payment } from '@/types';
+import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { AddFeeModal } from './AddFeeModal';
 import { CollectFeeModal } from './CollectFeeModal';
 import { FeeStructureModal } from './FeeStructureModal';
 import { ClassFeeStructureModal } from './ClassFeeStructureModal';
 import { PrintReceiptModal } from './PrintReceiptModal';
+import { ViewFeeStructure } from './ViewFeeStructure';
+import { getAllClasses } from '@/services/ClassesApi';
+import { getAllFeeStructures } from '@/services/FeesApi';
+
+interface ClassType {
+  _id: string;
+  grade: string;
+  section: string;
+}
+
+interface FeeRecord {
+  id: string;
+  studentName: string;
+  studentId: string;
+  grade: string;
+  academicYear: string;
+  collectionPeriod: string;
+  totalFee?: number;
+  paidAmount?: number;
+  dueAmount?: number;
+  status: string;
+  nextDueDate?: string;
+  payments?: { id: string; amount: number; date: string }[];
+}
 
 export const FeesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('all');
+
+  const [classes, setClasses] = useState<ClassType[]>([]);
+  const [feeRecords, setFeeRecords] = useState<FeeRecord[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [feeStructures, setFeeStructures] = useState<any[]>([]);
+
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [loadingFees, setLoadingFees] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
   const [addFeeModalOpen, setAddFeeModalOpen] = useState(false);
   const [collectFeeModalOpen, setCollectFeeModalOpen] = useState(false);
   const [feeStructureModalOpen, setFeeStructureModalOpen] = useState(false);
   const [classFeeStructureModalOpen, setClassFeeStructureModalOpen] = useState(false);
   const [printReceiptModalOpen, setPrintReceiptModalOpen] = useState(false);
-  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<Payment | null>(null);
-  const { toast } = useToast();
-  
+  const [viewFeeStructureModalOpen, setViewFeeStructureModalOpen] = useState(false);
+
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<any>(null);
+
   const { user } = useSelector((state: RootState) => state.auth);
   const isAdmin = user?.role === 'admin';
-  
-  const { data: feeRecordsResponse } = useGetFeeRecordsQuery({});
-  const { data: studentsResponse } = useGetStudentsQuery({ page: 1, limit: 1000 });
-  
-  const feeRecords = feeRecordsResponse?.data || [];
-  const students = studentsResponse?.data?.data || [];
 
-  // Calculate fee statistics
-  const totalCollected = feeRecords.reduce((sum, record) => sum + record.paidAmount, 0);
-  const totalPending = feeRecords.reduce((sum, record) => sum + record.dueAmount, 0);
-  const totalStudents = feeRecords.length;
-  // Calculate late submitters based on selected period
-  const calculateLateSubmitters = () => {
-    const now = new Date();
-    return feeRecords.filter(record => {
-      if (record.status === 'paid' || record.dueAmount === 0) return false;
-      
-      if (selectedPeriod === 'all') {
-        // Show overdue or those with no payment for 30+ days
-        return record.status === 'overdue' || 
-               (record.dueAmount > 0 && new Date(record.lastPaymentDate || 0) < new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+  /** Fetch Classes */
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        setLoadingClasses(true);
+        const data = await getAllClasses();
+        setClasses(data);
+      } catch (err) {
+        console.error('Error fetching classes:', err);
+      } finally {
+        setLoadingClasses(false);
       }
-      
-      // Filter by specific collection period
-      if (selectedPeriod !== record.collectionPeriod) return false;
-      
-      if (record.nextDueDate) {
-        return new Date(record.nextDueDate) < now;
+    };
+    fetchClasses();
+  }, []);
+
+  /** Fetch Students */
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setLoadingStudents(true);
+        const res = await axios.get('/api/students');
+        setStudents(res.data?.students || []);
+      } catch (err) {
+        console.error('Error fetching students:', err);
+      } finally {
+        setLoadingStudents(false);
       }
-      
-      return record.status === 'overdue';
-    });
+    };
+    fetchStudents();
+  }, []);
+
+  /** Fetch Fee Records */
+  useEffect(() => {
+    const fetchFees = async () => {
+      try {
+        setLoadingFees(true);
+        const res = await axios.get('/api/fees');
+        setFeeRecords(res.data?.data || []);
+      } catch (err) {
+        console.error('Error fetching fee records:', err);
+      } finally {
+        setLoadingFees(false);
+      }
+    };
+    fetchFees();
+  }, []);
+
+  /** Fetch Fee Structures */
+/** Fetch Fee Structures and add className */
+useEffect(() => {
+  const fetchFeeStructures = async () => {
+    try {
+      const data = await getAllFeeStructures();
+      if (data && Array.isArray(data)) {
+        const mapped = data.map((fs: any) => {
+          const cls = classes.find(c => c._id === fs.classId._id);
+          return {
+            ...fs,
+            className: cls ? `${cls.grade} ${cls.section}` : "Unknown Class",
+          };
+        });
+        setFeeStructures(mapped);
+      } else {
+        setFeeStructures([]);
+      }
+    } catch (err) {
+      console.error("Error fetching fee structures:", err);
+    }
   };
+  if (classes.length > 0) fetchFeeStructures(); // Ensure classes are loaded first
+}, [classes]);
 
-  const lateSubmitters = calculateLateSubmitters();
 
-  // Filter fee records
-  const filteredRecords = feeRecords.filter(record => {
-    const matchesSearch = record.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         record.studentId.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGrade = selectedGrade === 'all' || record.grade === selectedGrade;
-    const matchesStatus = selectedStatus === 'all' || record.status === selectedStatus;
-    const matchesPeriod = selectedPeriod === 'all' || record.collectionPeriod === selectedPeriod;
-    
+  /** Calculated Statistics */
+  const totalCollected = feeRecords.reduce((sum, r) => sum + (r.paidAmount || 0), 0);
+  const totalPending = feeRecords.reduce((sum, r) => sum + (r.dueAmount || 0), 0);
+  const totalStudents = feeRecords.length;
+
+  const lateSubmitters = feeRecords.filter(r => {
+    if (!r || r.status === 'paid' || r.dueAmount === 0) return false;
+    const now = new Date();
+    if (selectedPeriod !== 'all' && selectedPeriod !== r.collectionPeriod) return false;
+    return r.nextDueDate ? new Date(r.nextDueDate) < now : r.status === 'overdue';
+  });
+
+  /** Filtered Fee Records */
+  const filteredRecords = feeRecords.filter(r => {
+    const matchesSearch =
+      r.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.studentId?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesGrade = selectedGrade === 'all' || r.grade === selectedGrade;
+    const matchesStatus = selectedStatus === 'all' || r.status === selectedStatus;
+    const matchesPeriod = selectedPeriod === 'all' || r.collectionPeriod === selectedPeriod;
     return matchesSearch && matchesGrade && matchesStatus && matchesPeriod;
   });
 
@@ -100,46 +183,46 @@ export const FeesManagement = () => {
       default: return 'outline';
     }
   };
-
-  const exportData = () => {
-    toast({
-      title: "Export Started",
-      description: "Fee report is being generated...",
-    });
-  };
+  const getClassName = (id: string) => {
+  const cls = classes.find(c => c._id === id);
+  return cls ? cls.name : "Unknown Class";
+};
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header & Actions */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-3xl font-bold">Fee Management</h1>
           <p className="text-muted-foreground">
             {isAdmin ? 'Manage student fees, payments, and track collections' : 'View fee status and payment history'}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={exportData} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={() => alert('Export feature')} variant="outline">
+            <Download className="w-4 h-4 mr-2" /> Export Report
           </Button>
+
           <Button onClick={() => setClassFeeStructureModalOpen(true)} variant="outline">
-            <Eye className="w-4 h-4 mr-2" />
-            View Fee Structure
+            <Eye className="w-4 h-4 mr-2" /> View Class Fee Structure
           </Button>
+
           {isAdmin && (
             <>
               <Button onClick={() => setCollectFeeModalOpen(true)} variant="outline">
-                <CreditCard className="w-4 h-4 mr-2" />
-                Collect Fee
+                <CreditCard className="w-4 h-4 mr-2" /> Collect Fee
               </Button>
               <Button onClick={() => setFeeStructureModalOpen(true)} variant="outline">
-                <Settings className="w-4 h-4 mr-2" />
-                Manage Structure
+                <Settings className="w-4 h-4 mr-2" /> Create Fee Structure
               </Button>
               <Button onClick={() => setAddFeeModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Fee
+                <Plus className="w-4 h-4 mr-2" /> Add Fee
+              </Button>
+              <Button
+                onClick={() => setViewFeeStructureModalOpen(true)}
+                variant="outline"
+              >
+                <Eye className="w-4 h-4 mr-2" /> View All Structures
               </Button>
             </>
           )}
@@ -149,29 +232,29 @@ export const FeesManagement = () => {
       {/* Statistics Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" style={{ color: 'hsl(var(--success))' }}>₹{totalCollected.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-600">₹{totalCollected.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">This academic year</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex justify-between pb-2">
             <CardTitle className="text-sm font-medium">Pending Amount</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">₹{totalPending.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-red-600">₹{totalPending.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Outstanding dues</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Students</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -182,67 +265,38 @@ export const FeesManagement = () => {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex justify-between pb-2">
             <CardTitle className="text-sm font-medium">Late Submitters</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" style={{ color: 'hsl(var(--warning))' }}>{lateSubmitters.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">{lateSubmitters.length}</div>
             <p className="text-xs text-muted-foreground">Students with overdue fees</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Late Submitters Alert */}
-      {isAdmin && lateSubmitters.length > 0 && (
-        <Card className="border-destructive bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Late Fee Submitters ({lateSubmitters.length})
-            </CardTitle>
-            <CardDescription>
-              Students with overdue fee payments that require immediate attention
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {lateSubmitters.slice(0, 10).map((record) => (
-                <Badge key={record.id} variant="destructive">
-                  {record.studentName} - ₹{record.dueAmount}
-                </Badge>
-              ))}
-              {lateSubmitters.length > 10 && (
-                <Badge variant="outline">+{lateSubmitters.length - 10} more</Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Filters */}
+      {/* Fee Records Table */}
       <Card>
         <CardHeader>
           <CardTitle>Fee Records</CardTitle>
           <CardDescription>Search and filter student fee information</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search by student name or ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search by student name or ID..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
+
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Period" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Period" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Periods</SelectItem>
                 <SelectItem value="monthly">Monthly</SelectItem>
@@ -250,31 +304,17 @@ export const FeesManagement = () => {
                 <SelectItem value="yearly">Yearly</SelectItem>
               </SelectContent>
             </Select>
+
             <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-              <SelectTrigger className="w-[140px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Grade" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[140px]"><Filter className="h-4 w-4 mr-2" /><SelectValue placeholder="Grade" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Grades</SelectItem>
-                <SelectItem value="1">Grade 1</SelectItem>
-                <SelectItem value="2">Grade 2</SelectItem>
-                <SelectItem value="3">Grade 3</SelectItem>
-                <SelectItem value="4">Grade 4</SelectItem>
-                <SelectItem value="5">Grade 5</SelectItem>
-                <SelectItem value="6">Grade 6</SelectItem>
-                <SelectItem value="7">Grade 7</SelectItem>
-                <SelectItem value="8">Grade 8</SelectItem>
-                <SelectItem value="9">Grade 9</SelectItem>
-                <SelectItem value="10">Grade 10</SelectItem>
-                <SelectItem value="11">Grade 11</SelectItem>
-                <SelectItem value="12">Grade 12</SelectItem>
+                {classes.map(cls => <SelectItem key={cls._id} value={cls.grade}>Grade {cls.grade}</SelectItem>)}
               </SelectContent>
             </Select>
+
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
@@ -285,8 +325,8 @@ export const FeesManagement = () => {
             </Select>
           </div>
 
-          {/* Fee Records Table */}
-          <div className="rounded-md border">
+          {/* Table */}
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -303,7 +343,7 @@ export const FeesManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecords.map((record) => (
+                {filteredRecords.map(record => (
                   <TableRow key={record.id}>
                     <TableCell>
                       <div>
@@ -313,42 +353,20 @@ export const FeesManagement = () => {
                     </TableCell>
                     <TableCell>{record.grade}</TableCell>
                     <TableCell>{record.academicYear}</TableCell>
+                    <TableCell><Badge variant="outline">{record.collectionPeriod}</Badge></TableCell>
+                    <TableCell>₹{record.totalFee?.toLocaleString() || 0}</TableCell>
+                    <TableCell className="text-emerald-600">₹{record.paidAmount?.toLocaleString() || 0}</TableCell>
+                    <TableCell className="text-red-600">₹{record.dueAmount?.toLocaleString() || 0}</TableCell>
+                    <TableCell><Badge variant={getStatusColor(record.status)}>{record.status}</Badge></TableCell>
+                    <TableCell>{record.nextDueDate ? new Date(record.nextDueDate).toLocaleDateString() : 'Not set'}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {record.collectionPeriod.charAt(0).toUpperCase() + record.collectionPeriod.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>₹{record.totalFee.toLocaleString()}</TableCell>
-                    <TableCell className="text-emerald-600">₹{record.paidAmount.toLocaleString()}</TableCell>
-                    <TableCell className="text-red-600">₹{record.dueAmount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(record.status)}>
-                        {record.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {record.nextDueDate 
-                        ? new Date(record.nextDueDate).toLocaleDateString()
-                        : 'Not set'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      {record.payments.length > 0 && (
+                      {record.payments?.length > 0 && (
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
                             const latestPayment = record.payments[record.payments.length - 1];
-                            setSelectedPaymentForReceipt({
-                              id: latestPayment.id,
-                              amount: latestPayment.amount,
-                              paymentDate: latestPayment.paymentDate,
-                              paymentMethod: latestPayment.paymentMethod,
-                              receiptNumber: latestPayment.receiptNumber,
-                              collectedBy: latestPayment.collectedBy,
-                              transactionId: latestPayment.transactionId,
-                              notes: latestPayment.notes
-                            });
+                            setSelectedPaymentForReceipt(latestPayment);
                             setPrintReceiptModalOpen(true);
                           }}
                         >
@@ -360,38 +378,34 @@ export const FeesManagement = () => {
                 ))}
               </TableBody>
             </Table>
+            {filteredRecords.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No fee records found matching your criteria.
+              </div>
+            )}
           </div>
-
-          {filteredRecords.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              No fee records found matching your criteria.
-            </div>
-          )}
         </CardContent>
       </Card>
 
       {/* Modals */}
       {isAdmin && (
         <>
-          <AddFeeModal 
-            isOpen={addFeeModalOpen}
-            onClose={() => setAddFeeModalOpen(false)}
-            students={students}
-          />
-          <CollectFeeModal 
-            isOpen={collectFeeModalOpen}
-            onClose={() => setCollectFeeModalOpen(false)}
-            students={students}
-          />
-          <FeeStructureModal 
-            isOpen={feeStructureModalOpen}
-            onClose={() => setFeeStructureModalOpen(false)}
-          />
+          <AddFeeModal isOpen={addFeeModalOpen} onClose={() => setAddFeeModalOpen(false)} students={students} />
+          <CollectFeeModal isOpen={collectFeeModalOpen} onClose={() => setCollectFeeModalOpen(false)} students={students} />
+          <FeeStructureModal isOpen={feeStructureModalOpen} onClose={() => setFeeStructureModalOpen(false)} />
         </>
       )}
-      <ClassFeeStructureModal 
+
+      <ClassFeeStructureModal
         isOpen={classFeeStructureModalOpen}
         onClose={() => setClassFeeStructureModalOpen(false)}
+        classes={classes}
+      />
+
+      <ViewFeeStructure
+        isOpen={viewFeeStructureModalOpen}
+        onClose={() => setViewFeeStructureModalOpen(false)}
+        structures={feeStructures} // Pass **all fee structures** here
       />
 
       <PrintReceiptModal
@@ -401,8 +415,8 @@ export const FeesManagement = () => {
           setSelectedPaymentForReceipt(null);
         }}
         payment={selectedPaymentForReceipt}
-        studentName={feeRecords.find(r => r.payments.some(p => p.id === selectedPaymentForReceipt?.id))?.studentName || ''}
-        className={feeRecords.find(r => r.payments.some(p => p.id === selectedPaymentForReceipt?.id))?.grade || ''}
+        studentName={feeRecords.find(r => r.payments?.some(p => p.id === selectedPaymentForReceipt?.id))?.studentName || ''}
+        className={feeRecords.find(r => r.payments?.some(p => p.id === selectedPaymentForReceipt?.id))?.grade || ''}
       />
     </div>
   );

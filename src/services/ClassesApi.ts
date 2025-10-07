@@ -20,3 +20,26 @@ export const getAllClasses = async () => {
     throw error;
   }
 };
+
+
+export const createClass = async (classData: { grade: string; section: string }) => {
+  try {
+    const token = localStorage.getItem("token"); // token stored after login
+
+    const res = await axios.post(
+      `${API_BASE_URL}/class/create`,
+      classData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // verify token in backend
+        },
+        withCredentials: true, // optional, if you use cookies
+      }
+    );
+
+    return res.data; // returns { success, message, class }
+  } catch (error: any) {
+    throw error.response?.data || { error: "Something went wrong" };
+  }
+};
+

@@ -4,13 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useCreateClassMutation } from '@/store/api/classesApi';
+import { createClass } from '@/services/ClassesApi';
 import { ClassFormData } from '@/types';
 
 const classSchema = z.object({
@@ -24,25 +23,16 @@ const classSchema = z.object({
   subjects: z.array(z.string()).min(1, 'Select at least one subject'),
 });
 
+const availableSubjects = ['Math', 'Science', 'English', 'History', 'Geography', 'Physics', 'Chemistry', 'Biology'];
+
 interface CreateClassFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-const availableSubjects = [
-  'Math',
-  'Science',
-  'English',
-  'History',
-  'Geography',
-  'Physics',
-  'Chemistry',
-  'Biology',
-];
-
 export const CreateClassForm = ({ onSuccess, onCancel }: CreateClassFormProps) => {
   const { toast } = useToast();
-  const [createClass, { isLoading }] = useCreateClassMutation();
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<ClassFormData>({
     resolver: zodResolver(classSchema),
@@ -59,13 +49,16 @@ export const CreateClassForm = ({ onSuccess, onCancel }: CreateClassFormProps) =
   });
 
   const onSubmit = async (data: ClassFormData) => {
+    setLoading(true);
     try {
-      await createClass(data).unwrap();
-      toast({ title: 'Success', description: 'Class created successfully!' });
+      const res = await createClass(data);
+      toast({ title: 'Success', description: res.message });
       form.reset();
       onSuccess?.();
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to create class.', variant: 'destructive' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to create class', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,7 +70,6 @@ export const CreateClassForm = ({ onSuccess, onCancel }: CreateClassFormProps) =
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -99,16 +91,12 @@ export const CreateClassForm = ({ onSuccess, onCancel }: CreateClassFormProps) =
                   <FormItem>
                     <FormLabel>Grade</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select grade" />
-                        </SelectTrigger>
-                      </FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select grade" />
+                      </SelectTrigger>
                       <SelectContent>
                         {Array.from({ length: 12 }, (_, i) => (
-                          <SelectItem key={i + 1} value={(i + 1).toString()}>
-                            Grade {i + 1}
-                          </SelectItem>
+                          <SelectItem key={i + 1} value={(i + 1).toString()}>Grade {i + 1}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -125,20 +113,7 @@ export const CreateClassForm = ({ onSuccess, onCancel }: CreateClassFormProps) =
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Section</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select section" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {['A', 'B', 'C', 'D', 'E'].map((sec) => (
-                          <SelectItem key={sec} value={sec}>
-                            Section {sec}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input placeholder="A/B/C" {...field} />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -149,9 +124,7 @@ export const CreateClassForm = ({ onSuccess, onCancel }: CreateClassFormProps) =
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Academic Year</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., 2025-2026" {...field} />
-                    </FormControl>
+                    <Input placeholder="e.g., 2025-2026" {...field} />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -179,7 +152,7 @@ export const CreateClassForm = ({ onSuccess, onCancel }: CreateClassFormProps) =
                   <FormItem>
                     <FormLabel>Room (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter room number" {...field} />
+                      <Input placeholder="Enter room" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -187,46 +160,35 @@ export const CreateClassForm = ({ onSuccess, onCancel }: CreateClassFormProps) =
               />
             </div>
 
-            {/* Subjects */}
-            <FormField
-              control={form.control}
-              name="subjects"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subjects</FormLabel>
-                  <div className="grid grid-cols-2 gap-2">
-                    {availableSubjects.map((subject) => (
-                      <label key={subject} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          value={subject}
-                          checked={field.value.includes(subject)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              field.onChange([...field.value, subject]);
-                            } else {
-                              field.onChange(field.value.filter((s) => s !== subject));
-                            }
-                          }}
-                        />
-                        {subject}
-                      </label>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div>
+              <Label>Subjects</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {availableSubjects.map(subject => (
+                  <label key={subject} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      value={subject}
+                      checked={form.getValues('subjects').includes(subject)}
+                      onChange={e => {
+                        const current = form.getValues('subjects');
+                        if (e.target.checked) {
+                          form.setValue('subjects', [...current, subject]);
+                        } else {
+                          form.setValue('subjects', current.filter(s => s !== subject));
+                        }
+                      }}
+                    />
+                    {subject}
+                  </label>
+                ))}
+              </div>
+              <FormMessage>{form.formState.errors.subjects?.message}</FormMessage>
+            </div>
 
-            {/* Form Actions */}
             <div className="flex justify-end gap-4 pt-6">
-              {onCancel && (
-                <Button type="button" variant="outline" onClick={onCancel}>
-                  Cancel
-                </Button>
-              )}
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {onCancel && <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>}
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Create Class
               </Button>
             </div>

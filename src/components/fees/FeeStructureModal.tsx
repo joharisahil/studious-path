@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -19,21 +19,39 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useUpdateFeeStructureMutation } from '@/store/api/feesApi';
-import { FeeStructure } from '@/types';
+import { createFeeStructure as apiCreateFeeStructure } from '@/services/FeesApi';
+import { getAllClasses } from '@/services/ClassesApi';
+
+const monthsList = [
+  'April','May','June','July','August','September','October','November','December','January','February','March'
+];
+
+const monthNumberMap: Record<string, number> = {
+  "April": 3, "May": 4, "June": 5, "July": 6, "August": 7, "September": 8,
+  "October": 9, "November": 10, "December": 11, "January": 0, "February": 1, "March": 2
+};
+
+const getMonthDates = (month: string, session: string) => {
+  const sessionStartYear = parseInt(session.split('-')[0]);
+  const monthNum = monthNumberMap[month];
+  const year = monthNum >= 3 ? sessionStartYear : sessionStartYear + 1;
+  const startDate = new Date(year, monthNum, 1).toISOString().split('T')[0];
+  const lastDay = new Date(year, monthNum + 1, 0).getDate();
+  const dueDate = new Date(year, monthNum, lastDay).toISOString().split('T')[0];
+  return { startDate, dueDate };
+};
 
 const feeStructureSchema = z.object({
-  grade: z.string().min(1, 'Grade is required'),
-  academicYear: z.string().min(1, 'Academic year is required'),
-  tuitionFee: z.string().min(1, 'Tuition fee is required'),
-  labFee: z.string().min(0, 'Lab fee must be 0 or greater'),
-  libraryFee: z.string().min(0, 'Library fee must be 0 or greater'),
-  transportFee: z.string().optional(),
-  hostelFee: z.string().optional(),
-  activityFee: z.string().optional(),
-  sportsFee: z.string().optional(),
+  classIds: z.array(z.string()).min(1, 'Select at least one class'),
+  session: z.string().min(1, 'Session is required'),
+  monthDetails: z.array(z.object({
+    month: z.string(),
+    startDate: z.string(),
+    dueDate: z.string(),
+    amount: z.number().min(1),
+    lateFine: z.number().min(0).optional(),
+  })).min(1, 'Select at least one month'),
 });
 
 type FeeStructureFormData = z.infer<typeof feeStructureSchema>;
@@ -41,95 +59,77 @@ type FeeStructureFormData = z.infer<typeof feeStructureSchema>;
 interface FeeStructureModalProps {
   isOpen: boolean;
   onClose: () => void;
-  feeStructure?: FeeStructure;
+  mode?: 'create' | 'view' | 'edit' | 'delete';
+  initialData?: FeeStructureFormData; // for edit/view
 }
 
-export const FeeStructureModal = ({ isOpen, onClose, feeStructure }: FeeStructureModalProps) => {
+export const FeeStructureModal = ({
+  isOpen,
+  onClose,
+  mode = 'create',
+  initialData,
+}: FeeStructureModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [classes, setClasses] = useState<{ _id: string; grade: string; section: string }[]>([]);
   const { toast } = useToast();
-  const [updateFeeStructure] = useUpdateFeeStructureMutation();
 
   const form = useForm<FeeStructureFormData>({
     resolver: zodResolver(feeStructureSchema),
-    defaultValues: {
-      grade: '',
-      academicYear: '2024-25',
-      tuitionFee: '',
-      labFee: '0',
-      libraryFee: '0',
-      transportFee: '0',
-      hostelFee: '0',
-      activityFee: '0',
-      sportsFee: '0',
+    defaultValues: initialData || {
+      classIds: [],
+      session: '2024-25',
+      monthDetails: [],
     },
   });
 
+  const { watch, reset } = form;
+  const sessionValue = watch('session');
+
   useEffect(() => {
-    if (feeStructure) {
-      form.reset({
-        grade: feeStructure.grade,
-        academicYear: feeStructure.academicYear,
-        tuitionFee: feeStructure.tuitionFee.toString(),
-        labFee: feeStructure.labFee.toString(),
-        libraryFee: feeStructure.libraryFee.toString(),
-        transportFee: feeStructure.transportFee?.toString() || '0',
-        hostelFee: feeStructure.hostelFee?.toString() || '0',
-        activityFee: feeStructure.otherFees?.['Activity Fee']?.toString() || '0',
-        sportsFee: feeStructure.otherFees?.['Sports Fee']?.toString() || '0',
-      });
-    }
-  }, [feeStructure, form]);
+    const fetchClasses = async () => {
+      try {
+        const data = await getAllClasses();
+        setClasses(data);
+      } catch (err) {
+        console.error("Failed to fetch classes:", err);
+      }
+    };
+    fetchClasses();
+  }, []);
+
+  const sortedClasses = [...classes].sort((a, b) => {
+    if (a.grade === b.grade) return a.section.localeCompare(b.section);
+    return parseInt(a.grade) - parseInt(b.grade);
+  });
+
+  const classesByGrade: Record<string, { _id: string; section: string }[]> = {};
+  sortedClasses.forEach(cls => {
+    if (!classesByGrade[cls.grade]) classesByGrade[cls.grade] = [];
+    classesByGrade[cls.grade].push({ _id: cls._id, section: cls.section });
+  });
 
   const onSubmit = async (data: FeeStructureFormData) => {
+    if (mode === 'view' || mode === 'delete') return; // no submit in view/delete
+
     setIsLoading(true);
-    
     try {
-      const otherFees: { [key: string]: number } = {};
-      if (data.activityFee && parseFloat(data.activityFee) > 0) {
-        otherFees['Activity Fee'] = parseFloat(data.activityFee);
-      }
-      if (data.sportsFee && parseFloat(data.sportsFee) > 0) {
-        otherFees['Sports Fee'] = parseFloat(data.sportsFee);
-      }
-
-      const totalFee = 
-        parseFloat(data.tuitionFee) +
-        parseFloat(data.labFee || '0') +
-        parseFloat(data.libraryFee || '0') +
-        parseFloat(data.transportFee || '0') +
-        parseFloat(data.hostelFee || '0') +
-        Object.values(otherFees).reduce((sum, fee) => sum + fee, 0);
-
-      const updatedStructure: Partial<FeeStructure> & { id: string } = {
-        id: feeStructure?.id || Date.now().toString(),
-        grade: data.grade,
-        academicYear: data.academicYear,
-        tuitionFee: parseFloat(data.tuitionFee),
-        labFee: parseFloat(data.labFee || '0'),
-        libraryFee: parseFloat(data.libraryFee || '0'),
-        transportFee: data.transportFee ? parseFloat(data.transportFee) : undefined,
-        hostelFee: data.hostelFee ? parseFloat(data.hostelFee) : undefined,
-        otherFees,
-        totalFee,
-        paymentSchedule: feeStructure?.paymentSchedule || [
-          { installment: 1, dueDate: '2024-04-15T00:00:00Z', amount: totalFee / 2, description: 'First Installment' },
-          { installment: 2, dueDate: '2024-08-15T00:00:00Z', amount: totalFee / 2, description: 'Second Installment' }
-        ],
-      };
-
-      await updateFeeStructure(updatedStructure).unwrap();
-      
-      toast({
-        title: "Fee Structure Updated",
-        description: `Fee structure for Grade ${data.grade} updated successfully. Total fee: ₹${totalFee.toLocaleString()}`,
+      await apiCreateFeeStructure({
+        classIds: data.classIds,
+        session: data.session,
+        monthDetails: data.monthDetails,
       });
-      
-      form.reset();
+
+      toast({
+        title: "Fee Structure Saved",
+        description: `Fee structure for ${data.classIds.length} classes in session ${data.session} saved successfully.`,
+      });
+
+      reset();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update fee structure. Please try again.",
+        description: error.error || "Failed to save fee structure. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -138,214 +138,221 @@ export const FeeStructureModal = ({ isOpen, onClose, feeStructure }: FeeStructur
   };
 
   const handleClose = () => {
-    form.reset();
+    reset(initialData || {
+      classIds: [],
+      session: '2024-25',
+      monthDetails: [],
+    });
     onClose();
   };
 
+  const isReadOnly = mode === 'view' || mode === 'delete';
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto p-6">
         <DialogHeader>
           <DialogTitle>
-            {feeStructure ? 'Edit Fee Structure' : 'Create Fee Structure'}
+            {mode === 'create' && 'Create Fee Structure'}
+            {mode === 'view' && 'View Fee Structure'}
+            {mode === 'edit' && 'Edit Fee Structure'}
+            {mode === 'delete' && 'Delete Fee Structure'}
           </DialogTitle>
           <DialogDescription>
-            {feeStructure ? 'Update the fee structure details.' : 'Create a new fee structure for a grade.'}
+            {mode === 'view' && 'View the details of the fee structure.'}
+            {mode === 'create' && 'Create a new fee structure for classes.'}
+            {mode === 'edit' && 'Edit the selected fee structure.'}
+            {mode === 'delete' && 'Confirm deletion of this fee structure.'}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="grade"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Grade</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select grade" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map((grade) => (
-                          <SelectItem key={grade} value={grade.toString()}>
-                            Grade {grade}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="academicYear"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Academic Year</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="2024-25">2024-25</SelectItem>
-                        <SelectItem value="2025-26">2025-26</SelectItem>
-                        <SelectItem value="2026-27">2026-27</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="tuitionFee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tuition Fee (₹)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="15000" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="labFee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lab Fee (₹)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="2000" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="libraryFee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Library Fee (₹)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="1000" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="transportFee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Transport Fee (₹)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="2500" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="hostelFee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hostel Fee (₹)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="5000" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="activityFee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Activity Fee (₹)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="500" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
+            {/* Classes */}
             <FormField
               control={form.control}
-              name="sportsFee"
+              name="classIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Sports Fee (₹)</FormLabel>
+                  <FormLabel>Classes</FormLabel>
+                  <div className="flex flex-col gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                    {Object.keys(classesByGrade).map(grade => (
+                      <div key={grade} className="flex gap-2">
+                        {classesByGrade[grade].map(cls => {
+                          const isChecked = field.value.includes(cls._id);
+                          return (
+                            <label key={cls._id} className="flex items-center gap-2 cursor-pointer border rounded px-2 py-1">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={e => {
+                                  if (!isReadOnly) {
+                                    if (e.target.checked) field.onChange([...field.value, cls._id]);
+                                    else field.onChange(field.value.filter(id => id !== cls._id));
+                                  }
+                                }}
+                                disabled={isReadOnly}
+                              />
+                              <span>{grade}-{cls.section}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Session */}
+            <FormField
+              control={form.control}
+              name="session"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Session</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="300" 
-                      {...field} 
-                    />
+                    <Input {...field} disabled={isReadOnly} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {/* Months */}
+            <FormField
+              control={form.control}
+              name="monthDetails"
+              render={({ field }) => {
+                const sortedSelectedMonths = [...field.value].sort(
+                  (a, b) => monthsList.indexOf(a.month) - monthsList.indexOf(b.month)
+                );
+
+                const handleMonthToggle = (month: string) => {
+                  if (isReadOnly) return;
+                  const existingIndex = field.value.findIndex(m => m.month === month);
+                  if (existingIndex === -1) {
+                    const { startDate, dueDate } = getMonthDates(month, sessionValue);
+                    field.onChange([...field.value, { month, startDate, dueDate, amount: 0, lateFine: 0 }]);
+                  } else {
+                    field.onChange(field.value.filter(m => m.month !== month));
+                  }
+                };
+
+                return (
+                  <FormItem>
+                    <FormLabel>Collection Months</FormLabel>
+
+                    <div className="flex flex-wrap gap-3 mt-3">
+                      {monthsList.map(month => {
+                        const isSelected = field.value.some(m => m.month === month);
+                        return (
+                          <div
+                            key={month}
+                            onClick={() => handleMonthToggle(month)}
+                            className={`cursor-pointer border rounded-lg px-4 py-3 flex items-center justify-between min-w-[110px] hover:shadow-md transition-all
+                              ${isSelected ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-300'}`}
+                          >
+                            <span className="font-medium">{month}</span>
+                            <input type="checkbox" checked={isSelected} readOnly className="h-4 w-4 cursor-pointer" />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-1 gap-4">
+                      {sortedSelectedMonths.map((monthObj, index) => (
+                        <div key={monthObj.month} className="border rounded-lg p-4 bg-gray-50 shadow-sm">
+                          <h4 className="font-semibold mb-3">{monthObj.month}</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Controller
+                              control={form.control}
+                              name={`monthDetails.${index}.startDate`}
+                              render={({ field: startField }) => (
+                                <FormItem>
+                                  <FormLabel className="text-sm">Start Date</FormLabel>
+                                  <FormControl>
+                                    <Input type="date" {...startField} required className="text-sm" disabled={isReadOnly} />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <Controller
+                              control={form.control}
+                              name={`monthDetails.${index}.dueDate`}
+                              render={({ field: dueField }) => (
+                                <FormItem>
+                                  <FormLabel className="text-sm">Due Date</FormLabel>
+                                  <FormControl>
+                                    <Input type="date" {...dueField} required className="text-sm" disabled={isReadOnly} />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <Controller
+                              control={form.control}
+                              name={`monthDetails.${index}.amount`}
+                              render={({ field: amtField }) => (
+                                <FormItem>
+                                  <FormLabel className="text-sm">Amount (₹)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      placeholder="Amount"
+                                      {...amtField}
+                                      min={1}
+                                      className="text-sm"
+                                      disabled={isReadOnly}
+                                      onChange={e => !isReadOnly && amtField.onChange(Number(e.target.value) || '')}
+                                      onWheel={e => e.currentTarget.blur()}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <Controller
+                              control={form.control}
+                              name={`monthDetails.${index}.lateFine`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-sm">Late Fine (₹)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      placeholder="Late Fine"
+                                      min={0}
+                                      value={field.value ?? 0}
+                                      disabled={isReadOnly}
+                                      onChange={e => !isReadOnly && field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                                      onWheel={e => e.currentTarget.blur()}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Saving...' : feeStructure ? 'Update Structure' : 'Create Structure'}
-              </Button>
+              <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+              {(mode === 'create' || mode === 'edit') && (
+                <Button type="submit" disabled={isLoading}>{isLoading ? 'Saving...' : (mode === 'create' ? 'Create Structure' : 'Save Changes')}</Button>
+              )}
+              {mode === 'delete' && (
+                <Button type="button" variant="destructive" disabled={isLoading} onClick={() => { /* call delete API */ }}>Delete</Button>
+              )}
             </div>
+
           </form>
         </Form>
       </DialogContent>
