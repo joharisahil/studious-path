@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateFeeStructure, deleteFeeStructure } from "@/services/FeesApi";
-import { toast } from "react-hot-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface MonthDetail {
   month: string;

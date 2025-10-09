@@ -78,11 +78,19 @@ const StudentsManagement = () => {
   const studentsPerPage = 10;
 
   // Fetch students
-  const getStudentsFromAPI = async () => {
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+  });
+  const totalStudents = pagination.total || students.length;
+
+  const getStudentsFromAPI = async (page = 1) => {
     setIsLoading(true);
     try {
-      const data = await getAllStudents();
-      setStudents(data);
+      const data = await getAllStudents(page, 10);
+      setStudents(data.students);
+      setPagination(data.pagination);
     } catch (error) {
       toast({
         title: "Error",
@@ -94,9 +102,10 @@ const StudentsManagement = () => {
     }
   };
 
+  // Fetch when component mounts or when currentPage changes
   useEffect(() => {
-    getStudentsFromAPI();
-  }, []);
+    getStudentsFromAPI(currentPage);
+  }, [currentPage]);
 
   // Fetch classes
   useEffect(() => {
@@ -158,22 +167,27 @@ const StudentsManagement = () => {
   // Filtered students
   const filteredStudents = students.filter((student) => {
     const studentClassValue = `${student.grade}-${student.section}`;
-    const matchesGrade = selectedGrade === "all" || studentClassValue === selectedGrade;
-    const matchesStatus = selectedStatus === "all" || student.status === selectedStatus;
+    const matchesGrade =
+      selectedGrade === "all" || studentClassValue === selectedGrade;
+    const matchesStatus =
+      selectedStatus === "all" || student.status === selectedStatus;
     const matchesSearch =
-      (student.firstName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (student.lastName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (student.studentId ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (student.firstName ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.lastName ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.studentId ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       (student.email ?? "").toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesGrade && matchesStatus && matchesSearch;
   });
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / studentsPerPage));
-  const indexOfLastStudent = currentPage * studentsPerPage;
-  const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-  const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
+  // Use API pagination only
+  const currentStudents = filteredStudents;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -184,8 +198,12 @@ const StudentsManagement = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">Students Management</h1>
-          <p className="text-muted-foreground mt-1">Manage student profiles, enrollment, and academic records</p>
+          <h1 className="text-3xl font-bold text-gradient-primary">
+            Students Management
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Manage student profiles, enrollment, and academic records
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
@@ -201,38 +219,54 @@ const StudentsManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="kpi-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Students
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{students.length}</div>
+            <div className="text-2xl font-bold">{totalStudents}</div>
             <div className="text-sm text-muted-foreground">All enrollments</div>
           </CardContent>
         </Card>
         <Card className="kpi-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Students</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Active Students
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">{filteredStudents.filter((s) => s.status === "active").length}</div>
-            <div className="text-sm text-muted-foreground">Currently enrolled</div>
+            <div className="text-2xl font-bold text-success">
+              {filteredStudents.filter((s) => s.status === "active").length}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Currently enrolled
+            </div>
           </CardContent>
         </Card>
         <Card className="kpi-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">New This Month</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              New This Month
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">23</div>
-            <div className="text-sm text-muted-foreground">Recent enrollments</div>
+            <div className="text-sm text-muted-foreground">
+              Recent enrollments
+            </div>
           </CardContent>
         </Card>
         <Card className="kpi-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Graduation Rate</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Graduation Rate
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">94.2%</div>
-            <div className="text-sm text-muted-foreground">Last academic year</div>
+            <div className="text-sm text-muted-foreground">
+              Last academic year
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -241,7 +275,9 @@ const StudentsManagement = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Search & Filter Students</CardTitle>
-          <CardDescription>Find students by name, ID, grade, or status</CardDescription>
+          <CardDescription>
+            Find students by name, ID, grade, or status
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
@@ -256,17 +292,33 @@ const StudentsManagement = () => {
             </div>
 
             <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Select Grade" /></SelectTrigger>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select Grade" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Grades</SelectItem>
-                {loadingClasses ? <SelectItem value="loading" disabled>Loading...</SelectItem> :
-                 classList.length === 0 ? <SelectItem value="none" disabled>No classes found</SelectItem> :
-                 classList.map((cls, i) => <SelectItem key={i} value={`${cls.grade}-${cls.section}`}>Class {cls.grade} ({cls.section})</SelectItem>)}
+                {loadingClasses ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : classList.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No classes found
+                  </SelectItem>
+                ) : (
+                  classList.map((cls, i) => (
+                    <SelectItem key={i} value={`${cls.grade}-${cls.section}`}>
+                      Class {cls.grade} ({cls.section})
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
 
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Select Status" /></SelectTrigger>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
@@ -283,7 +335,11 @@ const StudentsManagement = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Students List</CardTitle>
-          <CardDescription>{isLoading ? "Loading..." : `Showing ${currentStudents.length} of ${filteredStudents.length} students`}</CardDescription>
+          <CardDescription>
+            {isLoading
+              ? "Loading..."
+              : `Showing page ${pagination.currentPage} of ${pagination.totalPages} — Total ${pagination.total} students`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -306,46 +362,85 @@ const StudentsManagement = () => {
               <TableBody>
                 {currentStudents.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.registrationNumber}</TableCell>
+                    <TableCell className="font-medium">
+                      {student.registrationNumber}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                           <span className="text-primary-foreground text-xs font-medium">
-                            {(student.firstName?.[0] ?? "") + (student.lastName?.[0] ?? "")}
+                            {(student.firstName?.[0] ?? "") +
+                              (student.lastName?.[0] ?? "")}
                           </span>
                         </div>
                         <div>
-                          <div className="font-medium">{student.firstName} {student.lastName}</div>
-                          <div className="text-sm text-muted-foreground">Section {student.section ?? "-"}</div>
+                          <div className="font-medium">
+                            {student.firstName} {student.lastName}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Section {student.section ?? "-"}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{student.email}</TableCell>
-                    <TableCell><Badge variant="outline">Grade {student.grade}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="outline">Grade {student.grade}</Badge>
+                    </TableCell>
                     <TableCell>{getStatusBadge(student.status)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : "-"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {student.dateOfBirth
+                        ? new Date(student.dateOfBirth).toLocaleDateString()
+                        : "-"}
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewStudent(student)}><Eye className="mr-2 h-4 w-4" /> View Details</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditStudent(student)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleViewStudent(student)}
+                          >
+                            <Eye className="mr-2 h-4 w-4" /> View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleEditStudent(student)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onSelect={(e) => e.preventDefault()}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              </DropdownMenuItem>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Student</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Delete Student
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete {student.firstName} {student.lastName}? This action cannot be undone.
+                                  Are you sure you want to delete{" "}
+                                  {student.firstName} {student.lastName}? This
+                                  action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteStudent(student.id!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleDeleteStudent(student.id!)
+                                  }
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -360,32 +455,71 @@ const StudentsManagement = () => {
 
           {filteredStudents.length === 0 && !isLoading && (
             <div className="text-center py-8">
-              <div className="text-muted-foreground mb-2">No students found</div>
-              <div className="text-sm text-muted-foreground">Try adjusting your search terms or filters</div>
+              <div className="text-muted-foreground mb-2">
+                No students found
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Try adjusting your search terms or filters
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
-          <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} disabled={currentPage === 1}>Previous</Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <Button key={page} size="sm" variant={currentPage === page ? "default" : "outline"} onClick={() => setCurrentPage(page)}>
-              {page}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            Page {pagination.currentPage} of {pagination.totalPages} — Total:{" "}
+            {pagination.total} students
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={pagination.currentPage === 1}
+            >
+              Previous
             </Button>
-          ))}
-          <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>Next</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage((prev) =>
+                  Math.min(pagination.totalPages, prev + 1)
+                )
+              }
+              disabled={pagination.currentPage === pagination.totalPages}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Modals */}
-      <CreateStudentModal open={createModalOpen} onOpenChange={setCreateModalOpen} onSuccess={getStudentsFromAPI} />
+      <CreateStudentModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onSuccess={getStudentsFromAPI}
+      />
       {selectedStudent && (
         <>
-          <EditStudentModal open={editModalOpen} onOpenChange={setEditModalOpen} student={selectedStudent} onSuccess={() => { getStudentsFromAPI(); setSelectedStudent(null); }} />
-          <StudentDetailsModal open={detailsModalOpen} onOpenChange={setDetailsModalOpen} student={selectedStudent} />
+          <EditStudentModal
+            open={editModalOpen}
+            onOpenChange={setEditModalOpen}
+            student={selectedStudent}
+            onSuccess={() => {
+              getStudentsFromAPI();
+              setSelectedStudent(null);
+            }}
+          />
+          <StudentDetailsModal
+            open={detailsModalOpen}
+            onOpenChange={setDetailsModalOpen}
+            student={selectedStudent}
+          />
         </>
       )}
     </div>
