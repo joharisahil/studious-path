@@ -15,13 +15,18 @@ const AdminDashboard = () => {
 
   const [studentsCount, setStudentsCount] = useState<number>(0); // ✅ state for total students
     const [teachersCount, setTeachersCount] = useState<number>(0);
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        total: 0,
+      });
 
   // Fetch students on mount
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         const students = await getAllStudents();
-        setStudentsCount(students.length); // ✅ update count
+        setStudentsCount(pagination.total); // ✅ update count
       } catch (error) {
         console.error("Failed to fetch students", error);
       }
