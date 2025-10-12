@@ -54,7 +54,7 @@ const MessageCenter = () => {
   // ✅ Fetch data on mount
   useEffect(() => {
     if (recipientType === "students") {
-      getAllStudents().then(setStudents).catch(console.error);
+      getAllStudents().then((data)=>setStudents(data.students)).catch(console.error);
     }
     if (recipientType === "teachers") {
       getAllTeachers().then(setTeachers).catch(console.error);

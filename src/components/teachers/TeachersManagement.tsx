@@ -53,9 +53,9 @@ import { useToast } from '@/hooks/use-toast';
 
 import CreateTeacherModal from './CreateTeacherModal';
 import EditTeacherModal from './EditTeacherModal';
-import TeacherDetailsModal from './TeacherDetailsModal'; // ✅ bring back details modal
+import TeacherDetailsModal from './TeacherDetailsModal';
 import { TeacherFormData } from '@/types';
-import { getAllTeachers } from '@/services/GetTotalTeachers';
+import { getAllTeachers } from '@/services/TeachersApi';
 
 const TeachersManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,31 +63,40 @@ const TeachersManagement = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] =
-    useState<TeacherFormData | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<TeacherFormData | null>(null);
   const [teachers, setTeachers] = useState<TeacherFormData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { toast } = useToast();
 
-  // 🔹 Fetch teachers
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllTeachers();
-        setTeachers(data);
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to fetch teachers.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // 🔹 Fetch teachers from API
+  const fetchTeachers = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllTeachers();
+      // Ensure we always have an array and each teacher has _id
+      const formattedTeachers = (data.teachers || []).map((t) => ({
+        ...t,
+        _id: t._id || t.id, // fallback if _id missing
+        experienceYears: t.experienceYears || 0,
+        firstName: t.firstName || '',
+        lastName: t.lastName || '',
+        registrationNumber: t.registrationNumber || t.teacherId || '',
+        status: t.status || 'active',
+      }));
+      setTeachers(formattedTeachers);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch teachers.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTeachers();
   }, []);
 
@@ -103,8 +112,7 @@ const TeachersManagement = () => {
 
   const handleDeleteTeacher = async (teacherId: string) => {
     try {
-      // 👉 Add delete API later
-      setTeachers((prev) => prev.filter((t) => t.id !== teacherId));
+      setTeachers((prev) => prev.filter((t) => t._id !== teacherId));
       toast({
         title: 'Teacher Deleted',
         description: 'Teacher has been successfully deleted.',
@@ -119,19 +127,12 @@ const TeachersManagement = () => {
   };
 
   // 🔎 Search + Filter
-  const filteredTeachers = teachers.filter((teacher: TeacherFormData) => {
-    const matchesStatus =
-      selectedStatus === 'all' || teacher.status === selectedStatus;
-
-    const firstName = teacher.firstName || '';
-    const lastName = teacher.lastName || '';
-    const email = teacher.email || '';
-
+  const filteredTeachers = teachers.filter((teacher) => {
+    const matchesStatus = selectedStatus === 'all' || teacher.status === selectedStatus;
     const matchesSearch =
-      firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      email.toLowerCase().includes(searchTerm.toLowerCase());
-
+      (teacher.firstName + ' ' + teacher.lastName + ' ' + teacher.email)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -140,113 +141,92 @@ const TeachersManagement = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">
-            Teachers Management
-          </h1>
+          <h1 className="text-3xl font-bold text-gradient-primary">Teachers Management</h1>
           <p className="text-muted-foreground mt-1">
             Manage teacher profiles, details, and status
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
-            <Download className="w-4 h-4" />
-            Export
+            <Download className="w-4 h-4" /> Export
           </Button>
           <Button onClick={() => setCreateModalOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Teacher
+            <Plus className="w-4 h-4" /> Add Teacher
           </Button>
         </div>
       </div>
 
-         {/* Teacher Stats Cards */}
-<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-  {/* Total Teachers */}
-  <Card className="kpi-card">
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground">
-        Total Teachers
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{teachers.length}</div>
-      <div className="text-sm text-muted-foreground">All registered</div>
-    </CardContent>
-  </Card>
+      {/* Teacher Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="kpi-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Teachers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{teachers.length}</div>
+            <div className="text-sm text-muted-foreground">All registered</div>
+          </CardContent>
+        </Card>
+        <Card className="kpi-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Junior Teachers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-warning">
+              {teachers.filter((t) => t.experienceYears <= 5).length}
+            </div>
+            <div className="text-sm text-muted-foreground">0–5 years of experience</div>
+          </CardContent>
+        </Card>
+        <Card className="kpi-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Senior Teachers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-success">
+              {teachers.filter((t) => t.experienceYears > 5).length}
+            </div>
+            <div className="text-sm text-muted-foreground">6+ years of experience</div>
+          </CardContent>
+        </Card>
+        <Card className="kpi-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Avg. Experience
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {String(
+                Math.round(
+                  teachers.reduce((sum, t) => sum + t.experienceYears, 0) /
+                  (teachers.length || 1)
+                )
+              ).padStart(2, '0')} yrs
+            </div>
+            <div className="text-sm text-muted-foreground">Across all teachers</div>
+          </CardContent>
+        </Card>
+      </div>
 
-  {/* Teachers with 0–5 years of experience */}
-  <Card className="kpi-card">
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground">
-        Junior Teachers
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-warning">
-        {teachers.filter((t) => t.experienceYears <= 5).length}
-      </div>
-      <div className="text-sm text-muted-foreground">
-        0–5 years of experience
-      </div>
-    </CardContent>
-  </Card>
-
-  {/* Teachers with 6+ years of experience */}
-  <Card className="kpi-card">
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground">
-        Senior Teachers
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-success">
-        {teachers.filter((t) => t.experienceYears > 5).length}
-      </div>
-      <div className="text-sm text-muted-foreground">
-        6+ years of experience
-      </div>
-    </CardContent>
-  </Card>
-
-  {/* Average Experience */}
-  <Card className="kpi-card">
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground">
-        Avg. Experience
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">
-        {String(
-          Math.round(
-            teachers.reduce((sum, t) => sum + t.experienceYears, 0) /
-              (teachers.length || 1)
-          )
-        ).padStart(2, "0")}{" "}
-        yrs
-      </div>
-      <div className="text-sm text-muted-foreground">
-        Across all teachers
-      </div>
-    </CardContent>
-  </Card>
-</div>
-
-      
       {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Search & Filter Teachers</CardTitle>
-          <CardDescription>
-            Find teachers by name, ID, or status
-          </CardDescription>
+          <CardDescription>Find teachers by name, email, or status</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Search by name, email, or teacher ID..."
+                placeholder="Search by name, email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -281,8 +261,12 @@ const TeachersManagement = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-muted-foreground">Loading teachers...</div>
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              Loading teachers...
+            </div>
+          ) : filteredTeachers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No teachers found. Try adjusting your search terms or filters.
             </div>
           ) : (
             <Table>
@@ -297,11 +281,9 @@ const TeachersManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTeachers.map((teacher: TeacherFormData) => (
-                  <TableRow key={teacher.id}>
-                    <TableCell className="font-medium">
-                      {teacher.registrationNumber}
-                    </TableCell>
+                {filteredTeachers.map((teacher) => (
+                  <TableRow key={teacher._id}>
+                    <TableCell className="font-medium">{teacher.registrationNumber}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -310,23 +292,14 @@ const TeachersManagement = () => {
                             {(teacher.lastName?.[0] || '').toUpperCase()}
                           </span>
                         </div>
-                        <div>
-                          <div className="font-medium">
-                            {teacher.firstName} {teacher.lastName}
-                          </div>
-                          {/* <div className="text-sm text-muted-foreground">
-                            {teacher.phone || 'N/A'}
-                          </div> */}
+                        <div className="font-medium">
+                          {teacher.firstName} {teacher.lastName}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">{teacher.email}</TableCell>
+                    <TableCell>{teacher.email}</TableCell>
                     <TableCell>{teacher.phone || '-'}</TableCell>
-                    <TableCell className="text-sm">
-  {String(teacher.experienceYears || 0).padStart(2, "0")}
-</TableCell>
-
-                    {/* <TableCell className="text-sm">{teacher.experienceYears || 0}</TableCell> */}
+                    <TableCell>{String(teacher.experienceYears).padStart(2, '0')}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -335,45 +308,29 @@ const TeachersManagement = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleViewTeacher(teacher)}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
+                          <DropdownMenuItem onClick={() => handleViewTeacher(teacher)}>
+                            <Eye className="mr-2 h-4 w-4" /> View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleEditTeacher(teacher)}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
+                          <DropdownMenuItem onClick={() => handleEditTeacher(teacher)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onSelect={(e) => e.preventDefault()}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={e => e.preventDefault()}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
                               </DropdownMenuItem>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Delete Teacher
-                                </AlertDialogTitle>
+                                <AlertDialogTitle>Delete Teacher</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete{' '}
-                                  {teacher.firstName} {teacher.lastName}? This
-                                  action cannot be undone.
+                                  Are you sure you want to delete {teacher.firstName} {teacher.lastName}? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() =>
-                                    handleDeleteTeacher(teacher.registrationNumber)
-                                  }
+                                  onClick={() => handleDeleteTeacher(teacher._id!)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete
@@ -389,17 +346,6 @@ const TeachersManagement = () => {
               </TableBody>
             </Table>
           )}
-
-          {filteredTeachers.length === 0 && !loading && (
-            <div className="text-center py-8">
-              <div className="text-muted-foreground mb-2">
-                No teachers found
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Try adjusting your search terms or filters
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -407,39 +353,37 @@ const TeachersManagement = () => {
       <CreateTeacherModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={() => {
-          getAllTeachers().then(setTeachers);
-        }}
+        onSuccess={fetchTeachers} // ✅ refresh teachers
       />
 
-      {selectedTeacher && (
-        <>
-          <EditTeacherModal
-            open={editModalOpen}
-            onOpenChange={setEditModalOpen}
-            teacher={selectedTeacher}
-            onSuccess={() => {
-              getAllTeachers().then(setTeachers);
-              setSelectedTeacher(null);
-            }}
-          />
+{selectedTeacher && (
+  <>
+    <EditTeacherModal
+      open={editModalOpen}
+      onOpenChange={setEditModalOpen}
+      teacher={selectedTeacher}
+      onSuccess={() => {
+        fetchTeachers();
+        setSelectedTeacher(null);
+      }}
+    />
 
-          <TeacherDetailsModal
-            open={detailsModalOpen}
-            onOpenChange={setDetailsModalOpen}
-            teacher={{
-              ...selectedTeacher,
-              id: selectedTeacher.id!,
-              teacherId: selectedTeacher.teacherId || '',
-              registrationNumber: selectedTeacher.registrationNumber || selectedTeacher.teacherId || '',
-              userId: selectedTeacher.userId || '',
-              status: selectedTeacher.status || 'active',
-              createdAt: selectedTeacher.createdAt || new Date().toISOString(),
-              updatedAt: selectedTeacher.updatedAt || new Date().toISOString(),
-            }}
-          />
-        </>
-      )}
+    <TeacherDetailsModal
+      open={detailsModalOpen}
+      onOpenChange={setDetailsModalOpen}
+      teacher={{
+        ...selectedTeacher,
+        id: selectedTeacher._id || selectedTeacher.id || '', // ensure id
+        registrationNumber: selectedTeacher.registrationNumber || selectedTeacher.teacherId || '',
+        userId: selectedTeacher.userId || '',
+        status: selectedTeacher.status || 'active',
+        createdAt: selectedTeacher.createdAt || new Date().toISOString(),
+        updatedAt: selectedTeacher.updatedAt || new Date().toISOString(),
+      }}
+    />
+  </>
+)}
+
     </div>
   );
 };

@@ -1,10 +1,29 @@
 import axios from "axios";
 import API_BASE_URL from "@/config/api";
+import { TeacherFormData } from "@/types";
 
-export const getAllTeachers = async () => {
+export const getAllTeachers = async (page = 1, limit = 10): Promise<{
+  teachers: TeacherFormData[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    total: number;
+  };
+}> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/teachers/getall`);
-    return response.data.teachers;
+    const token = localStorage.getItem("token");
+    const response = await axios.get(`${API_BASE_URL}/teachers/getall`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // required for verifyToken
+        },
+        withCredentials: true, // keep if you also rely on cookies
+      }
+    );
+    return {
+      teachers: response.data.teachers,
+      pagination: response.data.pagination,
+    };
   } catch (error: any) {
     console.error("Error fetching teachers:", error);
     throw error;

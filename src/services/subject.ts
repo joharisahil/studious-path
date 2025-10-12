@@ -14,41 +14,72 @@ const getAuthHeaders = () => {
   };
 };
 
-/* ==========================================================
-   SUBJECT APIs — MATCHING YOUR BACKEND CONTROLLER EXACTLY
-   ========================================================== */
+export interface CreateSubjectData {
+  name: string;
+  code?: string;
+  classIds: string[];       // allow multiple classes
+  teacherIds?: string[];    // optional multiple teachers
+}
 
-// 🔹 Create Subject
-export const createSubject = async (data: { name: string; code?: string }) => {
+export interface SubjectResponse {
+  success: boolean;
+  message: string;
+  subject: {
+    _id: string;
+    name: string;
+    code: string;
+    admin: string;
+    classes: string[];
+    teachers: string[];
+  };
+}
+
+export const createSubject = async (data: CreateSubjectData): Promise<SubjectResponse> => {
   try {
+    // prepare payload cleanly
     const payload = {
       name: data.name.trim(),
-      code: data.code?.trim() || null,
+      code: data.code?.trim() || undefined,
+      classIds: data.classIds,
+      teacherIds: data.teacherIds || [],
     };
 
-    const response = await axios.post(
+    const response = await axios.post<SubjectResponse>(
       `${API_BASE_URL}/subject/create`,
       payload,
       getAuthHeaders()
     );
+
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { message: error.message || "Failed to create subject" };
+    // centralized, user-friendly error handling
+    console.error("Create Subject Error:", error);
+    const errMsg =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to create subject";
+    throw new Error(errMsg);
   }
 };
 
 // 🔹 Get All Subjects (paginated)
-export const getSubjects = async (params?: { page?: number; limit?: number }) => {
+export const getSubjects = async (params?: { page?: number; limit?: number }): Promise<{ subjects: SubjectResponse['subject'][]; pagination: any }> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/subject/all`, {
       ...getAuthHeaders(),
       params,
     });
-    return response.data; // { success, subjects, pagination }
+
+    return {
+      subjects: response.data.subjects || [],
+      pagination: response.data.pagination || { currentPage: 1, totalPages: 1, total: 0 }
+    };
   } catch (error: any) {
     throw error.response?.data || { message: "Failed to fetch subjects" };
   }
 };
+
 
 // 🔹 Delete Subject by ID
 export const deleteSubject = async (subjectId: string) => {
@@ -64,7 +95,7 @@ export const deleteSubject = async (subjectId: string) => {
 };
 
 
-// ✅ GET all teachers
+//✅ GET all teachers
 export const getAllTeachers = async () => {
   try {
     // Make sure the endpoint points to /teachers/getall
