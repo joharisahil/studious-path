@@ -40,7 +40,7 @@ const AdminDashboard = () => {
     const fetchTeachers = async () => {
       try {
         const teachers = await getAllTeachers();
-        setTeachersCount(teachers.length); // ✅ update teachers count
+        setTeachersCount(teachers.pagination.total); //  update teachers count
       } catch (error) {
         console.error('Failed to fetch teachers', error);
       }
