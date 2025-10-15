@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 interface PendingReceiptModalProps {
@@ -7,11 +12,17 @@ interface PendingReceiptModalProps {
   payment: any | null; // can be a FeeRecord
 }
 
-export const PendingReceiptModal = ({ isOpen, onClose, payment }: PendingReceiptModalProps) => {
+export const PendingReceiptModal = ({
+  isOpen,
+  onClose,
+  payment,
+}: PendingReceiptModalProps) => {
   if (!payment) return null;
 
   // Determine next pending installment
-  const nextPending = payment.installments?.find((inst: any) => inst.status !== 'Paid');
+  const nextPending = payment.installments?.find(
+    (inst: any) => inst.status !== "Paid"
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -21,14 +32,28 @@ export const PendingReceiptModal = ({ isOpen, onClose, payment }: PendingReceipt
         </DialogHeader>
 
         <div className="space-y-2 text-sm">
-          <p><strong>Student:</strong> {payment.studentName}</p>
-          <p><strong>Class:</strong> {payment.grade}</p>
+          <p>
+            <strong>Student:</strong> {payment.studentName}
+          </p>
+          <p>
+            <strong>Class:</strong> {payment.grade}
+          </p>
           {nextPending ? (
             <>
-              <p><strong>Month:</strong> {nextPending.month}</p>
-              <p><strong>Due Date:</strong> {new Date(nextPending.dueDate).toLocaleDateString()}</p>
-              <p><strong>Amount Due:</strong> ₹{nextPending.amount?.toLocaleString()}</p>
-              <p><strong>Status:</strong> {nextPending.status}</p>
+              <p>
+                <strong>Month:</strong> {nextPending.month}
+              </p>
+              <p>
+                <strong>Due Date:</strong>{" "}
+                {new Date(nextPending.dueDate).toLocaleDateString()}
+              </p>
+              <p>
+                <strong>Amount Due:</strong> ₹
+                {nextPending.amount?.toLocaleString()}
+              </p>
+              <p>
+                <strong>Status:</strong> {nextPending.status}
+              </p>
             </>
           ) : (
             <p>All fees are up to date.</p>

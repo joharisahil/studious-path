@@ -1,8 +1,20 @@
 import { FC, useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import axios from "axios";
 import { updateFeeStructure } from "@/services/FeesApi"; // your API function
 import { toast } from "react-hot-toast"; // optional for notifications
@@ -29,7 +41,12 @@ interface Props {
   onSave: (updatedMonthDetails: MonthDetail[]) => void;
 }
 
-export const EditFeeStructureModal: FC<Props> = ({ isOpen, onClose, structure, onSave }) => {
+export const EditFeeStructureModal: FC<Props> = ({
+  isOpen,
+  onClose,
+  structure,
+  onSave,
+}) => {
   const [monthDetails, setMonthDetails] = useState<MonthDetail[]>([]);
 
   useEffect(() => {
@@ -38,13 +55,16 @@ export const EditFeeStructureModal: FC<Props> = ({ isOpen, onClose, structure, o
     }
   }, [structure]);
 
-const handleChange = (index: number, field: keyof MonthDetail, value: string | number) => {
-  const updated = [...monthDetails];
-  (updated[index] as Record<string, any>)[field] =
-    field === "amount" || field === "lateFine" ? Number(value) : value;
-  setMonthDetails(updated);
-};
-
+  const handleChange = (
+    index: number,
+    field: keyof MonthDetail,
+    value: string | number
+  ) => {
+    const updated = [...monthDetails];
+    (updated[index] as Record<string, any>)[field] =
+      field === "amount" || field === "lateFine" ? Number(value) : value;
+    setMonthDetails(updated);
+  };
 
   const handleSave = async () => {
     try {
@@ -62,7 +82,9 @@ const handleChange = (index: number, field: keyof MonthDetail, value: string | n
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Edit Fee Structure - {structure.classId.name || "Unknown Class"}</DialogTitle>
+          <DialogTitle>
+            Edit Fee Structure - {structure.classId.name || "Unknown Class"}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="overflow-x-auto mt-4">
@@ -80,34 +102,47 @@ const handleChange = (index: number, field: keyof MonthDetail, value: string | n
               {monthDetails.map((m, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
-                    <Input value={m.month} onChange={(e) => handleChange(idx, "month", e.target.value)} />
+                    <Input
+                      value={m.month}
+                      onChange={(e) =>
+                        handleChange(idx, "month", e.target.value)
+                      }
+                    />
                   </TableCell>
                   <TableCell>
                     <Input
                       type="date"
                       value={new Date(m.startDate).toISOString().slice(0, 10)}
-                      onChange={(e) => handleChange(idx, "startDate", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(idx, "startDate", e.target.value)
+                      }
                     />
                   </TableCell>
                   <TableCell>
                     <Input
                       type="date"
                       value={new Date(m.dueDate).toISOString().slice(0, 10)}
-                      onChange={(e) => handleChange(idx, "dueDate", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(idx, "dueDate", e.target.value)
+                      }
                     />
                   </TableCell>
                   <TableCell>
                     <Input
                       type="number"
                       value={m.amount}
-                      onChange={(e) => handleChange(idx, "amount", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(idx, "amount", e.target.value)
+                      }
                     />
                   </TableCell>
                   <TableCell>
                     <Input
                       type="number"
                       value={m.lateFine}
-                      onChange={(e) => handleChange(idx, "lateFine", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(idx, "lateFine", e.target.value)
+                      }
                     />
                   </TableCell>
                 </TableRow>

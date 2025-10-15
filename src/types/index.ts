@@ -15,7 +15,7 @@ export interface User {
   updatedAt: string;
 }
 
-export type UserRole = 'admin' | 'teacher' | 'student' | 'parent';
+export type UserRole = "admin" | "teacher" | "student" | "parent";
 
 export interface AuthState {
   user: User | null;
@@ -55,7 +55,7 @@ export interface Student {
   emergencyContact?: {
     name: string;
     phone: string;
-    relation: string; 
+    relation: string;
   };
 
   // Father info
@@ -84,17 +84,13 @@ export interface Student {
 
   // Status
   status?: "active" | "inactive" | "graduated" | "suspended";
-  
+
   // System fields
   userId?: string;
   avatar?: string;
   createdAt?: string;
   updatedAt?: string;
 }
-
-  
-
-
 
 export interface SubjectGrade {
   subjectId: string;
@@ -104,7 +100,7 @@ export interface SubjectGrade {
   totalMarks: number;
 }
 
-// Staff/Teacher Management  
+// Staff/Teacher Management
 export interface Staff {
   id: string;
   userId: string;
@@ -121,7 +117,7 @@ export interface Staff {
   qualifications: string[];
   address: string;
   avatar?: string;
-  status: 'active' | 'inactive' | 'terminated';
+  status: "active" | "inactive" | "terminated";
   createdAt: string;
   updatedAt: string;
 }
@@ -142,7 +138,7 @@ export interface Course {
   resources: CourseResource[];
   enrolledStudents: string[];
   schedule: ClassSchedule[];
-  status: 'active' | 'inactive' | 'completed';
+  status: "active" | "inactive" | "completed";
   createdAt: string;
   updatedAt: string;
 }
@@ -150,7 +146,7 @@ export interface Course {
 export interface CourseResource {
   id: string;
   title: string;
-  type: 'pdf' | 'video' | 'link' | 'document';
+  type: "pdf" | "video" | "link" | "document";
   url: string;
   uploadedAt: string;
   uploadedBy: string;
@@ -163,7 +159,6 @@ export interface ClassSchedule {
   endTime: string;
   room: string;
 }
-
 
 // Teacher Management
 export interface Teacher {
@@ -184,7 +179,7 @@ export interface Teacher {
   position: string;
   salary: number;
   avatar?: string;
-  status: 'active' | 'inactive' | 'terminated' | 'retired';
+  status: "active" | "inactive" | "terminated" | "retired";
   emergencyContact: {
     name: string;
     phone: string;
@@ -197,14 +192,13 @@ export interface Teacher {
   updatedAt: string;
 }
 
-
 // Attendance Management
 export interface AttendanceRecord {
   id: string;
   studentId: string;
   courseId: string;
   date: string;
-  status: 'present' | 'absent' | 'late' | 'excused';
+  status: "present" | "absent" | "late" | "excused";
   markedBy: string;
   notes?: string;
   createdAt: string;
@@ -229,7 +223,7 @@ export interface Assignment {
   teacherId: string;
   dueDate: string;
   totalMarks: number;
-  type: 'assignment' | 'quiz' | 'project' | 'exam';
+  type: "assignment" | "quiz" | "project" | "exam";
   instructions: string;
   resources: string[];
   submissions: AssignmentSubmission[];
@@ -248,7 +242,7 @@ export interface AssignmentSubmission {
   notes?: string;
   grade?: number;
   feedback?: string;
-  status: 'submitted' | 'graded' | 'late' | 'missing';
+  status: "submitted" | "graded" | "late" | "missing";
 }
 
 export interface Exam {
@@ -265,9 +259,9 @@ export interface Exam {
   passingMarks: number;
   room: string;
   instructions: string;
-  type: 'midterm' | 'final' | 'quiz' | 'practical';
+  type: "midterm" | "final" | "quiz" | "practical";
   results: ExamResult[];
-  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  status: "scheduled" | "ongoing" | "completed" | "cancelled";
   createdAt: string;
 }
 
@@ -313,10 +307,10 @@ export interface FeeRecord {
   totalFee: number;
   paidAmount: number;
   dueAmount: number;
-  collectionPeriod: 'monthly' | 'quarterly' | 'yearly';
+  collectionPeriod: "monthly" | "quarterly" | "yearly";
   nextDueDate?: string;
   payments: Payment[];
-  status: 'paid' | 'partial' | 'overdue' | 'pending';
+  status: "paid" | "partial" | "overdue" | "pending";
   lastPaymentDate?: string;
 }
 
@@ -324,7 +318,7 @@ export interface Payment {
   id: string;
   amount: number;
   paymentDate: string;
-  paymentMethod:  "Cash" | "Card" | "Bank Transfer" | "Online";
+  paymentMethod: "Cash" | "Card" | "Bank Transfer" | "Online";
   transactionId?: string;
   receiptNumber: string;
   collectedBy: string;
@@ -354,7 +348,7 @@ export interface Announcement {
   authorId: string;
   authorName: string;
   targetAudience: UserRole[];
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: "low" | "medium" | "high" | "urgent";
   attachments: string[];
   isActive: boolean;
   createdAt: string;
@@ -426,7 +420,7 @@ export interface DashboardKPIs {
 
 export interface Activity {
   id: string;
-  type: 'enrollment' | 'payment' | 'grade' | 'attendance' | 'assignment';
+  type: "enrollment" | "payment" | "grade" | "attendance" | "assignment";
   description: string;
   userId: string;
   userName: string;
@@ -470,10 +464,10 @@ export interface StudentFormData {
   rollNumber?: string;
   admissionDate?: string;
   classId?: string;
-  
+
   // Guardian info
   guardian?: Guardian; // Make optional for compatibility
-  
+
   // Parent info (for compatibility with EditStudentModal)
   fatherName?: string;
   fatherEmail?: string;
@@ -487,28 +481,11 @@ export interface StudentFormData {
 
 export interface ScholarshipFormData {
   studentId: string;
-  type: string;       // e.g., 'Merit' | 'Need-Based'
+  type: string; // e.g., 'Merit' | 'Need-Based'
   amount: number;
   notes?: string;
   academicYear?: string;
 }
-
-
-
-// export interface TeacherFormData {
-//   firstName: string;
-//   lastName: string;
-//   email: string;
-//   phone: string;
-//   dateOfBirth: string;
-//   address: string;
-//   subject: string;
-//   qualification: string;
-//   yearsOfExperience: string;
-//   emergencyContactName: string;
-//   emergencyContactPhone: string;
-//   emergencyContactRelation: string;
-// }
 
 export interface CourseFormData {
   name: string;
@@ -527,7 +504,7 @@ export interface AssignmentFormData {
   courseId: string;
   dueDate: string;
   totalMarks: number;
-  type: Assignment['type'];
+  type: Assignment["type"];
   instructions: string;
 }
 
@@ -546,7 +523,7 @@ export interface Class {
   currentStrength: number;
   room?: string;
   schedule: ClassSchedule[];
-  status: 'active' | 'inactive' | 'archived';
+  status: "active" | "inactive" | "archived";
   createdAt: string;
   updatedAt: string;
 }
@@ -583,7 +560,7 @@ export interface Subject {
   description: string;
   department: string;
   credits: number;
-  type: 'core' | 'elective' | 'practical' | 'theory';
+  type: "core" | "elective" | "practical" | "theory";
   grade: string;
   teacherId?: string;
   teacherName?: string;
@@ -607,7 +584,7 @@ export interface SubjectFormData {
   description: string;
   department: string;
   credits: number;
-  type: Subject['type'];
+  type: Subject["type"];
   grade: string;
   syllabus: string[];
   prerequisites: string[];
@@ -616,7 +593,7 @@ export interface SubjectFormData {
 export interface AssignTeacherData {
   subjectId: string;
   teacherId: string;
-  classSchedule?: Subject['classSchedule'];
+  classSchedule?: Subject["classSchedule"];
 }
 
 // Timetable Management
@@ -684,7 +661,12 @@ export interface FindFreeTeachersData {
   day: string;
   period: number;
 }
-export type TeacherStatus = "active" | "inactive" | "terminated" | "retired" | "onLeave";
+export type TeacherStatus =
+  | "active"
+  | "inactive"
+  | "terminated"
+  | "retired"
+  | "onLeave";
 
 export interface TeacherFormData {
   // Optional for update, required for creation
@@ -712,7 +694,7 @@ export interface TeacherFormData {
   // Arrays
   subjectSpecialization: string[]; // from form: [subject]
   subjects?: string[]; // Add this alias for backward compatibility
-  qualifications: string[];        // from form: [qualification]
+  qualifications: string[]; // from form: [qualification]
 
   // Experience
   yearsOfExperience: number; // convert string from form to number
@@ -733,15 +715,3 @@ export interface TeacherFormData {
   createdAt?: string;
   updatedAt?: string;
 }
-
-// export interface Teacher extends TeacherFormData {
-//   id: string;
-//   teacherId: string;
-//   userId: string;
-//   status: 'active' | 'inactive' | 'terminated' | 'retired';
-//   createdAt: string;
-//   updatedAt: string;
-// }
-
-
-

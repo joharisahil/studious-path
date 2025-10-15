@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -16,22 +16,31 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { Student } from '@/types';
-import { applyScholarship as applyScholarshipApi, getStudentFee } from '@/services/FeesApi';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Student } from "@/types";
+import {
+  applyScholarship as applyScholarshipApi,
+  getStudentFee,
+} from "@/services/FeesApi";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 const scholarshipSchema = z.object({
-  studentId: z.string().min(1, 'Please enter registration number'),
-  name: z.string().min(1, 'Scholarship name is required'),
-  type: z.enum(['full', 'half', 'custom']),
+  studentId: z.string().min(1, "Please enter registration number"),
+  name: z.string().min(1, "Scholarship name is required"),
+  type: z.enum(["full", "half", "custom"]),
   value: z.number().min(0).optional(),
-  valueType: z.enum(['fixed', 'percentage']).optional(),
-  period: z.enum(['yearly', 'monthly']),
+  valueType: z.enum(["fixed", "percentage"]).optional(),
+  period: z.enum(["yearly", "monthly"]),
   months: z.array(z.string()).optional(),
 });
 
@@ -42,48 +51,60 @@ interface ApplyScholarshipModalProps {
   onClose: () => void;
 }
 
-export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModalProps) => {
+export const ApplyScholarshipModal = ({
+  isOpen,
+  onClose,
+}: ApplyScholarshipModalProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [studentFee, setStudentFee] = useState<any>(null);
-  const [selectedStudentData, setSelectedStudentData] = useState<Partial<Student> | null>(null);
+  const [selectedStudentData, setSelectedStudentData] =
+    useState<Partial<Student> | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const form = useForm<ScholarshipFormData>({
     resolver: zodResolver(scholarshipSchema),
     defaultValues: {
-      studentId: '',
-      name: '',
-      type: 'full',
+      studentId: "",
+      name: "",
+      type: "full",
       value: 0,
-      valueType: 'fixed',
-      period: 'yearly',
+      valueType: "fixed",
+      period: "yearly",
       months: [],
     },
   });
 
-  const registrationNumber = form.watch('studentId');
-  const selectedType = form.watch('type');
-  const selectedPeriod = form.watch('period');
+  const registrationNumber = form.watch("studentId");
+  const selectedType = form.watch("type");
+  const selectedPeriod = form.watch("period");
 
   const fetchStudentFee = async (regNum: string) => {
-    if (!regNum) return toast({ title: 'Error', description: 'Enter registration number', variant: 'destructive' });
+    if (!regNum)
+      return toast({
+        title: "Error",
+        description: "Enter registration number",
+        variant: "destructive",
+      });
     setIsLoading(true);
     try {
       const data = await getStudentFee(regNum);
-      if (!data || data.length === 0) throw new Error('Student fee not found');
+      if (!data || data.length === 0) throw new Error("Student fee not found");
       const feeRecord = Array.isArray(data) ? data[0] : data;
       setStudentFee(feeRecord);
       setSelectedStudentData({
-        firstName: feeRecord.studentName.split(' ')[0],
-        lastName: feeRecord.studentName.split(' ')[1] || '',
+        firstName: feeRecord.studentName.split(" ")[0],
+        lastName: feeRecord.studentName.split(" ")[1] || "",
         registrationNumber: feeRecord.registrationNumber,
       });
     } catch (err: any) {
       toast({
-        title: 'Error',
-        description: err.response?.data?.error || err.message || 'Failed to fetch student fee',
-        variant: 'destructive',
+        title: "Error",
+        description:
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to fetch student fee",
+        variant: "destructive",
       });
       setStudentFee(null);
       setSelectedStudentData(null);
@@ -97,21 +118,26 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
     setShowConfirm(false);
     setIsLoading(true);
     try {
-      await applyScholarshipApi(selectedStudentData.registrationNumber, form.getValues());
+      await applyScholarshipApi(
+        selectedStudentData.registrationNumber,
+        form.getValues()
+      );
       toast({
-        title: 'Scholarship Applied',
-        description: `${form.getValues('name')} applied successfully to ${selectedStudentData.firstName} ${selectedStudentData.lastName}`,
+        title: "Scholarship Applied",
+        description: `${form.getValues("name")} applied successfully to ${
+          selectedStudentData.firstName
+        } ${selectedStudentData.lastName}`,
       });
       form.reset();
       setStudentFee(null);
       setSelectedStudentData(null);
       onClose();
     } catch (err: any) {
-      console.error('ApplyScholarship API error:', err);
+      console.error("ApplyScholarship API error:", err);
       toast({
-        title: 'Error',
-        description: err.response?.data?.error || 'Failed to apply scholarship',
-        variant: 'destructive',
+        title: "Error",
+        description: err.response?.data?.error || "Failed to apply scholarship",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -129,31 +155,62 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[1000px] flex flex-col md:flex-row gap-6 p-6 bg-gray-50 rounded-lg shadow-lg">
-
         {/* Left Box: Student Details */}
         {studentFee && selectedStudentData && (
           <div className="w-full md:w-1/3 bg-white rounded-xl shadow-lg p-5 flex flex-col gap-4 border border-gray-100">
-            <h3 className="text-2xl font-bold mb-2 border-b pb-2 text-indigo-600">Student Info</h3>
+            <h3 className="text-2xl font-bold mb-2 border-b pb-2 text-indigo-600">
+              Student Info
+            </h3>
             <div className="space-y-1">
-              <p><span className="font-semibold">Name:</span> {selectedStudentData.firstName} {selectedStudentData.lastName}</p>
-              <p><span className="font-semibold">Registration:</span> {selectedStudentData.registrationNumber}</p>
-              <p><span className="font-semibold">Class:</span> {studentFee.className}</p>
-              <p><span className="font-semibold">Session:</span> {studentFee.session}</p>
-              <p><span className="font-semibold">Total Fee:</span> ₹{studentFee.totalAmount}</p>
-              <p><span className="font-semibold">Net Payable:</span> ₹{studentFee.netPayable}</p>
-              <p><span className="font-semibold">Balance:</span> ₹{studentFee.balance}</p>
+              <p>
+                <span className="font-semibold">Name:</span>{" "}
+                {selectedStudentData.firstName} {selectedStudentData.lastName}
+              </p>
+              <p>
+                <span className="font-semibold">Registration:</span>{" "}
+                {selectedStudentData.registrationNumber}
+              </p>
+              <p>
+                <span className="font-semibold">Class:</span>{" "}
+                {studentFee.className}
+              </p>
+              <p>
+                <span className="font-semibold">Session:</span>{" "}
+                {studentFee.session}
+              </p>
+              <p>
+                <span className="font-semibold">Total Fee:</span> ₹
+                {studentFee.totalAmount}
+              </p>
+              <p>
+                <span className="font-semibold">Net Payable:</span> ₹
+                {studentFee.netPayable}
+              </p>
+              <p>
+                <span className="font-semibold">Balance:</span> ₹
+                {studentFee.balance}
+              </p>
             </div>
 
             {/* Installments */}
             <div className="mt-4">
-              <span className="font-semibold text-indigo-600">Installments</span>
+              <span className="font-semibold text-indigo-600">
+                Installments
+              </span>
               <div className="mt-2 border rounded-md divide-y divide-gray-100">
                 {studentFee.installments.map((inst: any) => (
-                  <div key={inst.month} className="flex justify-between items-center px-3 py-2 hover:bg-gray-50">
+                  <div
+                    key={inst.month}
+                    className="flex justify-between items-center px-3 py-2 hover:bg-gray-50"
+                  >
                     <span className="font-medium">{inst.month}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-sm font-semibold ${
-                      inst.amount > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-sm font-semibold ${
+                        inst.amount > 0
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
                       ₹{inst.amount} ({inst.status})
                     </span>
                   </div>
@@ -164,12 +221,21 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
             {/* Scholarships */}
             {studentFee.scholarships.length > 0 && (
               <div className="mt-4">
-                <span className="font-semibold text-indigo-600">Scholarships Applied</span>
+                <span className="font-semibold text-indigo-600">
+                  Scholarships Applied
+                </span>
                 <ul className="mt-2 flex flex-col gap-2">
                   {studentFee.scholarships.map((sch: any) => (
-                    <li key={sch._id} className="flex justify-between items-center bg-blue-50 px-3 py-1 rounded-md shadow-sm hover:bg-blue-100">
-                      <span>{sch.name} ({sch.type})</span>
-                      <span className="text-gray-500 text-sm">{new Date(sch.appliedAt).toLocaleDateString()}</span>
+                    <li
+                      key={sch._id}
+                      className="flex justify-between items-center bg-blue-50 px-3 py-1 rounded-md shadow-sm hover:bg-blue-100"
+                    >
+                      <span>
+                        {sch.name} ({sch.type})
+                      </span>
+                      <span className="text-gray-500 text-sm">
+                        {new Date(sch.appliedAt).toLocaleDateString()}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -182,7 +248,6 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
         <div className="w-full md:w-2/3 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
           <Form {...form}>
             <form className="space-y-6">
-
               {/* Registration Number + Search */}
               <div className="flex gap-2 items-end">
                 <FormField
@@ -192,13 +257,20 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
                     <FormItem className="flex-1">
                       <FormLabel>Registration Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter registration number" {...field} />
+                        <Input
+                          placeholder="Enter registration number"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="button" className="mb-1" onClick={() => fetchStudentFee(form.getValues('studentId'))}>
+                <Button
+                  type="button"
+                  className="mb-1"
+                  onClick={() => fetchStudentFee(form.getValues("studentId"))}
+                >
                   Search
                 </Button>
               </div>
@@ -225,7 +297,10 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -243,7 +318,7 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
               />
 
               {/* Value & ValueType if custom */}
-              {selectedType === 'custom' && (
+              {selectedType === "custom" && (
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -264,7 +339,10 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Value Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue />
@@ -272,7 +350,9 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="fixed">Fixed</SelectItem>
-                            <SelectItem value="percentage">Percentage</SelectItem>
+                            <SelectItem value="percentage">
+                              Percentage
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -289,7 +369,10 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Period</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -306,14 +389,17 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
               />
 
               {/* Months if monthly */}
-              {selectedPeriod === 'monthly' && studentFee && (
+              {selectedPeriod === "monthly" && studentFee && (
                 <FormField
                   control={form.control}
                   name="months"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Select Months</FormLabel>
-                      <Select onValueChange={(val) => field.onChange([val])} defaultValue="">
+                      <Select
+                        onValueChange={(val) => field.onChange([val])}
+                        defaultValue=""
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select month" />
@@ -335,9 +421,15 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
 
               {/* Buttons */}
               <div className="flex justify-end gap-3 mt-2">
-                <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
-                <Button type="button" onClick={() => setShowConfirm(true)} disabled={!studentFee || isLoading}>
-                  {isLoading ? 'Applying...' : 'Apply Scholarship'}
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setShowConfirm(true)}
+                  disabled={!studentFee || isLoading}
+                >
+                  {isLoading ? "Applying..." : "Apply Scholarship"}
                 </Button>
               </div>
             </form>
@@ -352,11 +444,18 @@ export const ApplyScholarshipModal = ({ isOpen, onClose }: ApplyScholarshipModal
                 <AlertCircle className="w-12 h-12 text-red-500" />
                 <h3 className="text-xl font-semibold">Confirm Scholarship</h3>
                 <p>Are you sure you want to apply this scholarship to:</p>
-                <p className="font-medium text-lg">{selectedStudentData?.firstName} {selectedStudentData?.lastName}</p>
-                <p className="text-gray-500">Registration: {selectedStudentData?.registrationNumber}</p>
+                <p className="font-medium text-lg">
+                  {selectedStudentData?.firstName}{" "}
+                  {selectedStudentData?.lastName}
+                </p>
+                <p className="text-gray-500">
+                  Registration: {selectedStudentData?.registrationNumber}
+                </p>
               </div>
               <div className="flex justify-end gap-3 mt-5">
-                <Button variant="outline" onClick={() => setShowConfirm(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setShowConfirm(false)}>
+                  Cancel
+                </Button>
                 <Button onClick={handleApplyScholarship}>Yes, Apply</Button>
               </div>
             </div>

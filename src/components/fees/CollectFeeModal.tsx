@@ -56,6 +56,7 @@ interface CollectFeeFormData {
 export const CollectFeeModal = ({
   isOpen,
   onClose,
+  
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -94,7 +95,8 @@ export const CollectFeeModal = ({
   const selectedMonth = form.watch("month");
   const selectedPaymentMethod = form.watch("paymentMethod");
   const needsTransactionId =
-    selectedPaymentMethod === "Bank Transfer" || selectedPaymentMethod === "Online";
+    selectedPaymentMethod === "Bank Transfer" ||
+    selectedPaymentMethod === "Online";
 
   // Fetch student fee
   const fetchStudentFee = async () => {
@@ -114,7 +116,11 @@ export const CollectFeeModal = ({
           ...inst,
           amountPaid: totalPaid,
           status:
-            totalPaid >= inst.amount ? "Paid" : totalPaid > 0 ? "Partial" : "Pending",
+            totalPaid >= inst.amount
+              ? "Paid"
+              : totalPaid > 0
+              ? "Partial"
+              : "Pending",
         };
       });
 
@@ -136,7 +142,9 @@ export const CollectFeeModal = ({
   // Auto-fill amount on month change
   useEffect(() => {
     if (!studentFee || !selectedMonth) return;
-    const inst = studentFee.installments.find((i: any) => i.month === selectedMonth);
+    const inst = studentFee.installments.find(
+      (i: any) => i.month === selectedMonth
+    );
     form.setValue("amount", inst ? inst.amount - inst.amountPaid : 0);
   }, [selectedMonth, studentFee, form]);
 
@@ -154,17 +162,23 @@ export const CollectFeeModal = ({
         paymentDate: data.paymentDate,
       });
 
-      const updatedInstallments = res.feeRecord.installments.map((inst: any) => {
-        const totalPaid = res.feeRecord.payments
-          .filter((p: any) => p.month === inst.month)
-          .reduce((sum: number, p: any) => sum + p.amount, 0);
-        return {
-          ...inst,
-          amountPaid: totalPaid,
-          status:
-            totalPaid >= inst.amount ? "Paid" : totalPaid > 0 ? "Partial" : "Pending",
-        };
-      });
+      const updatedInstallments = res.feeRecord.installments.map(
+        (inst: any) => {
+          const totalPaid = res.feeRecord.payments
+            .filter((p: any) => p.month === inst.month)
+            .reduce((sum: number, p: any) => sum + p.amount, 0);
+          return {
+            ...inst,
+            amountPaid: totalPaid,
+            status:
+              totalPaid >= inst.amount
+                ? "Paid"
+                : totalPaid > 0
+                ? "Partial"
+                : "Pending",
+          };
+        }
+      );
 
       setStudentFee({ ...res.feeRecord, installments: updatedInstallments });
 
@@ -245,7 +259,8 @@ export const CollectFeeModal = ({
                 <strong>Class:</strong> {studentFee.className || "N/A"}
               </p>
               <p>
-                <strong>Registration:</strong> {studentFee.registrationNumber || "N/A"}
+                <strong>Registration:</strong>{" "}
+                {studentFee.registrationNumber || "N/A"}
               </p>
 
               <div className="mt-4">
@@ -265,7 +280,10 @@ export const CollectFeeModal = ({
                         hover:scale-105 hover:shadow-xl`}
                       onClick={() => form.setValue("month", inst.month)}
                     >
-                      {inst.month} — ₹{inst.amount - inst.amountPaid > 0 ? inst.amount - inst.amountPaid : 0}
+                      {inst.month} — ₹
+                      {inst.amount - inst.amountPaid > 0
+                        ? inst.amount - inst.amountPaid
+                        : 0}
                       {inst.status !== "Pending" ? ` (${inst.status})` : ""}
                     </div>
                   ))}
@@ -286,7 +304,9 @@ export const CollectFeeModal = ({
                     <FormControl>
                       <Select
                         value={form.getValues("month")}
-                        onValueChange={(val) => form.setValue("month", val as any)}
+                        onValueChange={(val) =>
+                          form.setValue("month", val as any)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select month" />
@@ -298,7 +318,11 @@ export const CollectFeeModal = ({
                               value={i.month}
                               disabled={i.status === "Paid"}
                             >
-                              {i.month} — ₹{i.amount - i.amountPaid > 0 ? i.amount - i.amountPaid : 0} due
+                              {i.month} — ₹
+                              {i.amount - i.amountPaid > 0
+                                ? i.amount - i.amountPaid
+                                : 0}{" "}
+                              due
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -335,7 +359,9 @@ export const CollectFeeModal = ({
                         <SelectContent>
                           <SelectItem value="Cash">Cash</SelectItem>
                           <SelectItem value="Card">Card</SelectItem>
-                          <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                          <SelectItem value="Bank Transfer">
+                            Bank Transfer
+                          </SelectItem>
                           <SelectItem value="Online">Online</SelectItem>
                         </SelectContent>
                       </Select>

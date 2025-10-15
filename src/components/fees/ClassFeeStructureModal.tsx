@@ -147,7 +147,10 @@ export const ClassFeeStructureModal: FC<Props> = ({
           ) : (
             <>
               {/* Class Selector */}
-              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+              <Select
+                value={selectedClassId}
+                onValueChange={setSelectedClassId}
+              >
                 <SelectTrigger className="w-60">
                   <SelectValue placeholder="Select Class" />
                 </SelectTrigger>
@@ -164,7 +167,9 @@ export const ClassFeeStructureModal: FC<Props> = ({
               {selectedClassId && (
                 <div className="mt-4">
                   {isLoading ? (
-                    <div className="text-center py-4">Loading fee structure...</div>
+                    <div className="text-center py-4">
+                      Loading fee structure...
+                    </div>
                   ) : error ? (
                     <div className="text-center py-4 text-red-600">{error}</div>
                   ) : feeStructure ? (

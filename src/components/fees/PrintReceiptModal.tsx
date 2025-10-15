@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { Payment } from "@/types";
 
@@ -11,7 +16,12 @@ interface PrintReceiptModalProps {
   receiptNumber: string;
   session: string;
   installment: string;
-  feeDetails?: { description: string; due: number; con?: number; paid: number }[];
+  feeDetails?: {
+    description: string;
+    due: number;
+    con?: number;
+    paid: number;
+  }[];
   payModeInfo: { mode: string; date: string; bank?: string; number?: string };
   note?: string;
 }
@@ -57,21 +67,42 @@ export function PrintReceiptModal({
           </div>
 
           {/* Fee Receipt Title */}
-          <div className="bg-gray-200 text-center py-1 font-semibold mb-4">FEE RECEIPT</div>
+          <div className="bg-gray-200 text-center py-1 font-semibold mb-4">
+            FEE RECEIPT
+          </div>
 
           {/* Student Info */}
           <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
             <div>
-              <p><strong>Receipt No :</strong> {receiptNumber}</p>
-              <p><strong>Adm No :</strong> {payment.transactionId || "N/A"}</p>
-              <p><strong>Name :</strong> {studentName}</p>
-              <p><strong>Installment :</strong> {installment}</p>
+              <p>
+                <strong>Receipt No :</strong> {receiptNumber}
+              </p>
+              <p>
+                <strong>Adm No :</strong> {payment.transactionId || "N/A"}
+              </p>
+              <p>
+                <strong>Name :</strong> {studentName}
+              </p>
+              <p>
+                <strong>Installment :</strong> {installment}
+              </p>
             </div>
             <div>
-              <p><strong>Date :</strong> {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : "N/A"}</p>
-              <p><strong>Session :</strong> {session}</p>
-              <p><strong>Class :</strong> {className}</p>
-              <p><strong>Counter No :</strong> DPS-RECEIPT</p>
+              <p>
+                <strong>Date :</strong>{" "}
+                {payment.paymentDate
+                  ? new Date(payment.paymentDate).toLocaleDateString()
+                  : "N/A"}
+              </p>
+              <p>
+                <strong>Session :</strong> {session}
+              </p>
+              <p>
+                <strong>Class :</strong> {className}
+              </p>
+              <p>
+                <strong>Counter No :</strong> DPS-RECEIPT
+              </p>
             </div>
           </div>
 
@@ -93,18 +124,28 @@ export function PrintReceiptModal({
                   <td className="border px-2 py-1">{f.description}</td>
                   <td className="border px-2 py-1 text-right">{f.due || 0}</td>
                   <td className="border px-2 py-1 text-right">{f.con || 0}</td>
-                  <td className="border px-2 py-1 text-right">{totalPaidToday}</td>
+                  <td className="border px-2 py-1 text-right">
+                    {totalPaidToday}
+                  </td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-gray-100 font-semibold">
               <tr>
-                <td colSpan={4} className="border px-2 py-1 text-right">Total Paid Today</td>
-                <td className="border px-2 py-1 text-right">{totalPaidToday}</td>
+                <td colSpan={4} className="border px-2 py-1 text-right">
+                  Total Paid Today
+                </td>
+                <td className="border px-2 py-1 text-right">
+                  {totalPaidToday}
+                </td>
               </tr>
               <tr>
-                <td colSpan={4} className="border px-2 py-1 text-right">Remaining Balance</td>
-                <td className="border px-2 py-1 text-right">{remainingBalance}</td>
+                <td colSpan={4} className="border px-2 py-1 text-right">
+                  Remaining Balance
+                </td>
+                <td className="border px-2 py-1 text-right">
+                  {remainingBalance}
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -112,11 +153,25 @@ export function PrintReceiptModal({
           {/* Pay Mode Information */}
           <div className="mb-4 text-sm">
             <h4 className="font-semibold">PAY MODE INFORMATION</h4>
-            <p><strong>Pay Mode:</strong> {payModeInfo.mode}</p>
-            <p><strong>Date:</strong> {payModeInfo.date}</p>
-            {payModeInfo.bank && <p><strong>Bank:</strong> {payModeInfo.bank}</p>}
-            {payModeInfo.number && <p><strong>Number:</strong> {payModeInfo.number}</p>}
-            <p><strong>Total Paid Today:</strong> {totalPaidToday}</p>
+            <p>
+              <strong>Pay Mode:</strong> {payModeInfo.mode}
+            </p>
+            <p>
+              <strong>Date:</strong> {payModeInfo.date}
+            </p>
+            {payModeInfo.bank && (
+              <p>
+                <strong>Bank:</strong> {payModeInfo.bank}
+              </p>
+            )}
+            {payModeInfo.number && (
+              <p>
+                <strong>Number:</strong> {payModeInfo.number}
+              </p>
+            )}
+            <p>
+              <strong>Total Paid Today:</strong> {totalPaidToday}
+            </p>
           </div>
 
           {/* Total in Words */}
@@ -126,12 +181,16 @@ export function PrintReceiptModal({
 
           {/* Note */}
           <div className="mb-4">
-            <p><strong>Note :</strong> {note}</p>
+            <p>
+              <strong>Note :</strong> {note}
+            </p>
           </div>
 
           {/* Footer */}
           <div className="text-center text-xs">
-            <p>This is a computer generated Receipt. Does not require signature.</p>
+            <p>
+              This is a computer generated Receipt. Does not require signature.
+            </p>
             <p className="mt-2 font-semibold">PARENT COPY</p>
           </div>
 
