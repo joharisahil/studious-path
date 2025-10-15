@@ -1,46 +1,138 @@
-import { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Download, MoreVertical, UserPlus, UserMinus } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useGetSubjectsQuery, useDeleteSubjectMutation, useUnassignTeacherMutation } from '@/store/api/subjectsApi';
-import { useToast } from '@/hooks/use-toast';
-import CreateSubjectModal from './CreateSubjectModal';
-import EditSubjectModal from './EditSubjectModal';
-import AssignTeacherModal from './AssignTeacherModal';
-import SubjectDetailsModal from './SubjectDetailsModal';
-import { Subject } from '@/types';
+import { useState, useEffect } from "react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  Download,
+  MoreVertical,
+  UserPlus,
+  UserMinus,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import CreateSubjectModal from "./CreateSubjectModal";
+import EditSubjectModal from "./EditSubjectModal";
+import AssignTeacherModal from "./AssignTeacherModal";
+import SubjectDetailsModal from "./SubjectDetailsModal";
+import { Subject } from "@/types";
+import { getSubjects } from "@/services/subject";
+import {
+  useDeleteSubjectMutation,
+  useUnassignTeacherMutation,
+} from "@/store/api/subjectsApi";
 
 const SubjectManagement = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
-  const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+  const [selectedGrade, setSelectedGrade] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  // const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
-  const { data: subjectsResponse, isLoading, refetch } = useGetSubjectsQuery({
-    page: currentPage,
-    limit: 10,
-    search: searchTerm,
-    department: selectedDepartment,
-    grade: selectedGrade,
-  });
   const [deleteSubject] = useDeleteSubjectMutation();
   const [unassignTeacher] = useUnassignTeacherMutation();
+  type SubjectWithExtras = Subject & { id: string; grade: string };
+  const [subjects, setSubjects] = useState<SubjectWithExtras[]>([]);
 
-  const subjects = subjectsResponse?.data?.data || [];
-  const totalPages = subjectsResponse?.data?.totalPages || 1;
-  const totalSubjects = subjectsResponse?.data?.totalCount || 0;
+  const departments = [
+    "Mathematics",
+    "Science",
+    "English",
+    "Computer Science",
+    "History",
+    "Geography",
+  ];
+  const grades = ["9", "10", "11", "12"];
+
+  const totalSubjects = subjects.length;
+  const totalPages = 1; // since pagination isn’t handled server-side here
+
+  // ✅ Fetch subjects from API manually
+  const fetchSubjects = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getSubjects();
+
+      if (Array.isArray(response.subjects)) {
+        // Transform the data
+        const subjectsWithExtras: SubjectWithExtras[] = response.subjects.map(
+          (sub) => ({
+            ...sub,
+            id: sub._id,
+            grade:
+              sub.classes
+                ?.map((c) => `${c.grade}${c.section ? "-" + c.section : ""}`)
+                .join(", ") || "-",
+          })
+        );
+
+        setSubjects(subjectsWithExtras);
+      } else {
+        setSubjects([]);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load subjects. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   const handleEditSubject = (subject: Subject) => {
     setSelectedSubject(subject);
@@ -62,9 +154,10 @@ const SubjectManagement = () => {
       await unassignTeacher(subjectId).unwrap();
       toast({
         title: "Teacher Unassigned",
-        description: "Teacher has been successfully unassigned from the subject.",
+        description:
+          "Teacher has been successfully unassigned from the subject.",
       });
-      refetch();
+      fetchSubjects();
     } catch (error) {
       toast({
         title: "Error",
@@ -81,7 +174,7 @@ const SubjectManagement = () => {
         title: "Subject Deleted",
         description: "Subject has been successfully deleted.",
       });
-      refetch();
+      fetchSubjects();
     } catch (error) {
       toast({
         title: "Error",
@@ -93,28 +186,27 @@ const SubjectManagement = () => {
 
   const getTypeBadge = (type: string) => {
     switch (type) {
-      case 'core':
+      case "core":
         return <Badge className="bg-primary/10 text-primary">Core</Badge>;
-      case 'elective':
+      case "elective":
         return <Badge className="bg-info/10 text-info">Elective</Badge>;
-      case 'practical':
+      case "practical":
         return <Badge className="bg-warning/10 text-warning">Practical</Badge>;
-      case 'theory':
+      case "theory":
         return <Badge variant="secondary">Theory</Badge>;
       default:
-        return <Badge variant="secondary">{type}</Badge>;
+        return <Badge variant="secondary">{type || "-"}</Badge>;
     }
   };
-
-  const departments = ['Mathematics', 'Science', 'English', 'Computer Science', 'History', 'Geography'];
-  const grades = ['9', '10', '11', '12'];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">Subject Management</h1>
+          <h1 className="text-3xl font-bold text-gradient-primary">
+            Subject Management
+          </h1>
           <p className="text-muted-foreground mt-1">
             Manage subjects, assignments, and teacher allocations
           </p>
@@ -131,7 +223,7 @@ const SubjectManagement = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="kpi-card">
           <CardHeader className="pb-2">
@@ -141,7 +233,9 @@ const SubjectManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalSubjects}</div>
-            <div className="text-sm text-muted-foreground">Across all departments</div>
+            <div className="text-sm text-muted-foreground">
+              Across all departments
+            </div>
           </CardContent>
         </Card>
 
@@ -153,9 +247,11 @@ const SubjectManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {subjects.filter(s => s.teacherId).length}
+              {subjects.filter((s) => s.teachers).length}
             </div>
-            <div className="text-sm text-muted-foreground">With assigned teachers</div>
+            <div className="text-sm text-muted-foreground">
+              With assigned teachers
+            </div>
           </CardContent>
         </Card>
 
@@ -167,9 +263,11 @@ const SubjectManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-warning">
-              {subjects.filter(s => !s.teacherId).length}
+              {subjects.filter((s) => !s.teachers).length}
             </div>
-            <div className="text-sm text-muted-foreground">Need teacher assignment</div>
+            <div className="text-sm text-muted-foreground">
+              Need teacher assignment
+            </div>
           </CardContent>
         </Card>
 
@@ -181,62 +279,19 @@ const SubjectManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{departments.length}</div>
-            <div className="text-sm text-muted-foreground">Active departments</div>
+            <div className="text-sm text-muted-foreground">
+              Active departments
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters and Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Search & Filter Subjects</CardTitle>
-          <CardDescription>Find subjects by name, code, department, or teacher</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search by subject name, code, or teacher..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select Department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map(dept => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select Grade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Grades</SelectItem>
-                {grades.map(grade => (
-                  <SelectItem key={grade} value={grade}>Grade {grade}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Subjects Table */}
+      {/* Table */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Subjects List</CardTitle>
           <CardDescription>
-            {isLoading ? 'Loading...' : `Showing ${subjects.length} of ${totalSubjects} subjects`}
+            {isLoading ? "Loading..." : `Showing ${subjects.length} subjects`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -250,49 +305,69 @@ const SubjectManagement = () => {
                 <TableRow>
                   <TableHead>Subject Code</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Type</TableHead>
+                  {/* <TableHead>Department</TableHead> */}
+                  {/* <TableHead>Type</TableHead> */}
                   <TableHead>Grade</TableHead>
-                  <TableHead>Credits</TableHead>
+                  {/* <TableHead>Credits</TableHead> */}
                   <TableHead>Teacher</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subjects.map((subject) => (
-                  <TableRow key={subject.id}>
-                    <TableCell className="font-medium">{subject.code}</TableCell>
+                  <TableRow key={subject._id}>
+                    <TableCell>{subject.code || "-"}</TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{subject.name}</div>
+                        <div className="font-medium">{subject.name || "-"}</div>
                         <div className="text-sm text-muted-foreground truncate max-w-48">
-                          {subject.description}
+                          {subject.description || "-"}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{subject.department}</TableCell>
-                    <TableCell>{getTypeBadge(subject.type)}</TableCell>
+
+                    {/* <TableCell>{subject.department || '-'}</TableCell> */}
+                    {/* <TableCell>{getTypeBadge(subject.type || '-')}</TableCell> */}
+
                     <TableCell>
                       <Badge variant="outline">Grade {subject.grade}</Badge>
                     </TableCell>
-                    <TableCell>{subject.credits}</TableCell>
+
+                    {/* <TableCell>{subject.credits || '-'}</TableCell> */}
+
                     <TableCell>
-                      {subject.teacherName ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                            <span className="text-primary-foreground text-xs font-medium">
-                              {subject.teacherName.split(' ').map(n => n[0]).join('')}
-                            </span>
-                          </div>
-                          <span className="text-sm">{subject.teacherName}</span>
+                      {subject.teachers && subject.teachers.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {subject.teachers.map((t, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                <span className="text-primary-foreground text-xs font-medium">
+                                  {`${t.firstName[0] || ""}${
+                                    t.lastName[0] || ""
+                                  }`}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm">{`${t.firstName} ${t.lastName}`}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {t.email}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ) : (
-                        <Badge variant="outline" className="text-muted-foreground">
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
                           Unassigned
                         </Badge>
                       )}
                     </TableCell>
+
                     <TableCell className="text-right">
+                      {/* Actions Dropdown (unchanged) */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -300,28 +375,36 @@ const SubjectManagement = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewSubject(subject)}>
+                          <DropdownMenuItem
+                            onClick={() => handleViewSubject(subject)}
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditSubject(subject)}>
+                          <DropdownMenuItem
+                            onClick={() => handleEditSubject(subject)}
+                          >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          {subject.teacherId ? (
-                            <DropdownMenuItem onClick={() => handleUnassignTeacher(subject.id)}>
+                          {subject.teachers ? (
+                            <DropdownMenuItem
+                              onClick={() => handleUnassignTeacher(subject._id)}
+                            >
                               <UserMinus className="mr-2 h-4 w-4" />
                               Unassign Teacher
                             </DropdownMenuItem>
                           ) : (
-                            <DropdownMenuItem onClick={() => handleAssignTeacher(subject)}>
+                            <DropdownMenuItem
+                              onClick={() => handleAssignTeacher(subject)}
+                            >
                               <UserPlus className="mr-2 h-4 w-4" />
                               Assign Teacher
                             </DropdownMenuItem>
                           )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onSelect={(e) => e.preventDefault()}
                               >
@@ -331,16 +414,21 @@ const SubjectManagement = () => {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Subject</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Delete Subject
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete {subject.name}? 
-                                  This action cannot be undone and will affect all related data.
+                                  Are you sure you want to delete{" "}
+                                  {subject.name || "this subject"}? This action
+                                  cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleDeleteSubject(subject.id)}
+                                  onClick={() =>
+                                    handleDeleteSubject(subject._id)
+                                  }
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete
@@ -357,51 +445,21 @@ const SubjectManagement = () => {
             </Table>
           )}
 
-          {subjects.length === 0 && !isLoading && (
-            <div className="text-center py-8">
-              <div className="text-muted-foreground mb-2">No subjects found</div>
-              <div className="text-sm text-muted-foreground">
-                Try adjusting your search terms or filters
-              </div>
+          {!isLoading && subjects.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              No subjects found
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Modals */}
-      <CreateSubjectModal 
-        open={createModalOpen} 
+      <CreateSubjectModal
+        open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={() => refetch()}
+        onSuccess={fetchSubjects}
       />
-      
+
       {selectedSubject && (
         <>
           <EditSubjectModal
@@ -409,7 +467,7 @@ const SubjectManagement = () => {
             onOpenChange={setEditModalOpen}
             subject={selectedSubject}
             onSuccess={() => {
-              refetch();
+              fetchSubjects();
               setSelectedSubject(null);
             }}
           />
@@ -418,7 +476,7 @@ const SubjectManagement = () => {
             onOpenChange={setAssignModalOpen}
             subject={selectedSubject}
             onSuccess={() => {
-              refetch();
+              fetchSubjects();
               setSelectedSubject(null);
             }}
           />

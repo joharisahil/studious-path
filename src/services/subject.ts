@@ -1,6 +1,7 @@
 
 import axios from "axios";
 import API_BASE_URL from "@/config/api";
+import { SubjectResponse } from "@/types";
 
 // 🔹 Helper to get auth headers with token
 const getAuthHeaders = () => {
@@ -19,19 +20,6 @@ export interface CreateSubjectData {
   code?: string;
   classIds: string[];       // allow multiple classes
   teacherIds?: string[];    // optional multiple teachers
-}
-
-export interface SubjectResponse {
-  success: boolean;
-  message: string;
-  subject: {
-    _id: string;
-    name: string;
-    code: string;
-    admin: string;
-    classes: string[];
-    teachers: string[];
-  };
 }
 
 export const createSubject = async (data: CreateSubjectData): Promise<SubjectResponse> => {
@@ -110,18 +98,32 @@ export const getAllTeachers = async () => {
 };
 
 
-// ✳️ UPDATE SUBJECT
-export const updateSubject = async (subjectId: string, updatedData: any) => {
+export const updateSubject = async (
+  subjectId: string,
+  payload: {
+    name?: string;
+    code?: string;
+    classId?: string;
+    teacherIds?: string[];
+  }
+) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/${subjectId}`, updatedData);
-    return response.data;
+    const response = await axios.put(
+      `${API_BASE_URL}/subject/update/${subjectId}`,
+      payload,
+      getAuthHeaders()
+    );
+
+    // Return the updated subject from backend response
+    return response.data.subject;
   } catch (error: any) {
     console.error("Error updating subject:", error);
-    throw error.response?.data || error;
+    throw (
+      error.response?.data ||
+      new Error("Failed to update subject. Please try again.")
+    );
   }
 };
-
-
 /* ==========================================================
    SUBJECT ASSIGNMENTS
    ========================================================== */
@@ -178,7 +180,7 @@ export const getSubjectsByTeacher = async (teacherId: string) => {
   try {
     const response = await axios.get(
       `${API_BASE_URL}/subject/teacher/${teacherId}`,
-      getAuthHeaders()
+      getAuthHeaders()      
     );
     return response.data; // { success, subjects }
   } catch (error: any) {

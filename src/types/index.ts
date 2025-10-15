@@ -167,6 +167,7 @@ export interface ClassSchedule {
 
 // Teacher Management
 export interface Teacher {
+  _id: Key;
   id: string;
   userId: string;
   teacherId: string; // like studentId
@@ -524,6 +525,7 @@ export interface AssignmentFormData {
 
 // Class Management
 export interface Class {
+  _id: string;
   id: string;
   name: string;
   grade: string;
@@ -567,29 +569,50 @@ export interface StudentUploadData {
 }
 
 // Subject Management
+
+export interface ClassRef {
+  _id: string;
+  grade: string;
+  section?: string;
+}
+
+export interface TeacherList {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
 export interface Subject {
-  id: string;
+  _id: string;
   name: string;
   code: string;
-  description: string;
-  department: string;
-  credits: number;
-  type: 'core' | 'elective' | 'practical' | 'theory';
-  grade: string;
-  teacherId?: string;
-  teacherName?: string;
+  admin: string;
+  classes: ClassRef[];
+  teachers: TeacherList[];
+  department?: string;
+  type?: string;
+  grade:string;
+  credits?: number;
+  description?: string;
   classSchedule?: {
     dayOfWeek: number; // 0-6 (Sunday-Saturday)
     startTime: string;
     endTime: string;
     room: string;
   }[];
-  syllabus: string[];
-  resources: string[];
-  prerequisites: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+
+}
+
+export interface SubjectResponse {
+  success: boolean;
+  message?: string;
+  subject?: Subject;
+  subjects?: Subject[];
+  pagination?: {
+    page: number;
+    totalPages: number;
+    totalResults: number;
+  };
 }
 
 export interface SubjectFormData {

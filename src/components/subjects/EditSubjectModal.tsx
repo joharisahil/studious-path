@@ -1,6 +1,7 @@
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import * as z from "zod";
 import {
   Dialog,
@@ -20,14 +21,30 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Subject } from "@/types";
+import { Subject, Class, Teacher } from "@/types";
 import { updateSubject as apiUpdateSubject } from "@/services/subject";
+import { getAllClasses } from "@/services/ClassesApi";
+import { getAllTeachers } from "@/services/TeachersApi";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
-// ✅ Validation Schema
 const formSchema = z.object({
-  name: z.string().min(2, "Subject name must be at least 2 characters long"),
+  name: z.string().min(2, "Subject name must be at least 2 characters"),
   code: z.string().optional(),
+  classId: z.string(),
+  teacherIds: z.array(z.string()),
 });
 
 interface EditSubjectModalProps {
@@ -45,32 +62,84 @@ const EditSubjectModal = ({
 }: EditSubjectModalProps) => {
   const { toast } = useToast();
 
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", code: "" },
+    defaultValues: {
+      name: "",
+      code: "",
+      classId: "",
+      teacherIds: [],
+    },
   });
 
-  // ✅ Pre-fill form when modal opens
+  // Fetch classes and teachers when modal opens
   useEffect(() => {
-    if (subject && open) {
+    if (open) {
+      fetchClasses();
+      fetchTeachers();
+    }
+  }, [open]);
+
+  const fetchClasses = async () => {
+    try {
+      const data = await getAllClasses();
+      setClasses(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch classes", error);
+      setClasses([]);
+    }
+  };
+
+  const fetchTeachers = async () => {
+    try {
+      const data = await getAllTeachers();
+
+      // Handle both: array or paginated structure
+      const teachersArray = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.teachers)
+        ? data.teachers
+        : [];
+
+      // Normalize and ensure _id exists
+      const normalizedTeachers: Teacher[] = teachersArray.map((t: any) => ({
+        ...t,
+        _id: t._id || t.id || "", // fallback to empty string for safety
+      }));
+
+      setTeachers(normalizedTeachers);
+    } catch (error) {
+      console.error("Failed to fetch teachers", error);
+      setTeachers([]);
+    }
+  };
+
+  // Pre-fill form when modal opens
+  useEffect(() => {
+    if (open && subject && teachers.length > 0) {
       form.reset({
         name: subject.name || "",
         code: subject.code || "",
+        classId: subject.classes?.[0]?._id || "",
+        teacherIds: subject.teachers?.map((t) => t._id) || [],
       });
     }
-  }, [subject, open, form]);
+  }, [open, subject, teachers]);
 
-  // ✅ Submit Handler
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    if (!subject || !subject.code) return;
-
+    if (!subject) return;
+    setIsSubmitting(true);
     try {
-      const payload = {
+      await apiUpdateSubject(subject._id, {
         name: data.name.trim(),
         code: data.code?.trim() || subject.code,
-      };
-
-      await apiUpdateSubject(subject.code, payload);
+        classId: data.classId,
+        teacherIds: data.teacherIds,
+      });
 
       toast({
         title: "Subject Updated",
@@ -81,14 +150,21 @@ const EditSubjectModal = ({
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error updating subject:", error);
+
+      // Extract backend message safely
+      const backendMessage =
+        error?.error || // from { error: "..." }
+        error?.message ||
+        error?.response?.data?.message ||
+        "Failed to update subject. Please try again.";
+
       toast({
         title: "Update Failed",
-        description:
-          error?.response?.data?.message ||
-          error.message ||
-          "Failed to update subject. Please try again.",
+        description: backendMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -137,6 +213,87 @@ const EditSubjectModal = ({
                 )}
               />
 
+              {/* Class Dropdown (single select) */}
+              <FormField
+                control={form.control}
+                name="classId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Class</FormLabel>
+                    <FormControl>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(val) => field.onChange(val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((c) => (
+                            <SelectItem
+                              key={c._id || c.id}
+                              value={c._id || c.id}
+                            >
+                              {c.grade} {c.section || ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Teacher Multi-Select */}
+
+              <FormField
+                control={form.control}
+                name="teacherIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Teachers</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                          disabled={teachers.length === 0}
+                        >
+                          {field.value.length > 0
+                            ? `${field.value.length} teacher(s) selected`
+                            : "Select teachers"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full max-h-60 overflow-y-auto">
+                        <div className="space-y-2">
+                          {teachers.map((t) => (
+                            <div
+                              key={t._id}
+                              className="flex items-center space-x-2"
+                            >
+                              <Checkbox
+                                checked={field.value.includes(t._id)}
+                                onCheckedChange={(checked) => {
+                                  const newValues = checked
+                                    ? [...field.value, t._id]
+                                    : field.value.filter((id) => id !== t._id);
+                                  field.onChange(newValues);
+                                }}
+                              />
+                              <label className="text-sm">
+                                {t.firstName} {t.lastName}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <DialogFooter className="flex justify-end gap-2">
                 <Button
                   type="button"
@@ -145,7 +302,16 @@ const EditSubjectModal = ({
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Update Subject</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Subject"
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </Form>

@@ -55,9 +55,9 @@ export const createTeacher = async (teacherData) => {
 export const updateTeacher = async (id: string, teacherData: any) => {
   try {
     const res = await axios.put(`${API_BASE_URL}/teachers/${id}`, teacherData, {
-      withCredentials: true, // ✅ if you are using cookies for auth
+      withCredentials: true, // if you are using cookies for auth
     });
-    return res.data;
+    return res.data; 
   } catch (error: any) {
     throw error.response?.data || { error: "Something went wrong" };
   }
