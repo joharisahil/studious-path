@@ -1,11 +1,14 @@
-import axios from 'axios';
-import { Student, StudentFormData } from '@/types';
+import axios from "axios";
+import { Student, StudentFormData } from "@/types";
 
 // Base API URL from Vite environment
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Fetch all students
-export const getAllStudents = async (page = 1, limit = 10): Promise<{
+export const getAllStudents = async (
+  page = 1,
+  limit = 10
+): Promise<{
   students: Student[];
   pagination: {
     currentPage: number;
@@ -30,7 +33,6 @@ export const getAllStudents = async (page = 1, limit = 10): Promise<{
     throw error;
   }
 };
-
 
 // Create a new student
 export const createStudentApi = async (studentData: StudentFormData) => {
@@ -86,11 +88,11 @@ export const updateStudentService = async (
   } catch (error: any) {
     // Optional: extract backend error message
     const msg =
-      error.response?.data?.error || "Failed to update student. Please try again.";
+      error.response?.data?.error ||
+      "Failed to update student. Please try again.";
     throw new Error(msg);
   }
 };
-
 
 interface Pagination {
   total: number;
