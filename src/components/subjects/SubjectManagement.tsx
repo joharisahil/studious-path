@@ -63,6 +63,7 @@ import {
   useDeleteSubjectMutation,
   useUnassignTeacherMutation,
 } from "@/store/api/subjectsApi";
+import { deleteSubject as apiDeleteSubject } from "@/services/subject";
 
 const SubjectManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -82,6 +83,7 @@ const SubjectManagement = () => {
   const [unassignTeacher] = useUnassignTeacherMutation();
   type SubjectWithExtras = Subject & { id: string; grade: string };
   const [subjects, setSubjects] = useState<SubjectWithExtras[]>([]);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const departments = [
     "Mathematics",
@@ -96,7 +98,7 @@ const SubjectManagement = () => {
   const totalSubjects = subjects.length;
   const totalPages = 1; // since pagination isn’t handled server-side here
 
-  // ✅ Fetch subjects from API manually
+  // Fetch subjects from API manually
   const fetchSubjects = async () => {
     try {
       setIsLoading(true);
@@ -169,21 +171,24 @@ const SubjectManagement = () => {
 
   const handleDeleteSubject = async (subjectId: string) => {
     try {
-      await deleteSubject(subjectId).unwrap();
+      setIsDeleting(subjectId); // start spinner
+      await apiDeleteSubject(subjectId);
       toast({
         title: "Subject Deleted",
         description: "Subject has been successfully deleted.",
       });
       fetchSubjects();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to delete subject. Please try again.",
+        description:
+          error?.message || "Failed to delete subject. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(null); // stop spinner
     }
   };
-
   const getTypeBadge = (type: string) => {
     switch (type) {
       case "core":
@@ -387,7 +392,7 @@ const SubjectManagement = () => {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          {subject.teachers ? (
+                          {/* {subject.teachers ? (
                             <DropdownMenuItem
                               onClick={() => handleUnassignTeacher(subject._id)}
                             >
@@ -401,17 +406,18 @@ const SubjectManagement = () => {
                               <UserPlus className="mr-2 h-4 w-4" />
                               Assign Teacher
                             </DropdownMenuItem>
-                          )}
+                          )} */}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onSelect={(e) => e.preventDefault()}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                {" "}
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete{" "}
                               </DropdownMenuItem>
                             </AlertDialogTrigger>
+
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
