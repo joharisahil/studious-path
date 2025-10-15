@@ -162,7 +162,7 @@ export interface ClassSchedule {
 
 // Teacher Management
 export interface Teacher {
-  _id: Key;
+  _id: string;
   id: string;
   userId: string;
   teacherId: string; // like studentId
