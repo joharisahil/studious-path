@@ -38,11 +38,13 @@ export const EditFeeStructureModal: FC<Props> = ({ isOpen, onClose, structure, o
     }
   }, [structure]);
 
-  const handleChange = (index: number, field: keyof MonthDetail, value: string | number) => {
-    const updated = [...monthDetails];
-    updated[index][field] = field === "amount" || field === "lateFine" ? Number(value) : value;
-    setMonthDetails(updated);
-  };
+const handleChange = (index: number, field: keyof MonthDetail, value: string | number) => {
+  const updated = [...monthDetails];
+  (updated[index] as Record<string, any>)[field] =
+    field === "amount" || field === "lateFine" ? Number(value) : value;
+  setMonthDetails(updated);
+};
+
 
   const handleSave = async () => {
     try {

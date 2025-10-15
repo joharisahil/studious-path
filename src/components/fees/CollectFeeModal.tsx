@@ -29,11 +29,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { getStudentFee, collectFee } from "@/services/FeesApi";
 import { PrintReceiptModal } from "./PrintReceiptModal";
-import type { Payment } from "@/types";
-import { register } from "module";
+
+// ✅ Payment type update
+export interface Payment {
+  id: string;
+  amount: number;
+  paymentMethod: "Cash" | "Card" | "Bank Transfer" | "Online";
+  transactionId: string;
+  month: string;
+  paymentDate: string;
+  notes?: string;
+  collectedBy: string;
+  receiptNumber: string;
+}
 
 interface CollectFeeFormData {
-  studentId: string;
+  registrationNumber: string;
   month: string;
   amount: number;
   paymentMethod: "Cash" | "Card" | "Bank Transfer" | "Online";
@@ -50,9 +61,8 @@ export const CollectFeeModal = ({
   onClose: () => void;
 }) => {
   const { toast } = useToast();
-  const [studentIdInput, setStudentIdInput] = useState("");
+  const [registrationInput, setRegistrationInput] = useState("");
   const [studentFee, setStudentFee] = useState<any>(null);
-  const [studentInfo, setStudentInfo] = useState<any>(null); // ✅ store full student object
   const [studentFetched, setStudentFetched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [lastPayment, setLastPayment] = useState<Payment | null>(null);
@@ -61,7 +71,7 @@ export const CollectFeeModal = ({
   const form = useForm<CollectFeeFormData>({
     resolver: zodResolver(
       z.object({
-        studentId: z.string().min(1, "Student ID required"),
+        registrationNumber: z.string().min(1, "Registration Number required"),
         month: z.string().min(1, "Month required"),
         amount: z.number().min(1, "Amount must be > 0"),
         paymentMethod: z.enum(["Cash", "Card", "Bank Transfer", "Online"]),
@@ -71,7 +81,7 @@ export const CollectFeeModal = ({
       })
     ),
     defaultValues: {
-      studentId: "",
+      registrationNumber: "",
       month: "",
       amount: 0,
       paymentMethod: "Cash",
@@ -86,12 +96,12 @@ export const CollectFeeModal = ({
   const needsTransactionId =
     selectedPaymentMethod === "Bank Transfer" || selectedPaymentMethod === "Online";
 
-  // ✅ Fetch student fee by Student ID only
+  // Fetch student fee
   const fetchStudentFee = async () => {
-    if (!studentIdInput) return;
+    if (!registrationInput) return;
     setIsLoading(true);
     try {
-      const data = await getStudentFee(studentIdInput);
+      const data = await getStudentFee(registrationInput);
       const feeRecord = Array.isArray(data) ? data[0] : data;
 
       if (!feeRecord) throw new Error("No fee record found");
@@ -109,9 +119,8 @@ export const CollectFeeModal = ({
       });
 
       setStudentFee({ ...feeRecord, installments: installmentsWithPaid });
-      setStudentInfo(feeRecord.studentId); // ✅ store student object
       setStudentFetched(true);
-      form.setValue("studentId", studentIdInput);
+      form.setValue("registrationNumber", registrationInput);
     } catch (err: any) {
       toast({
         title: "Error",
@@ -124,19 +133,19 @@ export const CollectFeeModal = ({
     }
   };
 
-  // ✅ Auto-fill amount when month changes
+  // Auto-fill amount on month change
   useEffect(() => {
     if (!studentFee || !selectedMonth) return;
     const inst = studentFee.installments.find((i: any) => i.month === selectedMonth);
     form.setValue("amount", inst ? inst.amount - inst.amountPaid : 0);
   }, [selectedMonth, studentFee, form]);
 
-  // ✅ Handle Collect Fee submission
+  // Collect Fee submission
   const handleCollectFee = async (data: CollectFeeFormData) => {
     if (!studentFee) return;
     setIsLoading(true);
     try {
-      const res = await collectFee(studentFee._id, {
+      const res = await collectFee(data.registrationNumber, {
         month: data.month,
         amount: data.amount,
         mode: data.paymentMethod,
@@ -158,25 +167,25 @@ export const CollectFeeModal = ({
       });
 
       setStudentFee({ ...res.feeRecord, installments: updatedInstallments });
-      // ✅ Keep studentInfo as is
 
-      const txnId = res.transactionId || `TXN${Math.floor(Math.random() * 100000)}`;
+      // ✅ Use backend returned transactionId
       setLastPayment({
-        id: txnId,
+        id: res.transactionId,
         amount: data.amount,
         paymentMethod: data.paymentMethod,
-        transactionId: txnId,
+        transactionId: res.transactionId,
         month: data.month,
         paymentDate: data.paymentDate || new Date().toISOString(),
-        notes: data.notes || "",
-        collectedBy: "Admin User",
+        notes: data.notes,
+        collectedBy: "Admin", // adjust if needed
+        receiptNumber: res.transactionId,
       });
 
       toast({
         title: res.warning ? "Success with Warning" : "Success",
         description: res.warning
           ? `${res.message}. Warning: ${res.warning}`
-          : `${res.message}. Txn ID: ${txnId}`,
+          : `${res.message}. Txn ID: ${res.transactionId}`,
       });
     } catch (err: any) {
       console.error("CollectFee API error:", err);
@@ -194,9 +203,8 @@ export const CollectFeeModal = ({
   const handleClose = () => {
     form.reset({ paymentDate: new Date().toISOString().slice(0, 10) });
     setStudentFee(null);
-    setStudentInfo(null);
     setStudentFetched(false);
-    setStudentIdInput("");
+    setRegistrationInput("");
     setLastPayment(null);
     setShowReceipt(false);
     onClose();
@@ -210,16 +218,16 @@ export const CollectFeeModal = ({
           <DialogDescription>
             {studentFetched
               ? "Record fee payment"
-              : "Enter Student ID to fetch fee record"}
+              : "Enter Registration Number to fetch fee record"}
           </DialogDescription>
         </DialogHeader>
 
         {!studentFetched ? (
           <div className="space-y-4">
             <Input
-              placeholder="Enter Student ID"
-              value={studentIdInput}
-              onChange={(e) => setStudentIdInput(e.target.value)}
+              placeholder="Enter Registration Number"
+              value={registrationInput}
+              onChange={(e) => setRegistrationInput(e.target.value)}
             />
             <Button onClick={fetchStudentFee} disabled={isLoading}>
               {isLoading ? "Fetching..." : "Fetch Fee"}
@@ -231,16 +239,13 @@ export const CollectFeeModal = ({
             <div className="w-full md:w-1/3 p-4 border rounded-md bg-gray-50">
               <h3 className="text-lg font-semibold mb-2">Student Details</h3>
               <p>
-                <strong>Name:</strong> {studentInfo?.firstName} {studentInfo?.lastName}
+                <strong>Name:</strong> {studentFee.studentName || "N/A"}
               </p>
               <p>
-                <strong>Class:</strong>{" "}
-                {studentInfo?.classId
-                  ? `${studentInfo.classId.grade} - ${studentInfo.classId.section}`
-                  : "Not Assigned"}
+                <strong>Class:</strong> {studentFee.className || "N/A"}
               </p>
               <p>
-                <strong>Student REG:</strong> {studentInfo.registrationNumber}
+                <strong>Registration:</strong> {studentFee.registrationNumber || "N/A"}
               </p>
 
               <div className="mt-4">
@@ -260,8 +265,7 @@ export const CollectFeeModal = ({
                         hover:scale-105 hover:shadow-xl`}
                       onClick={() => form.setValue("month", inst.month)}
                     >
-                      {inst.month} — ₹
-                      {inst.amount - inst.amountPaid > 0 ? inst.amount - inst.amountPaid : 0}
+                      {inst.month} — ₹{inst.amount - inst.amountPaid > 0 ? inst.amount - inst.amountPaid : 0}
                       {inst.status !== "Pending" ? ` (${inst.status})` : ""}
                     </div>
                   ))}
@@ -384,7 +388,7 @@ export const CollectFeeModal = ({
                   </div>
                 </form>
 
-                {lastPayment && studentFee && (
+                {lastPayment && (
                   <div className="mt-4 flex justify-center">
                     <Button
                       variant="secondary"
@@ -400,32 +404,30 @@ export const CollectFeeModal = ({
         )}
 
         {/* Print Receipt */}
-        {lastPayment && studentFee && studentInfo && (
-  <PrintReceiptModal
-    isOpen={showReceipt}
-    onClose={() => setShowReceipt(false)}
-    payment={lastPayment}
-    studentName={`${studentInfo.firstName} ${studentInfo.lastName || ""}`}
-    className={`${studentInfo.classId?.grade || "N/A"} - ${studentInfo.classId?.section || "N/A"}`}
-    receiptNumber={lastPayment.transactionId || "N/A"}
-    session={studentFee.structureId?.session || "N/A"}
-    installment={form.getValues("month") || "N/A"}
-    feeDetails={studentFee.installments.map((inst: any) => ({
-      description: inst.month,
-      due: inst.amount,
-      con: inst.amountPaid,
-      paid: inst.amountPaid,
-    }))}
-    payModeInfo={{
-      mode: lastPayment.paymentMethod || "Cash",
-      date: lastPayment.paymentDate || new Date().toISOString(),
-      bank: lastPayment.bank,
-      number: lastPayment.transactionId,
-    }}
-    note={form.getValues("notes") || "N/A"}
-  />
-)}
-
+        {lastPayment && studentFee && (
+          <PrintReceiptModal
+            isOpen={showReceipt}
+            onClose={() => setShowReceipt(false)}
+            payment={lastPayment}
+            studentName={studentFee.studentName || "N/A"}
+            className={studentFee.className || "N/A"}
+            receiptNumber={lastPayment.transactionId || "N/A"}
+            session={studentFee.structureId?.session || "N/A"}
+            installment={form.getValues("month") || "N/A"}
+            feeDetails={studentFee.installments.map((inst: any) => ({
+              description: inst.month,
+              due: inst.amount,
+              con: inst.amountPaid,
+              paid: inst.amountPaid,
+            }))}
+            payModeInfo={{
+              mode: lastPayment.paymentMethod || "Cash",
+              date: lastPayment.paymentDate || new Date().toISOString(),
+              number: lastPayment.transactionId,
+            }}
+            note={form.getValues("notes") || "N/A"}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

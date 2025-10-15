@@ -37,13 +37,20 @@ interface Props {
 }
 
 export const ViewFeeStructure: FC<Props> = ({ isOpen, onClose, structures }) => {
-  const [localStructures, setLocalStructures] = useState<FeeStructure[]>(structures);
+  const [localStructures, setLocalStructures] = useState<FeeStructure[]>([]);
   const [editingStructure, setEditingStructure] = useState<FeeStructure | null>(null);
   const [monthDetails, setMonthDetails] = useState<MonthDetail[]>([]);
   const [updating, setUpdating] = useState(false);
 
+  // Sort structures by session, then class name
   useEffect(() => {
-    setLocalStructures(structures);
+    const sorted = [...structures].sort((a, b) => {
+      if (a.session !== b.session) {
+        return (a.session || "").localeCompare(b.session || "");
+      }
+      return (a.className || "").localeCompare(b.className || "");
+    });
+    setLocalStructures(sorted);
   }, [structures]);
 
   /** Delete fee structure */
@@ -63,24 +70,14 @@ export const ViewFeeStructure: FC<Props> = ({ isOpen, onClose, structures }) => 
   /** Open edit modal */
   const handleEdit = (structure: FeeStructure) => {
     setEditingStructure(structure);
-    setMonthDetails(structure.monthDetails.map(m => ({ ...m }))); // deep copy
+    setMonthDetails(structure.monthDetails.map(m => ({ ...m })));
   };
 
   /** Save changes */
   const handleUpdate = async () => {
     if (!editingStructure) return;
 
-    // Validation
-    if (
-      monthDetails.some(
-        m =>
-          !m.month ||
-          !m.startDate ||
-          !m.dueDate ||
-          m.amount < 0 ||
-          m.lateFine < 0
-      )
-    ) {
+    if (monthDetails.some(m => !m.month || !m.startDate || !m.dueDate || m.amount < 0 || m.lateFine < 0)) {
       toast.error("Please fill all fields correctly and ensure no negative amounts");
       return;
     }
@@ -105,83 +102,92 @@ export const ViewFeeStructure: FC<Props> = ({ isOpen, onClose, structures }) => 
     }
   };
 
-  /** Handle input changes in edit modal */
   const handleChange = (index: number, field: keyof MonthDetail, value: string | number) => {
     const updated = [...monthDetails];
-    updated[index][field] = field === "amount" || field === "lateFine" ? Number(value) : value;
+   (updated[index] as Record<string, any>)[field] =
+  field === "amount" || field === "lateFine" ? Number(value) : value;
+
     setMonthDetails(updated);
   };
 
-  /** Add new month row */
   const handleAddMonth = () => {
-    setMonthDetails(prev => [
-      ...prev,
-      { month: "", startDate: "", dueDate: "", amount: 0, lateFine: 0 }
-    ]);
+    setMonthDetails(prev => [...prev, { month: "", startDate: "", dueDate: "", amount: 0, lateFine: 0 }]);
   };
 
-  /** Remove month row */
   const handleRemoveMonth = (index: number) => {
     if (!confirm("Remove this month?")) return;
     setMonthDetails(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Group by session
+  const groupedBySession = localStructures.reduce((acc: Record<string, FeeStructure[]>, fs) => {
+    const key = fs.session || "Unknown Session";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(fs);
+    return acc;
+  }, {});
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-5xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Fee Structures</DialogTitle>
         </DialogHeader>
 
-        {localStructures.length > 0 ? (
-          <div className="space-y-4">
-            {localStructures.map((fs) => (
-              <Card key={fs._id}>
-                <CardHeader className="flex justify-between items-center">
-                  <CardTitle>
-                    Class: {fs.className || "Unknown"} |{" "}
-                    {fs.session ? `Session: ${fs.session}` : ""} |{" "}
-                    <Badge variant={fs.status === "Published" ? "default" : "secondary"}>
-                      {fs.status}
-                    </Badge>
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleEdit(fs)}>Edit</Button>
-                    <Button size="sm" variant="destructive" onClick={() => handleDelete(fs._id)}>Delete</Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="p-2 text-left">Month</th>
-                          <th className="p-2 text-left">Start Date</th>
-                          <th className="p-2 text-left">Due Date</th>
-                          <th className="p-2 text-right">Amount</th>
-                          <th className="p-2 text-right">Late Fine</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {fs.monthDetails.map((m, idx) => (
-                          <tr key={idx} className="border-t">
-                            <td className="p-2">{m.month}</td>
-                            <td className="p-2">{new Date(m.startDate).toLocaleDateString()}</td>
-                            <td className="p-2">{new Date(m.dueDate).toLocaleDateString()}</td>
-                            <td className="p-2 text-right">₹{m.amount.toLocaleString()}</td>
-                            <td className="p-2 text-right">₹{m.lateFine.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2">
-                    <span>Total Fee</span>
-                    <span className="text-primary">₹{fs.totalAmount.toLocaleString()}</span>
-                  </div>
-                </CardContent>
-              </Card>
+        {Object.keys(groupedBySession).length > 0 ? (
+          <div className="space-y-6">
+            {Object.keys(groupedBySession).map(session => (
+              <div key={session}>
+                <h3 className="text-lg font-semibold mb-2">{session}</h3>
+                <div className="space-y-4">
+                  {groupedBySession[session].map(fs => (
+                    <Card key={fs._id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader className="flex justify-between items-center">
+                        <CardTitle>
+                          Class: {fs.className || "Unknown"} |{" "}
+                          <Badge variant={fs.status === "Published" ? "default" : "secondary"}>
+                            {fs.status}
+                          </Badge>
+                        </CardTitle>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(fs)}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(fs._id)}>Delete</Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm border rounded-md">
+                            <thead className="bg-gray-100 sticky top-0">
+                              <tr>
+                                <th className="p-2 text-left">Month</th>
+                                <th className="p-2 text-left">Start Date</th>
+                                <th className="p-2 text-left">Due Date</th>
+                                <th className="p-2 text-right">Amount</th>
+                                <th className="p-2 text-right">Late Fine</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {fs.monthDetails.map((m, idx) => (
+                                <tr key={idx} className="border-t hover:bg-gray-50">
+                                  <td className="p-2">{m.month}</td>
+                                  <td className="p-2">{new Date(m.startDate).toLocaleDateString()}</td>
+                                  <td className="p-2">{new Date(m.dueDate).toLocaleDateString()}</td>
+                                  <td className="p-2 text-right">₹{m.amount.toLocaleString()}</td>
+                                  <td className="p-2 text-right">₹{m.lateFine.toLocaleString()}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2">
+                          <span>Total Fee</span>
+                          <span className="text-primary">₹{fs.totalAmount.toLocaleString()}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         ) : (
@@ -199,8 +205,8 @@ export const ViewFeeStructure: FC<Props> = ({ isOpen, onClose, structures }) => 
               </DialogHeader>
 
               <div className="overflow-x-auto mt-4">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
+                <table className="w-full text-sm border rounded-md">
+                  <thead className="bg-gray-100 sticky top-0">
                     <tr>
                       <th className="p-2 text-left">Month</th>
                       <th className="p-2 text-left">Start Date</th>
@@ -212,7 +218,7 @@ export const ViewFeeStructure: FC<Props> = ({ isOpen, onClose, structures }) => 
                   </thead>
                   <tbody>
                     {monthDetails.map((m, idx) => (
-                      <tr key={idx} className="border-t">
+                      <tr key={idx} className="border-t hover:bg-gray-50">
                         <td className="p-2">
                           <Input value={m.month} onChange={(e) => handleChange(idx, "month", e.target.value)} />
                         </td>
@@ -243,7 +249,6 @@ export const ViewFeeStructure: FC<Props> = ({ isOpen, onClose, structures }) => 
                     ))}
                   </tbody>
                 </table>
-
                 <div className="flex justify-start mt-2">
                   <Button size="sm" onClick={handleAddMonth}>Add Month</Button>
                 </div>
