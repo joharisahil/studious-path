@@ -324,7 +324,7 @@ export interface Payment {
   id: string;
   amount: number;
   paymentDate: string;
-  paymentMethod: 'cash' | 'card' | 'bank_transfer' | 'online';
+  paymentMethod:  "Cash" | "Card" | "Bank Transfer" | "Online";
   transactionId?: string;
   receiptNumber: string;
   collectedBy: string;
@@ -484,6 +484,15 @@ export interface StudentFormData {
   motherContact?: string;
   motherOccupation?: string;
 }
+
+export interface ScholarshipFormData {
+  studentId: string;
+  type: string;       // e.g., 'Merit' | 'Need-Based'
+  amount: number;
+  notes?: string;
+  academicYear?: string;
+}
+
 
 
 // export interface TeacherFormData {

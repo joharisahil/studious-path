@@ -109,11 +109,11 @@ export const assignFeeToStudent = async (data: any) => {
 //
 // 3. Collect Fee
 //
-export const collectFee = async (studentFeeId: string, data: any) => {
+export const collectFee = async (registrationNumber: string, data: any) => {
   try {
     const res = await axios.post(
-      `${API_BASE_URL}/fees/${studentFeeId}/pay`,
-      data,
+      `${API_BASE_URL}/fees/collect`,
+      { ...data, registrationNumber },
       getAuthHeaders()
     );
     return res.data;
@@ -123,13 +123,14 @@ export const collectFee = async (studentFeeId: string, data: any) => {
   }
 };
 
+
 //
 // 4. Student Fee Records
 //
-export const getStudentFee = async (studentId: string) => {
+export const getStudentFee = async (registrationNumber: string) => {
   try {
     const res = await axios.get(
-      `${API_BASE_URL}/fees/student/${studentId}`,
+      `${API_BASE_URL}/fees/student/regno/${registrationNumber}`,
       getAuthHeaders()
     );
     return res.data;
@@ -138,6 +139,7 @@ export const getStudentFee = async (studentId: string) => {
     throw error;
   }
 };
+
 
 //
 // 1️⃣ Get All Fee Structures
@@ -187,4 +189,68 @@ export const deleteFeeStructure = async (structureId: string) => {
     console.error("API deleteFeeStructure failed:", error.response?.data || error.message);
     throw error;
   }
+};
+export const applyScholarship = async (registrationNumber: string, data: ScholarshipFormData) => {
+  try {
+    const res = await axios.post(
+      `${API_BASE_URL}/fees/${registrationNumber}/scholarship`, // registrationNumber in URL
+      data,
+      getAuthHeaders()
+    );
+    return res.data;
+  } catch (error) {
+    console.error("API applyScholarship failed:", error);
+    throw error;
+  }
+};
+
+
+export interface SearchFilters {
+  status?: string;          // "Paid" | "Partial" | "Pending" | "all"
+  scholarship?: string;     // "with" | "without" | "all"
+  scholarshipType?: string; // "full" | "half" | "custom" | "all"
+  grade?: string;           // e.g., "1", "2", or "all"
+  period?: string;          // "monthly", "quarterly", "yearly", or "all"
+  registrationNumber?: string;
+  studentName?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  overdue?: boolean;
+  session?: string;
+  page?: number;
+  limit?: number;
 }
+
+export const fetchFilteredFees = async (filters: SearchFilters) => {
+  try {
+    const params: any = {};
+
+    if (filters.status && filters.status !== "all") params.status = filters.status;
+    if (filters.scholarship && filters.scholarship !== "all") params.scholarship = filters.scholarship;
+    if (filters.scholarshipType && filters.scholarshipType !== "all") params.scholarshipType = filters.scholarshipType;
+    if (filters.grade && filters.grade !== "all") params.grade = filters.grade;
+    if (filters.period && filters.period !== "all") params.period = filters.period;
+    if (filters.registrationNumber) params.registrationNumber = filters.registrationNumber;
+    if (filters.studentName) params.studentName = filters.studentName;
+    if (filters.minAmount) params.minAmount = filters.minAmount;
+    if (filters.maxAmount) params.maxAmount = filters.maxAmount;
+    if (filters.overdue !== undefined) params.overdue = filters.overdue;
+    if (filters.session) params.session = filters.session;
+    if (filters.page) params.page = filters.page;
+    if (filters.limit) params.limit = filters.limit;
+
+    const token = localStorage.getItem('token'); // Get your JWT token
+    const response = await axios.get(`${API_BASE_URL}/fees/search`, {
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ send token in header
+      },
+      params, // query params
+    });
+
+    return response.data; // { fees: [...], totalStudents, totalCollected, totalPending, page, limit }
+  } catch (error) {
+    console.error("Error fetching filtered fees:", error);
+    throw error;
+  }
+};
+

@@ -108,34 +108,44 @@ export const FeeStructureModal = ({
     classesByGrade[cls.grade].push({ _id: cls._id, section: cls.section });
   });
 
-  const onSubmit = async (data: FeeStructureFormData) => {
-    if (mode === 'view' || mode === 'delete') return; // no submit in view/delete
+const onSubmit = async (data: FeeStructureFormData) => {
+  if (mode === 'view' || mode === 'delete') return; // no submit in view/delete
 
-    setIsLoading(true);
-    try {
-      await apiCreateFeeStructure({
-        classIds: data.classIds,
-        session: data.session,
-        monthDetails: data.monthDetails,
-      });
+  setIsLoading(true);
+  try {
+    // ✅ Sanitize and ensure all required fields exist
+    const sanitizedMonthDetails = data.monthDetails.map((m) => ({
+      month: m.month || "",
+      startDate: m.startDate || "",
+      dueDate: m.dueDate || "",
+      amount: Number(m.amount) || 0,
+      lateFine: m.lateFine ?? 0,
+    }));
 
-      toast({
-        title: "Fee Structure Saved",
-        description: `Fee structure for ${data.classIds.length} classes in session ${data.session} saved successfully.`,
-      });
+    await apiCreateFeeStructure({
+      classIds: data.classIds,
+      session: data.session,
+      monthDetails: sanitizedMonthDetails, // ✅ cleaned data
+    });
 
-      reset();
-      onClose();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.error || "Failed to save fee structure. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    toast({
+      title: "Fee Structure Saved",
+      description: `Fee structure for ${data.classIds.length} classes in session ${data.session} saved successfully.`,
+    });
+
+    reset();
+    onClose();
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.error || "Failed to save fee structure. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleClose = () => {
     reset(initialData || {
