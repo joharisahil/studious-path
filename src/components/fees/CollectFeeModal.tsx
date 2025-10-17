@@ -225,17 +225,21 @@ export const CollectFeeModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px]">
-        <DialogHeader>
-          <DialogTitle>Collect Fee</DialogTitle>
-          <DialogDescription>
-            {studentFetched
-              ? "Record fee payment"
-              : "Enter Registration Number to fetch fee record"}
-          </DialogDescription>
-        </DialogHeader>
+  <Dialog open={isOpen} onOpenChange={handleClose}>
+    {/* 🧩 Add max-h & scrolling inside modal */}
+    <DialogContent
+      className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto rounded-xl"
+    >
+      <DialogHeader>
+        <DialogTitle className="text-lg sm:text-xl font-semibold">Collect Fee</DialogTitle>
+        <DialogDescription className="text-sm sm:text-base">
+          {studentFetched
+            ? "Record fee payment"
+            : "Enter Registration Number to fetch fee record"}
+        </DialogDescription>
+      </DialogHeader>
 
+      <div className="space-y-4 pb-4">
         {!studentFetched ? (
           <div className="space-y-4">
             <Input
@@ -243,25 +247,25 @@ export const CollectFeeModal = ({
               value={registrationInput}
               onChange={(e) => setRegistrationInput(e.target.value)}
             />
-            <Button onClick={fetchStudentFee} disabled={isLoading}>
+            <Button
+              onClick={fetchStudentFee}
+              disabled={isLoading}
+              className="w-full sm:w-auto"
+            >
               {isLoading ? "Fetching..." : "Fetch Fee"}
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row gap-6">
+          // 💡 Make this flex container scroll-safe & responsive
+          <div className="flex flex-col lg:flex-row gap-6">
             {/* Student Info */}
-            <div className="w-full md:w-1/3 p-4 border rounded-md bg-gray-50">
-              <h3 className="text-lg font-semibold mb-2">Student Details</h3>
-              <p>
-                <strong>Name:</strong> {studentFee.studentName || "N/A"}
-              </p>
-              <p>
-                <strong>Class:</strong> {studentFee.className || "N/A"}
-              </p>
-              <p>
-                <strong>Registration:</strong>{" "}
-                {studentFee.registrationNumber || "N/A"}
-              </p>
+            <div className="w-full lg:w-1/3 p-4 border rounded-md bg-gray-50 shadow-sm">
+              <h3 className="text-lg font-semibold mb-2 text-center lg:text-left">
+                Student Details
+              </h3>
+              <p><strong>Name:</strong> {studentFee.studentName || "N/A"}</p>
+              <p><strong>Class:</strong> {studentFee.className || "N/A"}</p>
+              <p><strong>Registration:</strong> {studentFee.registrationNumber || "N/A"}</p>
 
               <div className="mt-4">
                 <h4 className="font-medium mb-2">Fee Status</h4>
@@ -269,15 +273,15 @@ export const CollectFeeModal = ({
                   {studentFee.installments.map((inst: any) => (
                     <div
                       key={inst.month}
-                      className={`px-3 py-1 rounded-md text-white font-semibold cursor-pointer transition-all duration-300
+                      className={`px-3 py-1 rounded-md text-white font-semibold cursor-pointer transition-all duration-200
                         ${
                           inst.status === "Paid"
-                            ? "bg-green-500 border-2 border-yellow-300"
+                            ? "bg-green-500"
                             : inst.status === "Partial"
-                            ? "bg-yellow-400 border-2 border-orange-300"
-                            : "bg-red-500 border-2 border-pink-400"
+                            ? "bg-yellow-400 text-black"
+                            : "bg-red-500"
                         }
-                        hover:scale-105 hover:shadow-xl`}
+                        hover:scale-105`}
                       onClick={() => form.setValue("month", inst.month)}
                     >
                       {inst.month} — ₹
@@ -292,7 +296,7 @@ export const CollectFeeModal = ({
             </div>
 
             {/* Fee Collection Form */}
-            <div className="w-full md:w-2/3">
+            <div className="w-full lg:w-2/3">
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(handleCollectFee)}
@@ -304,9 +308,7 @@ export const CollectFeeModal = ({
                     <FormControl>
                       <Select
                         value={form.getValues("month")}
-                        onValueChange={(val) =>
-                          form.setValue("month", val as any)
-                        }
+                        onValueChange={(val) => form.setValue("month", val as any)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select month" />
@@ -349,9 +351,7 @@ export const CollectFeeModal = ({
                     <FormControl>
                       <Select
                         value={form.getValues("paymentMethod")}
-                        onValueChange={(val) =>
-                          form.setValue("paymentMethod", val as any)
-                        }
+                        onValueChange={(val) => form.setValue("paymentMethod", val as any)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select method" />
@@ -359,9 +359,7 @@ export const CollectFeeModal = ({
                         <SelectContent>
                           <SelectItem value="Cash">Cash</SelectItem>
                           <SelectItem value="Card">Card</SelectItem>
-                          <SelectItem value="Bank Transfer">
-                            Bank Transfer
-                          </SelectItem>
+                          <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                           <SelectItem value="Online">Online</SelectItem>
                         </SelectContent>
                       </Select>
@@ -399,7 +397,7 @@ export const CollectFeeModal = ({
                   </FormItem>
 
                   {/* Buttons */}
-                  <div className="flex justify-end gap-3">
+                  <div className="flex justify-end gap-3 sticky bottom-0 bg-white py-2">
                     <Button
                       variant="outline"
                       type="button"
@@ -414,6 +412,7 @@ export const CollectFeeModal = ({
                   </div>
                 </form>
 
+                {/* Print Receipt */}
                 {lastPayment && (
                   <div className="mt-4 flex justify-center">
                     <Button
@@ -428,33 +427,34 @@ export const CollectFeeModal = ({
             </div>
           </div>
         )}
+      </div>
 
-        {/* Print Receipt */}
-        {lastPayment && studentFee && (
-          <PrintReceiptModal
-            isOpen={showReceipt}
-            onClose={() => setShowReceipt(false)}
-            payment={lastPayment}
-            studentName={studentFee.studentName || "N/A"}
-            className={studentFee.className || "N/A"}
-            receiptNumber={lastPayment.transactionId || "N/A"}
-            session={studentFee.structureId?.session || "N/A"}
-            installment={form.getValues("month") || "N/A"}
-            feeDetails={studentFee.installments.map((inst: any) => ({
-              description: inst.month,
-              due: inst.amount,
-              con: inst.amountPaid,
-              paid: inst.amountPaid,
-            }))}
-            payModeInfo={{
-              mode: lastPayment.paymentMethod || "Cash",
-              date: lastPayment.paymentDate || new Date().toISOString(),
-              number: lastPayment.transactionId,
-            }}
-            note={form.getValues("notes") || "N/A"}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
-  );
+      {/* Receipt modal */}
+      {lastPayment && studentFee && (
+        <PrintReceiptModal
+          isOpen={showReceipt}
+          onClose={() => setShowReceipt(false)}
+          payment={lastPayment}
+          studentName={studentFee.studentName || "N/A"}
+          className={studentFee.className || "N/A"}
+          receiptNumber={lastPayment.transactionId || "N/A"}
+          session={studentFee.structureId?.session || "N/A"}
+          installment={form.getValues("month") || "N/A"}
+          feeDetails={studentFee.installments.map((inst: any) => ({
+            description: inst.month,
+            due: inst.amount,
+            con: inst.amountPaid,
+            paid: inst.amountPaid,
+          }))}
+          payModeInfo={{
+            mode: lastPayment.paymentMethod || "Cash",
+            date: lastPayment.paymentDate || new Date().toISOString(),
+            number: lastPayment.transactionId,
+          }}
+          note={form.getValues("notes") || "N/A"}
+        />
+      )}
+    </DialogContent>
+  </Dialog>
+);
 };
