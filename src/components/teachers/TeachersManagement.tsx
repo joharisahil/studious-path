@@ -7,6 +7,7 @@ import {
   Eye,
   Download,
   MoreVertical,
+  Upload,  // Added for the Import button
 } from 'lucide-react';
 import {
   Card,
@@ -54,6 +55,7 @@ import { useToast } from '@/hooks/use-toast';
 import CreateTeacherModal from './CreateTeacherModal';
 import EditTeacherModal from './EditTeacherModal';
 import TeacherDetailsModal from './TeacherDetailsModal';
+import ImportTeacherModal from './ImportTeacherModal.tsx';  // Import the new modal
 import { TeacherFormData } from '@/types';
 import { getAllTeachers } from '@/services/TeachersApi';
 
@@ -63,21 +65,21 @@ const TeachersManagement = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);  // New state for import modal
   const [selectedTeacher, setSelectedTeacher] = useState<TeacherFormData | null>(null);
   const [teachers, setTeachers] = useState<TeacherFormData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { toast } = useToast();
 
-  // 🔹 Fetch teachers from API
+  // Fetch teachers from API
   const fetchTeachers = async () => {
     try {
       setLoading(true);
       const data = await getAllTeachers();
-      // Ensure we always have an array and each teacher has _id
       const formattedTeachers = (data.teachers || []).map((t) => ({
         ...t,
-        _id: t._id || t.id, // fallback if _id missing
+        _id: t._id || t.id,
         experienceYears: t.experienceYears || 0,
         firstName: t.firstName || '',
         lastName: t.lastName || '',
@@ -126,7 +128,6 @@ const TeachersManagement = () => {
     }
   };
 
-  // 🔎 Search + Filter
   const filteredTeachers = teachers.filter((teacher) => {
     const matchesStatus = selectedStatus === 'all' || teacher.status === selectedStatus;
     const matchesSearch =
@@ -147,6 +148,9 @@ const TeachersManagement = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => setImportModalOpen(true)}>
+            <Upload className="w-4 h-4" /> Import
+          </Button>
           <Button variant="outline" className="gap-2">
             <Download className="w-4 h-4" /> Export
           </Button>
@@ -353,37 +357,39 @@ const TeachersManagement = () => {
       <CreateTeacherModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={fetchTeachers} // ✅ refresh teachers
+        onSuccess={fetchTeachers}
       />
-
-{selectedTeacher && (
-  <>
-    <EditTeacherModal
-      open={editModalOpen}
-      onOpenChange={setEditModalOpen}
-      teacher={selectedTeacher}
-      onSuccess={() => {
-        fetchTeachers();
-        setSelectedTeacher(null);
-      }}
-    />
-
-    <TeacherDetailsModal
-      open={detailsModalOpen}
-      onOpenChange={setDetailsModalOpen}
-      teacher={{
-        ...selectedTeacher,
-        id: selectedTeacher._id || selectedTeacher.id || '', // ensure id
-        registrationNumber: selectedTeacher.registrationNumber || selectedTeacher.teacherId || '',
-        userId: selectedTeacher.userId || '',
-        status: selectedTeacher.status || 'active',
-        createdAt: selectedTeacher.createdAt || new Date().toISOString(),
-        updatedAt: selectedTeacher.updatedAt || new Date().toISOString(),
-      }}
-    />
-  </>
-)}
-
+      {selectedTeacher && (
+        <>
+          <EditTeacherModal
+            open={editModalOpen}
+            onOpenChange={setEditModalOpen}
+            teacher={selectedTeacher}
+            onSuccess={() => {
+              fetchTeachers();
+              setSelectedTeacher(null);
+            }}
+          />
+          <TeacherDetailsModal
+            open={detailsModalOpen}
+            onOpenChange={setDetailsModalOpen}
+            teacher={{
+              ...selectedTeacher,
+              id: selectedTeacher._id || selectedTeacher.id || '',
+              registrationNumber: selectedTeacher.registrationNumber || selectedTeacher.teacherId || '',
+              userId: selectedTeacher.userId || '',
+              status: selectedTeacher.status || 'active',
+              createdAt: selectedTeacher.createdAt || new Date().toISOString(),
+              updatedAt: selectedTeacher.updatedAt || new Date().toISOString(),
+            }}
+          />
+        </>
+      )}
+      <ImportTeacherModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onSuccess={fetchTeachers}  // Refresh teachers after import
+      />
     </div>
   );
 };
