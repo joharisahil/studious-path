@@ -271,14 +271,15 @@ export const FeesManagement = () => {
               >
                 <Settings className="w-4 h-4 mr-2" /> Create Fee Structure
               </Button>
-              <Button onClick={() => setApplyScholarshipModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" /> Apply Scholarship
-              </Button>
+              
               <Button
                 onClick={() => setViewFeeStructureModalOpen(true)}
                 variant="outline"
               >
                 <Eye className="w-4 h-4 mr-2" /> View All Structures
+              </Button>
+              <Button onClick={() => setApplyScholarshipModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" /> Apply Scholarship
               </Button>
             </>
           )}
@@ -357,7 +358,7 @@ export const FeesManagement = () => {
           />
         </div>
 
-        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+        {/* <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Period" />
           </SelectTrigger>
@@ -367,7 +368,7 @@ export const FeesManagement = () => {
             <SelectItem value="quarterly">Quarterly</SelectItem>
             <SelectItem value="yearly">Yearly</SelectItem>
           </SelectContent>
-        </Select>
+        </Select> */}
 
         <Select value={selectedGrade} onValueChange={setSelectedGrade}>
           <SelectTrigger className="w-[140px]">
