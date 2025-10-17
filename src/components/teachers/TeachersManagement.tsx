@@ -236,7 +236,7 @@ const TeachersManagement = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            {/* <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
@@ -248,7 +248,7 @@ const TeachersManagement = () => {
                 <SelectItem value="terminated">Terminated</SelectItem>
                 <SelectItem value="retired">Retired</SelectItem>
               </SelectContent>
-            </Select>
+            </Select> */}
           </div>
         </CardContent>
       </Card>

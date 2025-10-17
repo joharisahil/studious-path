@@ -253,8 +253,8 @@ useEffect(() => {
                     <TableHead>Academic Year</TableHead>
                     <TableHead>Class Teacher</TableHead>
                     <TableHead>Students</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    {/* <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead> */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -284,10 +284,10 @@ useEffect(() => {
 </div>
 
                       </TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         <Badge className={getStatusColor()}>active</Badge>
-                      </TableCell>
-                      <TableCell>
+                      </TableCell> */}
+                      {/* <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -304,7 +304,7 @@ useEffect(() => {
                             <Plus className="w-3 h-3 mr-1" /> Add
                           </Button>
                         </div>
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   ))}
                 </TableBody>
