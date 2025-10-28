@@ -36,32 +36,39 @@ const studentEditSchema = z.object({
   section: z.string().min(1, "Section is required"),
   rollNumber: z.string().optional(),
   admissionDate: z.string().optional(),
-
   guardian: z.object({
     name: z.string().min(2, "Guardian name is required"),
     phone: z.string().min(10, "Guardian phone must be at least 10 digits"),
     relation: z.string().min(1, "Relation is required"),
   }),
-
   fatherName: z.string().min(2, "Father name is required"),
   fatherContact: z.string().min(10, "Father contact number is required"),
   fatherOccupation: z.string().min(2, "Father occupation is required"),
-  fatherEmail: z.string().email("Invalid father email").optional().or(z.literal("")),
-
+  fatherEmail: z
+    .string()
+    .email("Invalid father email")
+    .optional()
+    .or(z.literal("")),
   motherName: z.string().min(2, "Mother name is required"),
   motherContact: z.string().min(10, "Mother contact number is required"),
   motherOccupation: z.string().min(2, "Mother occupation is required"),
-  motherEmail: z.string().email("Invalid mother email").optional().or(z.literal("")),
+  motherEmail: z
+    .string()
+    .email("Invalid mother email")
+    .optional()
+    .or(z.literal("")),
 });
 
-type StudentEditFormData = z.infer<typeof studentEditSchema>;
+type StudentEditFormData = z.infer<typeof studentEditSchema> & {
+  _classId?: string;
+};
 
-// Utility to format ISO date to YYYY-MM-DD
+// Helper: format ISO to YYYY-MM-DD
 const formatDateForInput = (isoDate?: string) => {
   if (!isoDate) return "";
   const date = new Date(isoDate);
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${date.getFullYear()}-${month}-${day}`;
 };
 
@@ -95,10 +102,12 @@ const EditStudentModal = ({
       motherContact: "",
       motherOccupation: "",
       motherEmail: "",
+      _classId: "", // internal field for backend
     },
-    mode: "onChange", // ✅ important for isDirty to work
+    mode: "onChange",
   });
 
+  // Populate form when modal opens
   useEffect(() => {
     if (student && open) {
       form.reset({
@@ -125,71 +134,82 @@ const EditStudentModal = ({
         motherContact: student.motherphone || "",
         motherOccupation: student.motherOccupation || "",
         motherEmail: student.motherEmail || "",
+        _classId: student.classId?._id || "", // store ObjectId for backend
       });
     }
   }, [student, open, form]);
 
+  // Form submit
   const onSubmit = async (data: StudentEditFormData) => {
-  try {
-    // Construct payload exactly as backend expects
-    const payload = {
-      firstName: data.firstName,
-      lastName: data.lastName || "",
-      email: data.email,
-      phone: data.phone,
-      dob: data.dateOfBirth, // make sure backend accepts YYYY-MM-DD
-      address: data.address,
-      classId: {
-        grade: data.grade,
-        section: data.section,
-      },
-      rollNumber: data.rollNumber || "",
-      admissionDate: data.admissionDate || "",
-      contactName: data.guardian.name,
-      contactPhone: data.guardian.phone,
-      relation: data.guardian.relation,
-      fatherName: data.fatherName,
-      fatherphone: data.fatherContact,
-      fatherOccupation: data.fatherOccupation,
-      fatherEmail: data.fatherEmail || "",
-      motherName: data.motherName,
-      motherphone: data.motherContact,
-      motherOccupation: data.motherOccupation,
-      motherEmail: data.motherEmail || "",
-    };
+    try {
+      const payload = {
+        firstName: data.firstName,
+        lastName: data.lastName || "",
+        email: data.email,
+        phone: data.phone,
+        dob: data.dateOfBirth,
+        address: data.address,
+        classId: data._classId || student.classId?._id, // send ObjectId
+        rollNumber: data.rollNumber || "",
+        admissionDate: data.admissionDate || "",
+        contactName: data.guardian.name,
+        contactPhone: data.guardian.phone,
+        relation: data.guardian.relation,
+        fatherName: data.fatherName,
+        fatherphone: data.fatherContact,
+        fatherOccupation: data.fatherOccupation,
+        fatherEmail: data.fatherEmail || "",
+        motherName: data.motherName,
+        motherphone: data.motherContact,
+        motherOccupation: data.motherOccupation,
+        motherEmail: data.motherEmail || "",
+      };
 
-    await updateStudentService(student._id, payload);
+      console.log("EditStudentModal — sending payload:", payload);
+      console.log(
+        "EditStudentModal — student id:",
+        student?._id || student?.id
+      );
 
-    toast({
-      title: "Student Updated",
-      description: "Student information has been successfully updated.",
-    });
+      const studentId = student?._id || student?.id;
+      if (!studentId) throw new Error("Student id is missing");
 
-    onSuccess?.();
-    onOpenChange(false);
-  } catch (err: any) {
-    console.error("Update error:", err.response?.data || err.message);
-    toast({
-      title: "Error",
-      description: err.response?.data?.message || "Failed to update student",
-      variant: "destructive",
-    });
-  }
-};
+      await updateStudentService(studentId, payload);
 
+      toast({
+        title: "Student Updated",
+        description: "Student information has been successfully updated.",
+      });
+
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error("Update error:", err.response?.data || err.message || err);
+      toast({
+        title: "Error",
+        description:
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to update student",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-gradient-primary">Edit Student</DialogTitle>
+          <DialogTitle className="text-gradient-primary">
+            Edit Student
+          </DialogTitle>
           <DialogDescription>
             Update student personal, academic, and parent information
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Personal Information */}
+          {/* Personal Info */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Personal Information
@@ -199,7 +219,9 @@ const EditStudentModal = ({
                 <Label>First Name *</Label>
                 <Input {...form.register("firstName")} />
                 {form.formState.errors.firstName && (
-                  <p className="text-red-500 text-sm">{form.formState.errors.firstName.message}</p>
+                  <p className="text-red-500 text-sm">
+                    {form.formState.errors.firstName.message}
+                  </p>
                 )}
               </div>
               <div>
