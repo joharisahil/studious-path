@@ -1,351 +1,307 @@
+// StudentDetailsModal.tsx
+import React from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Calendar,
-  Mail,
-  Phone,
-  MapPin,
-  User,
-  GraduationCap,
-  Users,
-  Briefcase,
-} from "lucide-react";
-import { Student } from "@/types";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Copy } from "lucide-react";
+import { toast } from "sonner";
 
 interface StudentDetailsModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  student: Student | null;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
+  student: any;
 }
 
-const StudentDetailsModal = ({
+const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   open,
   onOpenChange,
+  onClose,
   student,
-}: StudentDetailsModalProps) => {
-  const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-success/10 text-success">Active</Badge>;
-      case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
-      case "graduated":
-        return <Badge className="bg-info/10 text-info">Graduated</Badge>;
-      case "suspended":
-        return <Badge variant="destructive">Suspended</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
+}) => {
+  if (!student) return null;
+
+  const scholarshipMeta = student.scholarshipInfo ?? {};
+  const scholarships = Array.isArray(scholarshipMeta.scholarships)
+    ? scholarshipMeta.scholarships
+    : [];
+
+  const formatDate = (date: string | undefined | null) =>
+    date
+      ? new Date(date).toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—";
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      onClose?.();
+      onOpenChange?.(false);
+    } else {
+      onOpenChange?.(true);
     }
   };
 
+  // Generic copy function
+  const handleCopy = (text: string, label?: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label ?? "Information"} copied to clipboard!`);
+  };
+
+  // Format sections as plain text for copying
+  const studentInfoText = `
+Student: ${student.firstName ?? ""} ${student.lastName ?? ""}
+Registration No: ${student.registrationNumber ?? ""}
+Class: ${student.classId?.grade ?? student.grade ?? "—"}-${student.classId?.section ?? student.section ?? "—"}
+Date of Birth: ${student.dob ? new Date(student.dob).toLocaleDateString("en-IN") : "—"}
+Address: ${student.address ?? "N/A"}
+Email: ${student.email ?? "N/A"}
+Phone: ${student.phone ?? "N/A"}
+Created On: ${formatDate(student.createdAt)}
+  `.trim();
+
+  const fatherInfoText = `
+Father's Name: ${student.fatherName ?? "N/A"}
+Occupation: ${student.fatherOccupation ?? "N/A"}
+Phone: ${student.fatherphone ?? "N/A"}
+Email: ${student.fatherEmail ?? "N/A"}
+  `.trim();
+
+  const motherInfoText = `
+Mother's Name: ${student.motherName ?? "N/A"}
+Occupation: ${student.motherOccupation ?? "N/A"}
+Phone: ${student.motherphone ?? "N/A"}
+Email: ${student.motherEmail ?? "N/A"}
+  `.trim();
+
+  const guardianInfoText = `
+Contact Person: ${student.contactName ?? "N/A"}
+Relation: ${student.relation ?? "N/A"}
+Email: ${student.contactEmail ?? "N/A"}
+Phone: ${student.contactPhone ?? "N/A"}
+  `.trim();
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        {!student ? (
-          <div className="text-center text-muted-foreground py-8">
-            No student selected
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <DialogHeader>
-              <DialogTitle className="text-gradient-primary">
-                Student Details
-              </DialogTitle>
-              <DialogDescription>
-                Complete information for {student.firstName ?? "-"}{" "}
-                {student.lastName ?? "-"}
-              </DialogDescription>
-            </DialogHeader>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl bg-background border border-border">
+        <DialogHeader className="border-b pb-3 mb-4">
+          <DialogTitle className="text-2xl font-bold tracking-tight flex items-center justify-between">
+            <span>
+              {student.firstName} {student.lastName}
+            </span>
+            {/* <Badge variant="outline" className="text-sm px-3 py-1">
+              {student.status ?? "Active"}
+            </Badge> */}
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Registration No:{" "}
+            <span className="font-medium">{student.registrationNumber}</span>
+          </p>
+        </DialogHeader>
 
-            {/* Header Section */}
-            <div className="flex items-start gap-6 p-6 bg-accent/50 rounded-lg">
-              <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground text-2xl font-bold">
-                  {student.firstName?.[0] ?? ""}
-                  {student.lastName?.[0] ?? ""}
-                </span>
+        <div className="space-y-8 px-4 pb-6">
+          {/* === STUDENT INFORMATION === */}
+          <section>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold mb-2 text-primary">
+                🎓 Student Information
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => handleCopy(studentInfoText, "Student details")}
+              >
+                <Copy className="w-4 h-4 mr-1" /> Copy
+              </Button>
+            </div>
+            <Separator className="mb-3" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+              <div>
+                <strong>Class:</strong>{" "}
+                {student.classId?.grade ?? student.grade ?? "—"} -{" "}
+                {student.classId?.section ?? student.section ?? "—"}
               </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold mb-1">
-                  {student.firstName ?? "-"} {student.lastName ?? "-"}
-                </h2>
-                <p className="text-sm font-medium text-blue-600 mb-2">
-                  ID: {student.registrationNumber ?? "-"}
-                </p>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-3">
-                  <span>
-                    Class {student.grade ?? student.classId?.grade ?? "-"} -
-                    Section {student.section ?? student.classId?.section ?? "-"}
-                  </span>
-                  {student.enrollmentDate && (
-                    <>
-                      <span>•</span>
-                      <span>
-                        Enrolled:{" "}
-                        {new Date(student.enrollmentDate).toLocaleDateString()}
-                      </span>
-                    </>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(student.status)}
-                </div>
+              <div>
+                <strong>Date of Birth:</strong>{" "}
+                {student.dob
+                  ? new Date(student.dob).toLocaleDateString("en-IN")
+                  : "—"}
+              </div>
+              <div>
+                <strong>Address:</strong> {student.address || "N/A"}
+              </div>
+              <div>
+                <strong>Email:</strong> {student.email || "N/A"}
+              </div>
+              <div>
+                <strong>Phone:</strong> {student.phone || "N/A"}
+              </div>
+              <div>
+                <strong>Created On:</strong> {formatDate(student.createdAt)}
+              </div>
+            </div>
+          </section>
+
+          {/* === PARENT / GUARDIAN INFO === */}
+          <section>
+            <h3 className="text-lg font-semibold mb-2 text-primary">
+              👨‍👩‍👧 Parent / Guardian Information
+            </h3>
+            <Separator className="mb-3" />
+
+            {/* --- Father --- */}
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold">Father</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => handleCopy(fatherInfoText, "Father details")}
+              >
+                <Copy className="w-4 h-4 mr-1" /> Copy
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+              <div>
+                <strong>Name:</strong> {student.fatherName || "N/A"}
+              </div>
+              <div>
+                <strong>Occupation:</strong> {student.fatherOccupation || "N/A"}
+              </div>
+              <div>
+                <strong>Phone:</strong> {student.fatherphone || "N/A"}
+              </div>
+              <div>
+                <strong>Email:</strong> {student.fatherEmail || "N/A"}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Personal Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <User className="w-4 h-4" /> Personal Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm text-muted-foreground">Email</div>
-                      <div className="font-medium">{student.email ?? "-"}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm text-muted-foreground">Phone</div>
-                      <div className="font-medium">{student.phone ?? "-"}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        Date of Birth
-                      </div>
-                      <div className="font-medium">
-                        {student.dob
-                          ? new Date(student.dob).toLocaleDateString()
-                          : "-"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-4 h-4 text-muted-foreground mt-1" />
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        Address
-                      </div>
-                      <div className="font-medium">
-                        {student.address ?? "-"}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <Separator className="my-4" />
 
-              {/* Academic Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4" /> Academic Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm text-muted-foreground">Class</div>
-                      <div className="font-medium">
-                        {student.grade ?? student.classId?.grade ?? "-"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        Section
-                      </div>
-                      <div className="font-medium">
-                        {student.section ?? student.classId?.section ?? "-"}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      Enrollment Date
-                    </div>
-                    <div className="font-medium">
-                      {student.createdAt
-                        ? new Date(student.createdAt).toLocaleDateString()
-                        : "-"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Status</div>
-                    <div className="mt-1">{getStatusBadge(student.status)}</div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* --- Mother --- */}
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold">Mother</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => handleCopy(motherInfoText, "Mother details")}
+              >
+                <Copy className="w-4 h-4 mr-1" /> Copy
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+              <div>
+                <strong>Name:</strong> {student.motherName || "N/A"}
+              </div>
+              <div>
+                <strong>Occupation:</strong> {student.motherOccupation || "N/A"}
+              </div>
+              <div>
+                <strong>Phone:</strong> {student.motherphone || "N/A"}
+              </div>
+              <div>
+                <strong>Email:</strong> {student.motherEmail || "N/A"}
+              </div>
             </div>
 
-            {/* Parent Contact Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-4 h-4" /> Parent Contact Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Father */}
-                <div className="space-y-2 p-4 bg-accent/50 rounded-lg">
-                  <h4 className="font-medium">Father</h4>
-                  <p>
-                    <strong>Name:</strong> {student.fatherName ?? "-"}
-                  </p>
-                  <p>
-                    <strong>Email:</strong> {student.fatherEmail ?? "-"}
-                  </p>
-                  <p>
-                    <strong>Phone:</strong> {student.fatherphone ?? "-"}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-muted-foreground" />
-                    {student.fatherOccupation ?? "-"}
-                  </p>
-                </div>
-                {/* Mother */}
-                <div className="space-y-2 p-4 bg-accent/50 rounded-lg">
-                  <h4 className="font-medium">Mother</h4>
-                  <p>
-                    <strong>Name:</strong> {student.motherName ?? "-"}
-                  </p>
-                  <p>
-                    <strong>Email:</strong> {student.motherEmail ?? "-"}
-                  </p>
-                  <p>
-                    <strong>Phone:</strong> {student.motherphone ?? "-"}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-muted-foreground" />
-                    {student.motherOccupation ?? "-"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <Separator className="my-4" />
 
-            {/* Emergency Contact */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-4 h-4" /> Emergency Contact
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p>
-                  <strong>Name:</strong> {student.contactName ?? "-"}
-                </p>
-                <p>
-                  <strong>Phone:</strong> {student.contactPhone ?? "-"}
-                </p>
-                <p>
-                  <strong>Relation:</strong> {student.relation ?? "-"}
-                </p>
-              </CardContent>
-            </Card>
+            {/* --- Guardian / Contact --- */}
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold">Guardian / Contact</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => handleCopy(guardianInfoText, "Guardian details")}
+              >
+                <Copy className="w-4 h-4 mr-1" /> Copy
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+              <div>
+                <strong>Contact Person:</strong> {student.contactName || "N/A"}
+              </div>
+              <div>
+                <strong>Relation:</strong> {student.relation || "N/A"}
+              </div>
+              <div>
+                <strong>Email:</strong> {student.contactEmail || "N/A"}
+              </div>
+              <div>
+                <strong>Phone:</strong> {student.contactPhone || "N/A"}
+              </div>
+            </div>
+          </section>
 
-            {/* Scholarship Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4" /> Scholarship Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {student.scholarships && student.scholarships.length > 0 ? (
-                  student.scholarships.map((scholarship, index) => (
-                    <div
-                      key={scholarship._id ?? index}
-                      className="p-4 bg-accent/50 rounded-lg flex flex-col gap-2"
-                    >
+          {/* === SCHOLARSHIP INFO === */}
+          <section>
+            <h3 className="text-lg font-semibold mb-2 text-primary">
+              🎖️ Scholarship Information
+            </h3>
+            <Separator className="mb-3" />
+            {scholarships.length > 0 ? (
+              <div className="space-y-4">
+                {scholarships.map((scholarship: any, index: number) => (
+                  <div
+                    key={index}
+                    className="border p-4 rounded-xl bg-muted/20 hover:bg-muted/30 transition"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold text-base">
+                        {scholarship.name ?? scholarship.scholarshipName ?? "—"}
+                      </h4>
+                      <Badge variant="default" className="capitalize">
+                        {scholarship.type ?? "—"}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
                       <div>
-                        <strong>Name:</strong>{" "}
-                        {scholarship.name ?? scholarship.scholarshipName ?? "-"}
+                        <strong>Amount:</strong>{" "}
+                        {typeof scholarship.value !== "undefined"
+                          ? scholarship.valueType === "fixed"
+                            ? `₹${scholarship.value}`
+                            : `${scholarship.value}%`
+                          : "—"}
                       </div>
                       <div>
-                        <strong>Type:</strong>{" "}
-                        {scholarship.type ?? scholarship.scholarshipType ?? "-"}
+                        <strong>Period:</strong> {scholarship.period ?? "—"}
                       </div>
                       <div>
-                        <strong>Value:</strong>{" "}
-                        {scholarship.value ?? scholarship.amount ?? "-"}
-                        {scholarship.valueType === "percentage" ? "%" : "₹"}
+                        <strong>Months:</strong>{" "}
+                        {Array.isArray(scholarship.months) &&
+                        scholarship.months.length
+                          ? scholarship.months.join(", ")
+                          : "—"}
                       </div>
                       <div>
-                        <strong>Period:</strong>{" "}
-                        {scholarship.period ?? scholarship.duration ?? "-"}
+                        <strong>Applied Date:</strong>{" "}
+                        {formatDate(scholarship.appliedAt)}
                       </div>
-                      <div>
-                        <strong>Applied On:</strong>{" "}
-                        {scholarship.appliedAt ?? scholarship.appliedDate
-                          ? new Date(
-                              scholarship.appliedAt ?? scholarship.appliedDate
-                            ).toLocaleDateString("en-IN", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "-"}
-                      </div>
-                      {/* Optional: other fields from backend */}
-                      {Object.keys(scholarship).map((key) =>
-                        ![
-                          "name",
-                          "scholarshipName",
-                          "type",
-                          "scholarshipType",
-                          "value",
-                          "amount",
-                          "valueType",
-                          "period",
-                          "duration",
-                          "appliedAt",
-                          "appliedDate",
-                          "_id",
-                        ].includes(key) ? (
-                          <div key={key}>
-                            <strong>{key}:</strong> {scholarship[key] ?? "-"}
-                          </div>
-                        ) : null
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 bg-accent/50 rounded-lg flex flex-col gap-2">
-                    <div>
-                      <strong>Name:</strong> -
-                    </div>
-                    <div>
-                      <strong>Type:</strong> -
-                    </div>
-                    <div>
-                      <strong>Value:</strong> -
-                    </div>
-                    <div>
-                      <strong>Period:</strong> -
-                    </div>
-                    <div>
-                      <strong>Applied On:</strong> -
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                No scholarship information available.
+              </p>
+            )}
+          </section>
+        </div>
       </DialogContent>
     </Dialog>
   );
