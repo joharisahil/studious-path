@@ -61,21 +61,21 @@ export interface Student {
   // Father info
   fatherName?: string;
   fatherEmail?: string;
-  fatherphone?: string; // kept lowercase to match DB
+  fatherPhone?: string;
   fatherContact?: string;
   fatherOccupation?: string;
 
   // Mother info
   motherName?: string;
   motherEmail?: string;
-  motherphone?: string;
+  motherPhone?: string;
   motherContact?: string;
   motherOccupation?: string;
 
   // Academic
   grade?: string;
   section?: string;
-  classId?: string;
+  classId?: string | { _id?: string; grade?: string; section?: string; name?: string };
   registrationNumber?: string;
   rollNumber?: string;
   admissionDate?: string;
@@ -91,6 +91,7 @@ export interface Student {
   createdAt?: string;
   updatedAt?: string;
 }
+
 
 export interface SubjectGrade {
   subjectId: string;
