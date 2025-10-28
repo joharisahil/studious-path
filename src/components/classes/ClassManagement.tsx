@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Plus,
-  Upload,
-  Users,
-  Search,
-  Filter,
-  Download,
-} from "lucide-react";
+import { Plus, Upload, Users, Search, Filter, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,7 +42,9 @@ interface Student {
 
 export const ClassManagement = () => {
   const [classes, setClasses] = useState<any[]>([]);
-  const [classStudents, setClassStudents] = useState<{ [key: string]: Student[] }>({});
+  const [classStudents, setClassStudents] = useState<{
+    [key: string]: Student[];
+  }>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,30 +72,30 @@ export const ClassManagement = () => {
   }, []);
 
   // ✅ Fetch students per class after classes are loaded
-useEffect(() => {
-  const fetchStudentsPerClass = async () => {
-    try {
-      const students = await getAllStudents();
+  useEffect(() => {
+    const fetchStudentsPerClass = async () => {
+      try {
+        const students = await getAllStudents();
 
-      // group students by class id
-      const studentsMap: { [key: string]: any[] } = {};
-      students.forEach((student) => {
-        const classId = student.classId; // classId is already a string
-        if (!classId) return; // skip if no classId
-        if (!studentsMap[classId]) studentsMap[classId] = [];
-        studentsMap[classId].push(student);
-      });
+        // group students by class id
+        const studentsMap: { [key: string]: any[] } = {};
+        students.forEach((student) => {
+          const classId = student.classId; // classId is already a string
+          if (!classId) return; // skip if no classId
+          if (!studentsMap[classId]) studentsMap[classId] = [];
+          studentsMap[classId].push(student);
+        });
 
-      setClassStudents(studentsMap);
-    } catch (err) {
-      console.error("Failed to fetch students per class:", err);
+        setClassStudents(studentsMap);
+      } catch (err) {
+        console.error("Failed to fetch students per class:", err);
+      }
+    };
+
+    if (classes.length > 0) {
+      fetchStudentsPerClass();
     }
-  };
-
-  if (classes.length > 0) {
-    fetchStudentsPerClass();
-  }
-}, [classes]);
+  }, [classes]);
 
   // ✅ Derived stats
   const totalStudents = Object.values(classStudents).reduce(
@@ -110,8 +105,7 @@ useEffect(() => {
   const avgClassSize =
     classes.length > 0 ? Math.round(totalStudents / classes.length) : 0;
 
-  const getStatusColor = () =>
-    "bg-green-100 text-green-800 border-green-200";
+  const getStatusColor = () => "bg-green-100 text-green-800 border-green-200";
 
   const handleUploadStudents = (classId: string) => {
     setSelectedClass(classId);
@@ -168,7 +162,9 @@ useEffect(() => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -178,7 +174,9 @@ useEffect(() => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Avg Class Size</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Class Size
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -266,23 +264,27 @@ useEffect(() => {
                       <TableCell>{cls.grade}</TableCell>
                       <TableCell>2025-26</TableCell>
                       <TableCell>
-                        <span className="text-muted-foreground">Not assigned</span>
+                        <span className="text-muted-foreground">
+                          Not assigned
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-  <div className="text-sm">
-    {classStudents[cls._id]?.length || 0}/30
-  </div>
-  <div className="w-16 bg-gray-200 rounded-full h-2">
-    <div
-      className="bg-primary rounded-full h-2"
-      style={{
-        width: `${((classStudents[cls._id]?.length || 0) / 30) * 100}%`,
-      }}
-    />
-  </div>
-</div>
-
+                          <div className="text-sm">
+                            {classStudents[cls._id]?.length || 0}/30
+                          </div>
+                          <div className="w-16 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-primary rounded-full h-2"
+                              style={{
+                                width: `${
+                                  ((classStudents[cls._id]?.length || 0) / 30) *
+                                  100
+                                }%`,
+                              }}
+                            />
+                          </div>
+                        </div>
                       </TableCell>
                       {/* <TableCell>
                         <Badge className={getStatusColor()}>active</Badge>
@@ -315,7 +317,10 @@ useEffect(() => {
       </Card>
 
       {/* Modals */}
-      <CreateClassModal open={showCreateModal} onOpenChange={setShowCreateModal} />
+      <CreateClassModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+      />
       <UploadStudentsModal
         open={showUploadModal}
         onOpenChange={setShowUploadModal}

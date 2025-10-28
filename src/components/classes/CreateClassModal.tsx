@@ -1,17 +1,36 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { toast } from 'sonner';
-import { createClass } from '@/services/ClassesApi';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+import { toast } from "sonner";
+import { createClass } from "@/services/ClassesApi";
 
 const classSchema = z.object({
-  grade: z.string().min(1, 'Grade is required'),
-  section: z.string().min(1, 'Section is required'),
+  grade: z.string().min(1, "Grade is required"),
+  section: z.string().min(1, "Section is required"),
 });
 
 interface FormData {
@@ -24,14 +43,17 @@ interface CreateClassModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export const CreateClassModal = ({ open, onOpenChange }: CreateClassModalProps) => {
+export const CreateClassModal = ({
+  open,
+  onOpenChange,
+}: CreateClassModalProps) => {
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(classSchema),
     defaultValues: {
-      grade: '',
-      section: '',
+      grade: "",
+      section: "",
     },
   });
 
@@ -39,11 +61,11 @@ export const CreateClassModal = ({ open, onOpenChange }: CreateClassModalProps) 
     setLoading(true);
     try {
       const res = await createClass(data); // only grade & section
-      toast.success(res.message || 'Class created successfully!');
+      toast.success(res.message || "Class created successfully!");
       form.reset();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to create class');
+      toast.error(err?.message || "Failed to create class");
     } finally {
       setLoading(false);
     }
@@ -67,7 +89,10 @@ export const CreateClassModal = ({ open, onOpenChange }: CreateClassModalProps) 
                   <FormItem>
                     <FormLabel>Grade</FormLabel>
                     <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select grade" />
                         </SelectTrigger>
@@ -92,12 +117,15 @@ export const CreateClassModal = ({ open, onOpenChange }: CreateClassModalProps) 
                   <FormItem>
                     <FormLabel>Section</FormLabel>
                     <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select section" />
                         </SelectTrigger>
                         <SelectContent>
-                          {['A', 'B', 'C', 'D', 'E'].map(sec => (
+                          {["A", "B", "C", "D", "E"].map((sec) => (
                             <SelectItem key={sec} value={sec}>
                               Section {sec}
                             </SelectItem>
@@ -112,11 +140,16 @@ export const CreateClassModal = ({ open, onOpenChange }: CreateClassModalProps) 
             </div>
 
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Creating...' : 'Create Class'}
+                {loading ? "Creating..." : "Create Class"}
               </Button>
             </div>
           </form>

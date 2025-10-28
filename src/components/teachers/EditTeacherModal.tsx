@@ -62,7 +62,9 @@ const EditTeacherModal = ({
         email: teacher.email || "",
         phone: teacher.phone || "",
         phone2: teacher.phone2 || "",
-        dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.slice(0, 10) : "",
+        dateOfBirth: teacher.dateOfBirth
+          ? teacher.dateOfBirth.slice(0, 10)
+          : "",
         dob: teacher.dob ? teacher.dob.slice(0, 10) : "",
         address: teacher.address || "",
         subjectSpecialization: teacher.subjectSpecialization || [],

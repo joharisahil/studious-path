@@ -4,11 +4,20 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Phone, MapPin, User, Calendar, BookOpen, Award, Briefcase } from 'lucide-react';
-import { TeacherFormData } from '@/types';
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  User,
+  Calendar,
+  BookOpen,
+  Award,
+  Briefcase,
+} from "lucide-react";
+import { TeacherFormData } from "@/types";
 
 interface TeacherDetailsModalProps {
   open: boolean;
@@ -23,16 +32,20 @@ interface TeacherDetailsModalProps {
   };
 }
 
-const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModalProps) => {
+const TeacherDetailsModal = ({
+  open,
+  onOpenChange,
+  teacher,
+}: TeacherDetailsModalProps) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return <Badge className="bg-success/10 text-success">Active</Badge>;
-      case 'inactive':
+      case "inactive":
         return <Badge variant="secondary">Inactive</Badge>;
-      case 'onLeave':
+      case "onLeave":
         return <Badge className="bg-warning/10 text-warning">On Leave</Badge>;
-      case 'retired':
+      case "retired":
         return <Badge variant="destructive">Retired</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
@@ -43,7 +56,9 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-gradient-primary">Teacher Details</DialogTitle>
+          <DialogTitle className="text-gradient-primary">
+            Teacher Details
+          </DialogTitle>
           <DialogDescription>
             Complete information for {teacher.firstName} {teacher.lastName}
           </DialogDescription>
@@ -63,9 +78,13 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
                 {teacher.firstName} {teacher.lastName}
               </h2>
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                <span className="font-medium">Teacher ID: {teacher.registrationNumber}</span>
+                <span className="font-medium">
+                  Teacher ID: {teacher.registrationNumber}
+                </span>
               </div>
-              <div className="flex items-center gap-2">{getStatusBadge(teacher.status)}</div>
+              <div className="flex items-center gap-2">
+                {getStatusBadge(teacher.status)}
+              </div>
             </div>
           </div>
 
@@ -101,7 +120,9 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
                   <div className="flex items-center gap-3">
                     <Phone className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <div className="text-sm text-muted-foreground">Alternate Phone</div>
+                      <div className="text-sm text-muted-foreground">
+                        Alternate Phone
+                      </div>
                       <div className="font-medium">{teacher.phone2}</div>
                     </div>
                   </div>
@@ -110,7 +131,9 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
                 <div className="flex items-center gap-3">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <div className="text-sm text-muted-foreground">Date of Birth</div>
+                    <div className="text-sm text-muted-foreground">
+                      Date of Birth
+                    </div>
                     <div className="font-medium">
                       {new Date(teacher.dob).toLocaleDateString()}
                     </div>
@@ -138,14 +161,22 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
               <CardContent className="space-y-4">
                 <div>
                   <div className="text-sm text-muted-foreground">Subjects</div>
-                  <div className="font-medium">{teacher.subjects?.join(', ')}</div>
+                  <div className="font-medium">
+                    {teacher.subjects?.join(", ")}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">Qualifications</div>
-                  <div className="font-medium">{teacher.qualifications?.join(', ')}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Qualifications
+                  </div>
+                  <div className="font-medium">
+                    {teacher.qualifications?.join(", ")}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">Years of Experience</div>
+                  <div className="text-sm text-muted-foreground">
+                    Years of Experience
+                  </div>
                   <div className="font-medium">{teacher.experienceYears}</div>
                 </div>
               </CardContent>
@@ -158,20 +189,32 @@ const TeacherDetailsModal = ({ open, onOpenChange, teacher }: TeacherDetailsModa
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted-foreground">Teacher ID</div>
-                  <div className="font-medium font-mono">{teacher.registrationNumber}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Teacher ID
+                  </div>
+                  <div className="font-medium font-mono">
+                    {teacher.registrationNumber}
+                  </div>
                 </div>
                 {/* <div>
                   <div className="text-sm text-muted-foreground">User ID</div>
                   <div className="font-medium font-mono">{teacher.userId}</div>
                 </div> */}
                 <div>
-                  <div className="text-sm text-muted-foreground">Created At</div>
-                  <div className="font-medium">{new Date(teacher.createdAt).toLocaleString()}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Created At
+                  </div>
+                  <div className="font-medium">
+                    {new Date(teacher.createdAt).toLocaleString()}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">Last Updated</div>
-                  <div className="font-medium">{new Date(teacher.updatedAt).toLocaleString()}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Last Updated
+                  </div>
+                  <div className="font-medium">
+                    {new Date(teacher.updatedAt).toLocaleString()}
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -70,8 +70,8 @@ const CreateTeacherForm = ({ onSuccess, onCancel }: CreateTeacherFormProps) => {
         phone2: data.phone2,
         dob: data.dob,
         address: data.address,
-        subjects: [data.subject],              // backend expects array
-        qualifications: [data.qualification],  // backend expects array
+        subjects: [data.subject], // backend expects array
+        qualifications: [data.qualification], // backend expects array
         experienceYears: Number(data.experience), // backend expects number
       };
 
@@ -106,108 +106,158 @@ const CreateTeacherForm = ({ onSuccess, onCancel }: CreateTeacherFormProps) => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="firstName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter first name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-                <FormField control={form.control} name="lastName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter last name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter first name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter last name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter email address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-                <FormField control={form.control} name="phone" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter phone number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="Enter email address"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter phone number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              <FormField control={form.control} name="phone2" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Alternate Phone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter alternate phone" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
+              <FormField
+                control={form.control}
+                name="phone2"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Alternate Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter alternate phone" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <FormField control={form.control} name="dob" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date of Birth</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
+              <FormField
+                control={form.control}
+                name="dob"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <FormField control={form.control} name="address" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter full address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter full address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Professional Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Professional Information</h3>
-              <FormField control={form.control} name="subject" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subject</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter subject taught" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="qualification" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Qualification</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter qualification" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="experience" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Experience (Years)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="Enter experience in years" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}/>
+              <h3 className="text-lg font-semibold">
+                Professional Information
+              </h3>
+              <FormField
+                control={form.control}
+                name="subject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subject</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter subject taught" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="qualification"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Qualification</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter qualification" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="experience"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Experience (Years)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Enter experience in years"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Form Actions */}

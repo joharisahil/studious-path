@@ -1,5 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import CreateTeacherForm from './CreateTeacherForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import CreateTeacherForm from "./CreateTeacherForm";
 
 interface CreateTeacherModalProps {
   open: boolean;
@@ -7,7 +12,11 @@ interface CreateTeacherModalProps {
   onSuccess?: () => void;
 }
 
-const CreateTeacherModal = ({ open, onOpenChange, onSuccess }: CreateTeacherModalProps) => {
+const CreateTeacherModal = ({
+  open,
+  onOpenChange,
+  onSuccess,
+}: CreateTeacherModalProps) => {
   const handleSuccess = () => {
     onSuccess?.();
     onOpenChange(false);
