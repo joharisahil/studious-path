@@ -94,7 +94,10 @@ export const updateStudentService = async (studentId: string, payload: any) => {
 
     return response.data; // { message, student }
   } catch (error: any) {
-    console.error("UpdateStudentService Error:", error.response?.data || error.message);
+    console.error(
+      "UpdateStudentService Error:",
+      error.response?.data || error.message
+    );
     const msg =
       error.response?.data?.error ||
       error.response?.data?.message ||
@@ -108,16 +111,22 @@ export const deleteStudent = async (id: string) => {
   if (!id) throw new Error("Student ID is required");
 
   try {
-    const response = await axios.delete(`${API_BASE_URL}/students/delete/${id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      withCredentials: true, // if using cookies/session
-    });
+    const response = await axios.delete(
+      `${API_BASE_URL}/students/delete/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        withCredentials: true, // if using cookies/session
+      }
+    );
 
     return response.data; // { message: "Student deleted" }
   } catch (error: any) {
-    console.error("DeleteStudent API Error:", error.response?.data || error.message);
+    console.error(
+      "DeleteStudent API Error:",
+      error.response?.data || error.message
+    );
     const msg =
       error.response?.data?.error ||
       error.response?.data?.message ||
@@ -129,19 +138,19 @@ export const deleteStudent = async (id: string) => {
 // Fetch scholarship students with pagination, grade filter, and search
 export const getStudentsWithScholarships = async () => {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/fees/with-scholarships`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        withCredentials: true, // only if your backend expects cookies
-      }
-    );
+    const response = await axios.get(`${API_BASE_URL}/fees/with-scholarships`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      withCredentials: true, // only if your backend expects cookies
+    });
 
     return response.data; // { students: [...], count: number }
   } catch (error: any) {
-    console.error("Error fetching scholarship students:", error.response?.data || error.message);
+    console.error(
+      "Error fetching scholarship students:",
+      error.response?.data || error.message
+    );
     const msg =
       error.response?.data?.error ||
       error.response?.data?.message ||
