@@ -78,42 +78,83 @@ export interface UpdateStudentPayload {
   motherphone?: string;
 }
 
-export const updateStudentService = async (
-  studentId: string,
-  payload: UpdateStudentPayload
-) => {
+export const updateStudentService = async (studentId: string, payload: any) => {
   try {
-    const response = await axios.put(`/api/students/${studentId}`, payload);
+    const response = await axios.put(
+      `${API_BASE_URL}/students/${studentId}`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+
     return response.data; // { message, student }
   } catch (error: any) {
-    // Optional: extract backend error message
+    console.error(
+      "UpdateStudentService Error:",
+      error.response?.data || error.message
+    );
     const msg =
       error.response?.data?.error ||
+      error.response?.data?.message ||
       "Failed to update student. Please try again.";
     throw new Error(msg);
   }
 };
 
-interface Pagination {
-  total: number;
-  currentPage: number;
-  totalPages: number;
-  limit: number;
-}
+// Delete a student by ID
+export const deleteStudent = async (id: string) => {
+  if (!id) throw new Error("Student ID is required");
 
-interface GetStudentsResponse {
-  success: boolean;
-  students: Student[];
-  pagination: Pagination;
-}
+  try {
+    const response = await axios.delete(
+      `${API_BASE_URL}/students/delete/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        withCredentials: true, // if using cookies/session
+      }
+    );
 
-// Renamed function to avoid confusion
-export const fetchPaginatedStudents = async (
-  page: number = 1,
-  limit: number = 10
-): Promise<GetStudentsResponse> => {
-  const { data } = await axios.get("/api/students", {
-    params: { page, limit },
-  });
-  return data;
+    return response.data; // { message: "Student deleted" }
+  } catch (error: any) {
+    console.error(
+      "DeleteStudent API Error:",
+      error.response?.data || error.message
+    );
+    const msg =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      "Failed to delete student. Please try again.";
+    throw new Error(msg);
+  }
+};
+
+// Fetch scholarship students with pagination, grade filter, and search
+export const getStudentsWithScholarships = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/fees/with-scholarships`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      withCredentials: true, // only if your backend expects cookies
+    });
+
+    return response.data; // { students: [...], count: number }
+  } catch (error: any) {
+    console.error(
+      "Error fetching scholarship students:",
+      error.response?.data || error.message
+    );
+    const msg =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      "Failed to fetch scholarship students";
+    throw new Error(msg);
+  }
 };

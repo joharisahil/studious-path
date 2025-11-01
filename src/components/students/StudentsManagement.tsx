@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// StudentsManagement.tsx
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Plus,
   Search,
@@ -7,6 +8,8 @@ import {
   Eye,
   Download,
   MoreVertical,
+  Upload,
+  Copy,
 } from "lucide-react";
 import {
   Card,
@@ -44,7 +47,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -53,22 +55,23 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import CreateStudentModal from "./CreateStudentModal";
 import EditStudentModal from "./EditStudentModal";
-import StudentDetailsModal from "./StudentDetailsModal";
-import { Student } from "@/types";
-import { getAllStudents } from "@/services/StudentsApi.ts";
+import ImportStudentModal from "./ImportStudentModal";
+import { getAllStudents, deleteStudent } from "@/services/StudentsApi";
 import { getAllClasses } from "@/services/ClassesApi";
+import StudentDetailsModal from "./StudentDetailsModal";
 
-const StudentsManagement = () => {
-  const [students, setStudents] = useState<Student[]>([]);
+const StudentsManagement: React.FC = () => {
+  const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [scholarshipFilter, setScholarshipFilter] = useState<string>("all"); // 'all' | 'yes'
   const [currentPage, setCurrentPage] = useState(1);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
 
   const [classList, setClassList] = useState<any[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
@@ -77,21 +80,58 @@ const StudentsManagement = () => {
 
   const studentsPerPage = 10;
 
-  // Fetch students
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     total: 0,
   });
-  const totalStudents = pagination.total || students.length;
 
-  const getStudentsFromAPI = async (page = 1) => {
+  // KPI values (populated from getAllStudents response)
+  const [totalStudentCount, setTotalStudentCount] = useState<number>(0);
+  const [totalScholarshipCount, setTotalScholarshipCount] = useState<number>(0);
+  const [scholarshipPercentage, setScholarshipPercentage] =
+    useState<string>("0%");
+
+  // ------------------------------
+  // Fetch students from API (single source of truth)
+  // ------------------------------
+  const fetchStudents = async (page = 1) => {
     setIsLoading(true);
     try {
-      const data = await getAllStudents(page, 10);
-      setStudents(data.students);
-      setPagination(data.pagination);
-    } catch (error) {
+      const res: any = await getAllStudents(page, studentsPerPage);
+      // expecting response to match the JSON you showed:
+      // { success, totalStudents, totalScholarshipStudents, scholarshipPercentage, students, pagination }
+      const resp = res || {};
+      setStudents(resp.students || []);
+      setPagination(
+        resp.pagination || {
+          currentPage: page,
+          totalPages: 1,
+          total: resp.totalStudents || (resp.students?.length ?? 0),
+        }
+      );
+
+      // KPIs from server (fallbacks to computed)
+      setTotalStudentCount(
+        resp.totalStudents ??
+          resp.pagination?.total ??
+          resp.students?.length ??
+          0
+      );
+      setTotalScholarshipCount(
+        resp.totalScholarshipStudents ??
+          computeTotalScholarshipFromList(resp.students || [])
+      );
+      setScholarshipPercentage(
+        resp.scholarshipPercentage ??
+          computeScholarshipPercent(
+            resp.totalScholarshipStudents ?? undefined,
+            resp.totalStudents ?? undefined,
+            resp.students || []
+          )
+      );
+    } catch (err: any) {
+      console.error("Error fetching students", err);
       toast({
         title: "Error",
         description: "Failed to fetch students",
@@ -102,18 +142,55 @@ const StudentsManagement = () => {
     }
   };
 
-  // Fetch when component mounts or when currentPage changes
+  // compute helpers in case server doesn't provide KPIs
+  const computeTotalScholarshipFromList = (list: any[]) =>
+    list.filter((s) => s.scholarshipInfo != null).length;
+  const computeScholarshipPercent = (
+    serverScholarshipCount?: number,
+    serverTotal?: number,
+    list: any[] = []
+  ) => {
+    const total = serverTotal ?? list.length;
+    const scholarshipCount =
+      typeof serverScholarshipCount === "number"
+        ? serverScholarshipCount
+        : computeTotalScholarshipFromList(list);
+    if (!total) return "0%";
+    return `${((scholarshipCount / total) * 100).toFixed(2)}%`;
+  };
+
+  // ------------------------------
+  // Initial fetch & fetch classes
+  // ------------------------------
   useEffect(() => {
-    getStudentsFromAPI(currentPage);
+    fetchStudents(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
-  // Fetch classes
   useEffect(() => {
+    // fetch classes and sort them before showing
     const fetchClasses = async () => {
       setLoadingClasses(true);
       try {
-        const data = await getAllClasses();
-        setClassList(data || []);
+        const data: any[] = await getAllClasses();
+        // sort by numeric grade when possible, then section
+        const sorted = (data || []).slice().sort((a: any, b: any) => {
+          const ag = isFinite(Number(a.grade))
+            ? Number(a.grade)
+            : a.grade?.toString()?.localeCompare?.(b.grade ?? "");
+          if (typeof ag === "number" && typeof Number(b.grade) === "number") {
+            if (Number(a.grade) !== Number(b.grade))
+              return Number(a.grade) - Number(b.grade);
+          } else if (typeof ag === "string") {
+            const cmp = (a.grade ?? "")
+              .toString()
+              .localeCompare((b.grade ?? "").toString());
+            if (cmp !== 0) return cmp;
+          }
+          // fallback to section sort
+          return (a.section ?? "").toString().localeCompare(b.section ?? "");
+        });
+        setClassList(sorted);
       } catch (err) {
         console.error("Failed to fetch classes:", err);
       } finally {
@@ -123,76 +200,124 @@ const StudentsManagement = () => {
     fetchClasses();
   }, []);
 
-  const handleEditStudent = (student: Student) => {
+  // ------------------------------
+  // Handlers
+  // ------------------------------
+  const handleEditStudent = (student: any) => {
     setSelectedStudent(student);
     setEditModalOpen(true);
   };
 
-  const handleViewStudent = (student: Student) => {
+  const handleViewStudent = (student: any) => {
     setSelectedStudent(student);
     setDetailsModalOpen(true);
   };
 
   const handleDeleteStudent = async (studentId: string) => {
     try {
-      setStudents((prev) => prev.filter((s) => s.id !== studentId));
+      await deleteStudent(studentId);
+      setStudents((prev) => prev.filter((s) => s._id !== studentId));
+      // update KPIs locally
+      const newTotal = Math.max(0, totalStudentCount - 1);
+      const hadScholarship =
+        students.find((s) => s._id === studentId)?.scholarshipInfo != null;
+      setTotalStudentCount(newTotal);
+      if (hadScholarship) setTotalScholarshipCount((p) => Math.max(0, p - 1));
+      setScholarshipPercentage(
+        computeScholarshipPercent(
+          undefined,
+          newTotal,
+          students.filter((s) => s._id !== studentId)
+        )
+      );
       toast({
         title: "Student Deleted",
         description: "Student has been successfully deleted.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to delete student. Please try again.",
+        description:
+          error.message || "Failed to delete student. Please try again.",
         variant: "destructive",
       });
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-success/10 text-success">Active</Badge>;
-      case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
-      case "graduated":
-        return <Badge className="bg-info/10 text-info">Graduated</Badge>;
-      case "suspended":
-        return <Badge variant="destructive">Suspended</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+  // copy registration number
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied",
+        description: "Registration number copied to clipboard.",
+      });
+    } catch {
+      toast({
+        title: "Failed",
+        description: "Could not copy to clipboard.",
+        variant: "destructive",
+      });
     }
   };
 
-  // Filtered students
-  const filteredStudents = students.filter((student) => {
-    const studentClassValue = `${student.grade}-${student.section}`;
-    const matchesGrade =
-      selectedGrade === "all" || studentClassValue === selectedGrade;
-    const matchesStatus =
-      selectedStatus === "all" || student.status === selectedStatus;
-    const matchesSearch =
-      (student.firstName ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (student.lastName ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (student.studentId ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (student.email ?? "").toLowerCase().includes(searchTerm.toLowerCase());
+  // ------------------------------
+  // Derived / filtered students
+  // ------------------------------
+  const filteredStudents = useMemo(() => {
+    const base = students || [];
+    // apply scholarship filter first
+    const scholarshipFiltered =
+      scholarshipFilter === "yes"
+        ? base.filter((s) => s.scholarshipInfo != null)
+        : base;
 
-    return matchesGrade && matchesStatus && matchesSearch;
-  });
+    // apply grade filter
+    const gradeFiltered =
+      selectedGrade === "all"
+        ? scholarshipFiltered
+        : scholarshipFiltered.filter((s) => {
+            const clsGrade = s.classId?.grade ?? s.grade ?? "";
+            const clsSection = s.classId?.section ?? s.section ?? "";
+            return `${clsGrade}-${clsSection}` === selectedGrade;
+          });
 
-  // Use API pagination only
-  const currentStudents = filteredStudents;
+    // apply search
+    const search = searchTerm.trim().toLowerCase();
+    if (!search) return gradeFiltered;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedGrade, selectedStatus]);
+    return gradeFiltered.filter((student) => {
+      return (
+        (student.firstName ?? "").toString().toLowerCase().includes(search) ||
+        (student.lastName ?? "").toString().toLowerCase().includes(search) ||
+        (student.registrationNumber ?? "")
+          .toString()
+          .toLowerCase()
+          .includes(search) ||
+        (student.email ?? "").toString().toLowerCase().includes(search)
+      );
+    });
+  }, [students, scholarshipFilter, selectedGrade, searchTerm]);
 
+  // top performing class (by scholarship students count)
+  const topPerformingClass = useMemo(() => {
+    const map: Record<string, { name: string; count: number }> = {};
+    students.forEach((s) => {
+      if (!s.classId) return;
+      const key = `${s.classId.grade ?? s.grade ?? ""}-${
+        s.classId.section ?? s.section ?? ""
+      }`;
+      if (!key) return;
+      if (!map[key]) map[key] = { name: key, count: 0 };
+      if (s.scholarshipInfo) map[key].count += 1;
+    });
+    const arr = Object.values(map).sort((a, b) => b.count - a.count);
+    return arr.length ? arr[0] : { name: "None", count: 0 };
+  }, [students]);
+
+  // ------------------------------
+  // Render
+  // ------------------------------
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -205,7 +330,15 @@ const StudentsManagement = () => {
             Manage student profiles, enrollment, and academic records
           </p>
         </div>
+
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setImportModalOpen(true)}
+          >
+            <Upload className="w-4 h-4" /> Import
+          </Button>
           <Button variant="outline" className="gap-2">
             <Download className="w-4 h-4" /> Export
           </Button>
@@ -215,7 +348,7 @@ const StudentsManagement = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="kpi-card">
           <CardHeader className="pb-2">
@@ -224,48 +357,53 @@ const StudentsManagement = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStudents}</div>
+            <div className="text-2xl font-bold">{totalStudentCount}</div>
             <div className="text-sm text-muted-foreground">All enrollments</div>
           </CardContent>
         </Card>
+
         <Card className="kpi-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Students
+              Scholarship Students
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {filteredStudents.filter((s) => s.status === "active").length}
+              {totalScholarshipCount}
             </div>
             <div className="text-sm text-muted-foreground">
-              Currently enrolled
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="kpi-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              New This Month
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">23</div>
-            <div className="text-sm text-muted-foreground">
-              Recent enrollments
+              Receiving scholarships
             </div>
           </CardContent>
         </Card>
+
         <Card className="kpi-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Graduation Rate
+              Scholarship Percentage
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">94.2%</div>
+            <div className="text-2xl font-bold text-primary">
+              {scholarshipPercentage}
+            </div>
             <div className="text-sm text-muted-foreground">
-              Last academic year
+              % of students on scholarship
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="kpi-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Top Performing Class
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{topPerformingClass.name}</div>
+            <div className="text-sm text-muted-foreground">
+              {topPerformingClass.count} scholarship students
             </div>
           </CardContent>
         </Card>
@@ -276,9 +414,10 @@ const StudentsManagement = () => {
         <CardHeader>
           <CardTitle className="text-base">Search & Filter Students</CardTitle>
           <CardDescription>
-            Find students by name, ID, grade, or status
+            Find students by name, ID, grade, or scholarship
           </CardDescription>
         </CardHeader>
+
         <CardContent className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1 relative">
@@ -306,7 +445,7 @@ const StudentsManagement = () => {
                     No classes found
                   </SelectItem>
                 ) : (
-                  classList.map((cls, i) => (
+                  classList.map((cls: any, i: number) => (
                     <SelectItem key={i} value={`${cls.grade}-${cls.section}`}>
                       Class {cls.grade} ({cls.section})
                     </SelectItem>
@@ -315,16 +454,16 @@ const StudentsManagement = () => {
               </SelectContent>
             </Select>
 
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <Select
+              value={scholarshipFilter}
+              onValueChange={setScholarshipFilter}
+            >
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select Status" />
+                <SelectValue placeholder="Scholarship Students" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="graduated">Graduated</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="all">All Students</SelectItem>
+                <SelectItem value="yes">With Scholarship</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -341,6 +480,7 @@ const StudentsManagement = () => {
               : `Showing page ${pagination.currentPage} of ${pagination.totalPages} — Total ${pagination.total} students`}
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
@@ -350,21 +490,37 @@ const StudentsManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Registeration Number</TableHead>
+                  <TableHead>Registration Number</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Class</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Section</TableHead>
                   <TableHead>DOB</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                {currentStudents.map((student) => (
-                  <TableRow key={student.id}>
+                {filteredStudents.map((student) => (
+                  <TableRow key={student._id}>
                     <TableCell className="font-medium">
-                      {student.registrationNumber}
+                      <div className="flex items-center gap-2">
+                        <span>{student.registrationNumber || "-"}</span>
+                        {student.registrationNumber && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1"
+                            onClick={() =>
+                              handleCopy(student.registrationNumber)
+                            }
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
+
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -377,22 +533,32 @@ const StudentsManagement = () => {
                           <div className="font-medium">
                             {student.firstName} {student.lastName}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            Section {student.section ?? "-"}
-                          </div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">{student.email}</TableCell>
+
+                    <TableCell className="text-sm">
+                      {student.email || "-"}
+                    </TableCell>
+
                     <TableCell>
-                      <Badge variant="outline">Grade {student.grade}</Badge>
+                      <Badge variant="outline">
+                        {student.classId?.grade ?? "-"}
+                      </Badge>
                     </TableCell>
-                    <TableCell>{getStatusBadge(student.status)}</TableCell>
+
+                    <TableCell>{student.classId?.section ?? "-"}</TableCell>
+
                     <TableCell className="text-sm text-muted-foreground">
-                      {student.dateOfBirth
-                        ? new Date(student.dateOfBirth).toLocaleDateString()
-                        : "-"}
+                      {student.dob
+                        ? new Date(student.dob).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "N/A"}
                     </TableCell>
+
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -400,6 +566,7 @@ const StudentsManagement = () => {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
+
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => handleViewStudent(student)}
@@ -411,6 +578,8 @@ const StudentsManagement = () => {
                           >
                             <Edit className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
+
+                          {/* Delete Confirmation */}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem
@@ -420,22 +589,24 @@ const StudentsManagement = () => {
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                               </DropdownMenuItem>
                             </AlertDialogTrigger>
+
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
                                   Delete Student
                                 </AlertDialogTitle>
-                                <AlertDialogDescription>
+                                <div className="text-sm text-muted-foreground">
                                   Are you sure you want to delete{" "}
                                   {student.firstName} {student.lastName}? This
                                   action cannot be undone.
-                                </AlertDialogDescription>
+                                </div>
                               </AlertDialogHeader>
+
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() =>
-                                    handleDeleteStudent(student.id!)
+                                    handleDeleteStudent(student._id)
                                   }
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
@@ -477,7 +648,10 @@ const StudentsManagement = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              onClick={() => {
+                setCurrentPage((p) => Math.max(1, p - 1));
+                fetchStudents(Math.max(1, currentPage - 1));
+              }}
               disabled={pagination.currentPage === 1}
             >
               Previous
@@ -485,11 +659,10 @@ const StudentsManagement = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                setCurrentPage((prev) =>
-                  Math.min(pagination.totalPages, prev + 1)
-                )
-              }
+              onClick={() => {
+                setCurrentPage((p) => Math.min(pagination.totalPages, p + 1));
+                fetchStudents(Math.min(pagination.totalPages, currentPage + 1));
+              }}
               disabled={pagination.currentPage === pagination.totalPages}
             >
               Next
@@ -502,7 +675,7 @@ const StudentsManagement = () => {
       <CreateStudentModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={getStudentsFromAPI}
+        onSuccess={() => fetchStudents(1)}
       />
       {selectedStudent && (
         <>
@@ -511,7 +684,7 @@ const StudentsManagement = () => {
             onOpenChange={setEditModalOpen}
             student={selectedStudent}
             onSuccess={() => {
-              getStudentsFromAPI();
+              fetchStudents(pagination.currentPage);
               setSelectedStudent(null);
             }}
           />
@@ -522,6 +695,11 @@ const StudentsManagement = () => {
           />
         </>
       )}
+      <ImportStudentModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onSuccess={() => fetchStudents(pagination.currentPage)}
+      />
     </div>
   );
 };

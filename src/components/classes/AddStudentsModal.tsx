@@ -1,16 +1,31 @@
-import { useState, useEffect } from 'react';
-import { Search, Users, Check, Plus } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useGetStudentsQuery } from '@/store/api/studentsApi';
-import { useGetClassQuery, useAddStudentsToClassMutation } from '@/store/api/classesApi';
-import { toast } from 'sonner';
-import { Student } from '@/types';
+import { useState, useEffect } from "react";
+import { Search, Users, Check, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useGetStudentsQuery } from "@/store/api/studentsApi";
+import {
+  useGetClassQuery,
+  useAddStudentsToClassMutation,
+} from "@/store/api/classesApi";
+import { toast } from "sonner";
+import { Student } from "@/types";
 
 interface AddStudentsModalProps {
   open: boolean;
@@ -18,10 +33,15 @@ interface AddStudentsModalProps {
   classId: string | null;
 }
 
-export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsModalProps) => {
-  const [addStudentsToClass, { isLoading: isAdding }] = useAddStudentsToClassMutation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [gradeFilter, setGradeFilter] = useState('');
+export const AddStudentsModal = ({
+  open,
+  onOpenChange,
+  classId,
+}: AddStudentsModalProps) => {
+  const [addStudentsToClass, { isLoading: isAdding }] =
+    useAddStudentsToClassMutation();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("");
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -31,7 +51,7 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
     search: searchTerm,
   });
 
-  const { data: classData } = useGetClassQuery(classId || '', {
+  const { data: classData } = useGetClassQuery(classId || "", {
     skip: !classId,
   });
 
@@ -41,17 +61,18 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
   const enrolledStudentIds = classInfo?.students || [];
 
   // Filter students not already in class and by grade if selected
-  const availableStudents = students.filter(student => {
+  const availableStudents = students.filter((student) => {
     const notEnrolled = !enrolledStudentIds.includes(student.id);
-    const matchesGrade = gradeFilter === 'all' || !gradeFilter || student.grade === gradeFilter;
+    const matchesGrade =
+      gradeFilter === "all" || !gradeFilter || student.grade === gradeFilter;
     return notEnrolled && matchesGrade;
   });
 
   const handleStudentSelect = (studentId: string, selected: boolean) => {
     if (selected) {
-      setSelectedStudents(prev => [...prev, studentId]);
+      setSelectedStudents((prev) => [...prev, studentId]);
     } else {
-      setSelectedStudents(prev => prev.filter(id => id !== studentId));
+      setSelectedStudents((prev) => prev.filter((id) => id !== studentId));
     }
   };
 
@@ -59,7 +80,7 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
     if (selectedStudents.length === availableStudents.length) {
       setSelectedStudents([]);
     } else {
-      setSelectedStudents(availableStudents.map(s => s.id));
+      setSelectedStudents(availableStudents.map((s) => s.id));
     }
   };
 
@@ -76,14 +97,14 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
       setSelectedStudents([]);
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error?.data?.message || 'Failed to add students to class');
+      toast.error(error?.data?.message || "Failed to add students to class");
     }
   };
 
   const resetModal = () => {
     setSelectedStudents([]);
-    setSearchTerm('');
-    setGradeFilter('');
+    setSearchTerm("");
+    setGradeFilter("");
     setCurrentPage(1);
   };
 
@@ -95,16 +116,16 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'inactive':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'graduated':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'suspended':
-        return 'bg-red-100 text-red-800 border-red-200';
+      case "active":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "inactive":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "graduated":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "suspended":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -127,7 +148,8 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
                   <div>
                     <h4 className="font-medium">{classInfo.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      Current: {classInfo.currentStrength}/{classInfo.maxCapacity} students
+                      Current: {classInfo.currentStrength}/
+                      {classInfo.maxCapacity} students
                     </p>
                   </div>
                   <Badge className={getStatusColor(classInfo.status)}>
@@ -173,7 +195,8 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
                   <div className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-green-600" />
                     <span className="text-sm font-medium">
-                      {selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''} selected
+                      {selectedStudents.length} student
+                      {selectedStudents.length !== 1 ? "s" : ""} selected
                     </span>
                   </div>
                   <Button
@@ -198,11 +221,13 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
               ) : availableStudents.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No available students</h3>
+                  <h3 className="text-lg font-medium mb-2">
+                    No available students
+                  </h3>
                   <p className="text-muted-foreground">
-                    {searchTerm || gradeFilter 
-                      ? 'No students match your search criteria.'
-                      : 'All students are already enrolled in this class.'}
+                    {searchTerm || gradeFilter
+                      ? "No students match your search criteria."
+                      : "All students are already enrolled in this class."}
                   </p>
                 </div>
               ) : (
@@ -213,12 +238,16 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
                       <Checkbox
                         id="select-all"
                         checked={
-                          selectedStudents.length === availableStudents.length &&
+                          selectedStudents.length ===
+                            availableStudents.length &&
                           availableStudents.length > 0
                         }
                         onCheckedChange={handleSelectAll}
                       />
-                      <label htmlFor="select-all" className="text-sm font-medium">
+                      <label
+                        htmlFor="select-all"
+                        className="text-sm font-medium"
+                      >
                         Select All ({availableStudents.length})
                       </label>
                     </div>
@@ -227,11 +256,14 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
                   {/* Student List */}
                   <div className="max-h-60 overflow-y-auto space-y-2">
                     {availableStudents.map((student) => (
-                      <div key={student.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent">
+                      <div
+                        key={student.id}
+                        className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent"
+                      >
                         <Checkbox
                           id={student.id}
                           checked={selectedStudents.includes(student.id)}
-                          onCheckedChange={(checked) => 
+                          onCheckedChange={(checked) =>
                             handleStudentSelect(student.id, checked as boolean)
                           }
                         />
@@ -299,10 +331,11 @@ export const AddStudentsModal = ({ open, onOpenChange, classId }: AddStudentsMod
               disabled={selectedStudents.length === 0 || isAdding}
             >
               <Plus className="w-4 h-4 mr-2" />
-              {isAdding 
-                ? 'Adding...' 
-                : `Add ${selectedStudents.length} Student${selectedStudents.length !== 1 ? 's' : ''}`
-              }
+              {isAdding
+                ? "Adding..."
+                : `Add ${selectedStudents.length} Student${
+                    selectedStudents.length !== 1 ? "s" : ""
+                  }`}
             </Button>
           </div>
         </div>

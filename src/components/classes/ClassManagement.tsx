@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Plus,
-  Upload,
-  Users,
-  Search,
-  Filter,
-  Download,
-} from "lucide-react";
+import { Plus, Upload, Users, Search, Filter, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,7 +42,9 @@ interface Student {
 
 export const ClassManagement = () => {
   const [classes, setClasses] = useState<any[]>([]);
-  const [classStudents, setClassStudents] = useState<{ [key: string]: Student[] }>({});
+  const [classStudents, setClassStudents] = useState<{
+    [key: string]: Student[];
+  }>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,30 +72,30 @@ export const ClassManagement = () => {
   }, []);
 
   // ✅ Fetch students per class after classes are loaded
-useEffect(() => {
-  const fetchStudentsPerClass = async () => {
-    try {
-      const students = await getAllStudents();
+  useEffect(() => {
+    const fetchStudentsPerClass = async () => {
+      try {
+        const students = await getAllStudents();
 
-      // group students by class id
-      const studentsMap: { [key: string]: any[] } = {};
-      students.forEach((student) => {
-        const classId = student.classId; // classId is already a string
-        if (!classId) return; // skip if no classId
-        if (!studentsMap[classId]) studentsMap[classId] = [];
-        studentsMap[classId].push(student);
-      });
+        // group students by class id
+        const studentsMap: { [key: string]: any[] } = {};
+        students.forEach((student) => {
+          const classId = student.classId; // classId is already a string
+          if (!classId) return; // skip if no classId
+          if (!studentsMap[classId]) studentsMap[classId] = [];
+          studentsMap[classId].push(student);
+        });
 
-      setClassStudents(studentsMap);
-    } catch (err) {
-      console.error("Failed to fetch students per class:", err);
+        setClassStudents(studentsMap);
+      } catch (err) {
+        console.error("Failed to fetch students per class:", err);
+      }
+    };
+
+    if (classes.length > 0) {
+      fetchStudentsPerClass();
     }
-  };
-
-  if (classes.length > 0) {
-    fetchStudentsPerClass();
-  }
-}, [classes]);
+  }, [classes]);
 
   // ✅ Derived stats
   const totalStudents = Object.values(classStudents).reduce(
@@ -110,8 +105,7 @@ useEffect(() => {
   const avgClassSize =
     classes.length > 0 ? Math.round(totalStudents / classes.length) : 0;
 
-  const getStatusColor = () =>
-    "bg-green-100 text-green-800 border-green-200";
+  const getStatusColor = () => "bg-green-100 text-green-800 border-green-200";
 
   const handleUploadStudents = (classId: string) => {
     setSelectedClass(classId);
@@ -168,7 +162,9 @@ useEffect(() => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -178,7 +174,9 @@ useEffect(() => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Avg Class Size</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Class Size
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -224,98 +222,94 @@ useEffect(() => {
 
       {/* Classes Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Classes</CardTitle>
-          <CardDescription>
-            Manage all classes and their student enrollments
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : filteredClasses.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No classes found</h3>
-              <Button onClick={() => setShowCreateModal(true)}>
-                <Plus className="w-4 h-4 mr-2" /> Create Class
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Class Name</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead>Academic Year</TableHead>
-                    <TableHead>Class Teacher</TableHead>
-                    <TableHead>Students</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredClasses.map((cls) => (
-                    <TableRow key={cls._id}>
-                      <TableCell className="font-medium">
-                        {cls.grade}-{cls.section}
-                      </TableCell>
-                      <TableCell>{cls.grade}</TableCell>
-                      <TableCell>2025-26</TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">Not assigned</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-  <div className="text-sm">
-    {classStudents[cls._id]?.length || 0}/30
-  </div>
-  <div className="w-16 bg-gray-200 rounded-full h-2">
-    <div
-      className="bg-primary rounded-full h-2"
-      style={{
-        width: `${((classStudents[cls._id]?.length || 0) / 30) * 100}%`,
-      }}
-    />
-  </div>
-</div>
+  <CardHeader>
+    <CardTitle>Classes</CardTitle>
+    <CardDescription>
+      Manage all classes and their student enrollments
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    {isLoading ? (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    ) : filteredClasses.length === 0 ? (
+      <div className="text-center py-8">
+        <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium mb-2">No classes found</h3>
+        <Button onClick={() => setShowCreateModal(true)}>
+          <Plus className="w-4 h-4 mr-2" /> Create Class
+        </Button>
+      </div>
+    ) : (
+      <div className="space-y-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Class Name</TableHead>
+              <TableHead>Grade</TableHead>
+              <TableHead>Academic Year</TableHead>
+              <TableHead>Class Teacher</TableHead>
+              <TableHead>Students</TableHead>
+            </TableRow>
+          </TableHeader>
 
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor()}>active</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleUploadStudents(cls._id)}
-                          >
-                            <Upload className="w-3 h-3 mr-1" /> Upload
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAddStudents(cls._id)}
-                          >
-                            <Plus className="w-3 h-3 mr-1" /> Add
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
+          <TableBody>
+            {/* ✅ Sort classes by grade (numeric) and section (A–Z) */}
+            {filteredClasses
+              .slice() // avoid mutating original array
+              .sort((a, b) => {
+                // convert grade to number if possible
+                const gradeA = parseInt(a.grade) || 0;
+                const gradeB = parseInt(b.grade) || 0;
+
+                if (gradeA !== gradeB) return gradeA - gradeB;
+
+                // sort section alphabetically
+                return a.section.localeCompare(b.section);
+              })
+              .map((cls) => (
+                <TableRow key={cls._id}>
+                  <TableCell className="font-medium">
+                    {cls.grade}-{cls.section}
+                  </TableCell>
+                  <TableCell>{cls.grade}</TableCell>
+                  <TableCell>2025-26</TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground">Not assigned</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm">
+                        {classStudents[cls._id]?.length || 0}/30
+                      </div>
+                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-primary rounded-full h-2"
+                          style={{
+                            width: `${
+                              ((classStudents[cls._id]?.length || 0) / 30) *
+                              100
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+      </div>
+    )}
+  </CardContent>
       </Card>
 
       {/* Modals */}
-      <CreateClassModal open={showCreateModal} onOpenChange={setShowCreateModal} />
+      <CreateClassModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+      />
       <UploadStudentsModal
         open={showUploadModal}
         onOpenChange={setShowUploadModal}

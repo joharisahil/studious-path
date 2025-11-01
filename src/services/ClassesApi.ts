@@ -10,11 +10,11 @@ export const getAllClasses = async () => {
       `${API_BASE_URL}/class/getall`,
        {
         headers: {
-          Authorization: `Bearer ${token}`, // verify token in backend
+          Authorization: `Bearer ${token}`,
         },
-        withCredentials: true, // optional, if you use cookies
+        withCredentials: true, 
       }
-    ); // ✅ make sure "classes"
+    ); 
     
     return response.data.classes;
   } catch (error) {
@@ -26,20 +26,20 @@ export const getAllClasses = async () => {
 
 export const createClass = async (classData: { grade: string; section: string }) => {
   try {
-    const token = localStorage.getItem("token"); // token stored after login
+    const token = localStorage.getItem("token"); 
 
     const res = await axios.post(
       `${API_BASE_URL}/class/create`,
       classData,
       {
         headers: {
-          Authorization: `Bearer ${token}`, // verify token in backend
+          Authorization: `Bearer ${token}`, 
         },
-        withCredentials: true, // optional, if you use cookies
+        withCredentials: true, 
       }
     );
 
-    return res.data; // returns { success, message, class }
+    return res.data; 
   } catch (error: any) {
     throw error.response?.data || { error: "Something went wrong" };
   }
