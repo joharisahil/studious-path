@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Mail, GraduationCap } from 'lucide-react';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Mail, GraduationCap } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -17,24 +17,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { useFindFreeTeachersMutation } from '@/store/api/timetableApi';
-import { FreeTeacher, FindFreeTeachersData } from '@/types';
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { findFreeTeachers } from "@/services/TimeTableApi";
 
 const formSchema = z.object({
-  day: z.string().min(1, 'Day is required'),
-  period: z.coerce.number().min(1).max(8, 'Period must be between 1-8'),
+  day: z.string().min(1, "Day is required"),
+  periodNumber: z.coerce.number().min(1).max(8, "Period must be between 1–8"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -49,50 +48,44 @@ export const FindFreeTeachersModal: React.FC<FindFreeTeachersModalProps> = ({
   onOpenChange,
 }) => {
   const { toast } = useToast();
-  const [findFreeTeachers, { isLoading }] = useFindFreeTeachersMutation();
-  const [freeTeachers, setFreeTeachers] = useState<FreeTeacher[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [freeTeachers, setFreeTeachers] = useState<any[]>([]);
   const [searched, setSearched] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      day: '',
-      period: 1,
+      day: "",
+      periodNumber: 1,
     },
   });
 
-  const days = [
-    'Monday',
-    'Tuesday', 
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ];
-
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const periods = Array.from({ length: 8 }, (_, i) => i + 1);
 
   const onSubmit = async (data: FormData) => {
     try {
-      const searchData: FindFreeTeachersData = {
+      setLoading(true);
+      const result = await findFreeTeachers({
         day: data.day,
-        period: data.period,
-      };
+        periodNumber: data.periodNumber,
+      });
 
-      const result = await findFreeTeachers(searchData).unwrap();
-      setFreeTeachers(result);
+      setFreeTeachers(result.freeTeachers || []);
       setSearched(true);
-      
+
       toast({
-        title: 'Search Complete',
-        description: `Found ${result.length} available teacher${result.length !== 1 ? 's' : ''}`,
+        title: "Search Complete",
+        description: `Found ${result.freeTeachers?.length || 0} available teacher(s).`,
       });
     } catch (error: any) {
       toast({
-        title: 'Error', 
-        description: 'Failed to find free teachers',
-        variant: 'destructive',
+        title: "Error",
+        description: error?.response?.data?.error || "Failed to find free teachers.",
+        variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -102,7 +95,7 @@ export const FindFreeTeachersModal: React.FC<FindFreeTeachersModalProps> = ({
         <DialogHeader>
           <DialogTitle>Find Free Teachers</DialogTitle>
           <DialogDescription>
-            Find teachers available during a specific time slot
+            Find teachers available during a specific time slot.
           </DialogDescription>
         </DialogHeader>
 
@@ -115,7 +108,7 @@ export const FindFreeTeachersModal: React.FC<FindFreeTeachersModalProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Day</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select day" />
@@ -136,11 +129,14 @@ export const FindFreeTeachersModal: React.FC<FindFreeTeachersModalProps> = ({
 
               <FormField
                 control={form.control}
-                name="period"
+                name="periodNumber"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Period</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={field.value?.toString()}>
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      value={field.value?.toString()}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select period" />
@@ -160,8 +156,8 @@ export const FindFreeTeachersModal: React.FC<FindFreeTeachersModalProps> = ({
               />
             </div>
 
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? 'Searching...' : 'Find Free Teachers'}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Searching..." : "Find Free Teachers"}
             </Button>
           </form>
         </Form>
@@ -176,24 +172,28 @@ export const FindFreeTeachersModal: React.FC<FindFreeTeachersModalProps> = ({
             {freeTeachers.length > 0 ? (
               <div className="grid gap-4">
                 {freeTeachers.map((teacher) => (
-                  <Card key={teacher.id}>
+                  <Card key={teacher._id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-medium">{teacher.name}</h4>
-                          <p className="text-sm text-muted-foreground">{teacher.department}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {teacher.department || "No department"}
+                          </p>
                           <div className="flex items-center gap-2 text-sm mt-1">
                             <Mail className="h-4 w-4" />
                             <span>{teacher.email}</span>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-1">
-                          {teacher.subjectSpecialization.map((subject) => (
-                            <Badge key={subject} variant="outline" className="text-xs">
-                              {subject}
-                            </Badge>
-                          ))}
-                        </div>
+                        {teacher.subjectSpecialization?.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {teacher.subjectSpecialization.map((subject: string) => (
+                              <Badge key={subject} variant="outline" className="text-xs">
+                                {subject}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
