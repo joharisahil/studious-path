@@ -33,6 +33,7 @@ import { TimetablePeriodFormData } from "@/types";
 import { getAllClasses } from "@/services/ClassesApi";
 import { getSubjects, getSubjectsByClass } from "@/services/subject";
 import { getAllTeachers, getTeachersBySubject } from "@/services/TeachersApi";
+import { createPeriod } from "@/services/TimeTableApi";
 
 const formSchema = z.object({
   day: z.string().min(1, "Day is required"),
@@ -61,7 +62,8 @@ export const CreatePeriodModal: React.FC<CreatePeriodModalProps> = ({
   const [isClassesLoading, setIsClassesLoading] = useState(false);
   const [isTeacherLoading, setIsTeacherLoading] = useState(false);
   const { toast } = useToast();
-  const [createPeriod, { isLoading }] = useCreatePeriodMutation();
+  // const [createPeriod, { isLoading }] = useCreatePeriodMutation();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -153,33 +155,35 @@ export const CreatePeriodModal: React.FC<CreatePeriodModalProps> = ({
   };
 
 
-  const onSubmit = async (data: FormData) => {
-    try {
-      const periodData: TimetablePeriodFormData = {
-        day: data.day!,
-        period: data.period!,
-        classId: data.classId!,
-        subjectId: data.subjectId!,
-        teacherId: data.teacherId!,
-        room: data.room,
-      };
+const onSubmit = async (data: FormData) => {
+  try {
+    setIsLoading(true);
+    const result = await createPeriod({
+      day: data.day,
+      period: data.period,
+      classId: data.classId,
+      subjectId: data.subjectId,
+      teacherId: data.teacherId,
+      room: data.room,
+    });
 
-      const result = await createPeriod(periodData).unwrap();
-      toast({
-        title: "Success",
-        description: result.message,
-      });
-      form.reset(); // ✅ clear form
-      onOpenChange(false); // ✅ close modal
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.data?.message || "Failed to create period",
-        variant: "destructive",
-      });
-    }
-  };
+    toast({
+      title: "Success",
+      description: result.message || "Period created successfully",
+    });
 
+    form.reset();
+    onOpenChange(false);
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error?.error || "Failed to create period",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -431,9 +435,10 @@ export const CreatePeriodModal: React.FC<CreatePeriodModalProps> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create Period"}
-              </Button>
+<Button type="submit" disabled={isLoading}>
+  {isLoading ? "Creating..." : "Create Period"}
+</Button>
+
             </div>
           </form>
         </Form>
