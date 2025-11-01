@@ -222,98 +222,87 @@ export const ClassManagement = () => {
 
       {/* Classes Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Classes</CardTitle>
-          <CardDescription>
-            Manage all classes and their student enrollments
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : filteredClasses.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No classes found</h3>
-              <Button onClick={() => setShowCreateModal(true)}>
-                <Plus className="w-4 h-4 mr-2" /> Create Class
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Class Name</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead>Academic Year</TableHead>
-                    <TableHead>Class Teacher</TableHead>
-                    <TableHead>Students</TableHead>
-                    {/* <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead> */}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredClasses.map((cls) => (
-                    <TableRow key={cls._id}>
-                      <TableCell className="font-medium">
-                        {cls.grade}-{cls.section}
-                      </TableCell>
-                      <TableCell>{cls.grade}</TableCell>
-                      <TableCell>2025-26</TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">
-                          Not assigned
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm">
-                            {classStudents[cls._id]?.length || 0}/30
-                          </div>
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-primary rounded-full h-2"
-                              style={{
-                                width: `${
-                                  ((classStudents[cls._id]?.length || 0) / 30) *
-                                  100
-                                }%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </TableCell>
-                      {/* <TableCell>
-                        <Badge className={getStatusColor()}>active</Badge>
-                      </TableCell> */}
-                      {/* <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleUploadStudents(cls._id)}
-                          >
-                            <Upload className="w-3 h-3 mr-1" /> Upload
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAddStudents(cls._id)}
-                          >
-                            <Plus className="w-3 h-3 mr-1" /> Add
-                          </Button>
-                        </div>
-                      </TableCell> */}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
+  <CardHeader>
+    <CardTitle>Classes</CardTitle>
+    <CardDescription>
+      Manage all classes and their student enrollments
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    {isLoading ? (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    ) : filteredClasses.length === 0 ? (
+      <div className="text-center py-8">
+        <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium mb-2">No classes found</h3>
+        <Button onClick={() => setShowCreateModal(true)}>
+          <Plus className="w-4 h-4 mr-2" /> Create Class
+        </Button>
+      </div>
+    ) : (
+      <div className="space-y-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Class Name</TableHead>
+              <TableHead>Grade</TableHead>
+              <TableHead>Academic Year</TableHead>
+              <TableHead>Class Teacher</TableHead>
+              <TableHead>Students</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {/* ✅ Sort classes by grade (numeric) and section (A–Z) */}
+            {filteredClasses
+              .slice() // avoid mutating original array
+              .sort((a, b) => {
+                // convert grade to number if possible
+                const gradeA = parseInt(a.grade) || 0;
+                const gradeB = parseInt(b.grade) || 0;
+
+                if (gradeA !== gradeB) return gradeA - gradeB;
+
+                // sort section alphabetically
+                return a.section.localeCompare(b.section);
+              })
+              .map((cls) => (
+                <TableRow key={cls._id}>
+                  <TableCell className="font-medium">
+                    {cls.grade}-{cls.section}
+                  </TableCell>
+                  <TableCell>{cls.grade}</TableCell>
+                  <TableCell>2025-26</TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground">Not assigned</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm">
+                        {classStudents[cls._id]?.length || 0}/30
+                      </div>
+                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-primary rounded-full h-2"
+                          style={{
+                            width: `${
+                              ((classStudents[cls._id]?.length || 0) / 30) *
+                              100
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+      </div>
+    )}
+  </CardContent>
       </Card>
 
       {/* Modals */}

@@ -11,13 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Form,
   FormField,
   FormItem,
@@ -25,12 +18,17 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { createClass } from "@/services/ClassesApi";
 
+// ✅ Validation Schema
 const classSchema = z.object({
   grade: z.string().min(1, "Grade is required"),
-  section: z.string().min(1, "Section is required"),
+  section: z
+    .string()
+    .min(1, "Section is required")
+    .max(1, "Only one character allowed"),
 });
 
 interface FormData {
@@ -60,10 +58,13 @@ export const CreateClassModal = ({
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const res = await createClass(data); // only grade & section
+      const res = await createClass(data);
       toast.success(res.message || "Class created successfully!");
       form.reset();
       onOpenChange(false);
+
+      // ✅ Automatically refresh the page
+      window.location.reload();
     } catch (err: any) {
       toast.error(err?.message || "Failed to create class");
     } finally {
@@ -76,12 +77,15 @@ export const CreateClassModal = ({
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>Create Class</DialogTitle>
-          <DialogDescription>Select grade and section</DialogDescription>
+          <DialogDescription>
+            Enter grade and section manually
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              {/* Grade input field */}
               <FormField
                 control={form.control}
                 name="grade"
@@ -89,27 +93,17 @@ export const CreateClassModal = ({
                   <FormItem>
                     <FormLabel>Grade</FormLabel>
                     <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select grade" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => (
-                            <SelectItem key={i + 1} value={`${i + 1}`}>
-                              Grade {i + 1}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        placeholder="Enter grade (e.g., 10)"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* Section input field (auto uppercase + single letter) */}
               <FormField
                 control={form.control}
                 name="section"
@@ -117,21 +111,14 @@ export const CreateClassModal = ({
                   <FormItem>
                     <FormLabel>Section</FormLabel>
                     <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select section" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["A", "B", "C", "D", "E"].map((sec) => (
-                            <SelectItem key={sec} value={sec}>
-                              Section {sec}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        placeholder="Enter section (e.g., A)"
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value.toUpperCase().slice(0, 1);
+                          field.onChange(value);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
