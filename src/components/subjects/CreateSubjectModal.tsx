@@ -21,7 +21,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { createSubject, SubjectResponse } from "@/services/subject";
+import { createSubject } from "@/services/subject";
+import { SubjectResponse } from "@/types"
 import { Subject } from "@/types";
 import {
   Select,

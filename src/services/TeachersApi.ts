@@ -62,3 +62,21 @@ export const updateTeacher = async (id: string, teacherData: any) => {
     throw error.response?.data || { error: "Something went wrong" };
   }
 };
+
+export const getTeachersBySubject = async (subjectId: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.get(
+      `${API_BASE_URL}/teachers/subject/${subjectId}`,{
+        headers: {
+        Authorization: `Bearer ${token}`, // required for verifyToken
+      },
+      withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching teachers by subject:", error);
+    throw error.response?.data || { message: "Failed to fetch teachers" };
+  }
+};
