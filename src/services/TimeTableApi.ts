@@ -87,3 +87,30 @@ export const findFreeTeachers = async (payload: FindFreeTeachersPayload) => {
   });
   return response.data;
 };
+
+export const getClassTimetable = async (classId: string) => {
+  try {
+    const res = await axios.get(
+      `${API_BASE_URL}/timetable/class/${classId}`,
+      getAuthHeaders()
+    );
+    return res.data.timetable || [];
+  } catch (error) {
+    console.error("Error fetching class timetable:", error);
+    throw error;
+  }
+};
+
+// Get Teacher Timetable
+export const getTeacherTimetable = async (teacherId: string) => {
+  try {
+    const res = await axios.get(
+      `${API_BASE_URL}/timetable/teacher/${teacherId}`,
+      getAuthHeaders()
+    );
+    return res.data.timetable || [];
+  } catch (error) {
+    console.error("Error fetching teacher timetable:", error);
+    throw error;
+  }
+};
