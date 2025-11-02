@@ -36,47 +36,55 @@ export const getAllStudents = async (
 
 // Create a new student
 export const createStudentApi = async (studentData: StudentFormData) => {
-  const res = await axios.post(`${API_BASE_URL}/students/create`, studentData, {
-    withCredentials: true, // if you’re using cookies/session
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`, // if using JWT
-    },
-  });
-  return res.data;
-};
+  try {
+    const payload = {
+      firstName: studentData.firstName,
+      lastName: studentData.lastName,
+      dob: studentData.dob,
+      classId: studentData.classId,
+      session: studentData.session,
 
-export interface UpdateStudentPayload {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  dateOfBirth?: string;
-  address?: string;
-  grade?: string;
-  section?: string;
-  rollNumber?: string;
-  admissionDate?: string;
-  guardian?: {
-    name?: string;
-    phone?: string;
-    relation?: string;
-  };
-  fatherName?: string;
-  fatherContact?: string;
-  fatherOccupation?: string;
-  fatherEmail?: string;
-  motherName?: string;
-  motherContact?: string;
-  motherOccupation?: string;
-  motherEmail?: string;
-  registrationNumber?: string;
-  classId?: { grade: string; section: string };
-  contactName?: string;
-  contactPhone?: string;
-  relation?: string;
-  fatherphone?: string;
-  motherphone?: string;
-}
+      address: studentData.address,
+      phone: studentData.phone,
+
+      // Father
+      fatherName: studentData.fatherName || "",
+      fatherphone: studentData.fatherphone || "",
+      fatherEmail: studentData.fatherEmail || "",
+      fatherOccupation: studentData.fatherOccupation || "",
+
+      // Mother
+      motherName: studentData.motherName || "",
+      motherphone: studentData.motherphone || "",
+      motherEmail: studentData.motherEmail || "",
+      motherOccupation: studentData.motherOccupation || "",
+
+      // Emergency Contact ✅ FIXED HERE
+      contactName: studentData.contactName || "",
+      contactphone: studentData.contactPhone || "", // ✅ FIXED NAME
+      relation: studentData.relation || "",
+      contactEmail: studentData.contactEmail || "",
+    };
+
+    const res = await axios.post(`${API_BASE_URL}/students/create`, payload, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+
+    return res.data;
+  } catch (error: any) {
+    console.error("CreateStudent API Error:", error.response?.data || error);
+
+    throw new Error(
+      error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Failed to register student."
+    );
+  }
+};
 
 export const updateStudentService = async (studentId: string, payload: any) => {
   try {

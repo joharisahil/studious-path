@@ -1,6 +1,6 @@
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { 
+import { useNavigate, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import {
   GraduationCap,
   LayoutDashboard,
   Users,
@@ -16,13 +16,13 @@ import {
   ChevronRight,
   School,
   Book,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { RootState } from '@/store';
-import { logout } from '@/store/slices/authSlice';
-import { toggleSidebar } from '@/store/slices/uiSlice';
-import { UserRole } from '@/types';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RootState } from "@/store";
+import { logout } from "@/store/slices/authSlice";
+import { toggleSidebar } from "@/store/slices/uiSlice";
+import { UserRole } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface SidebarItem {
   id: string;
@@ -33,19 +33,79 @@ interface SidebarItem {
 }
 
 const sidebarItems: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['admin','teacher','student','parent'] },
-  { id: 'students', label: 'Students', icon: Users, path: '/students', roles: ['admin','teacher'] },
-  { id: 'teachers', label: 'Teachers', icon: UserCheck, path: '/teachers', roles: ['admin'] },
-  { id: 'classes', label: 'Classes', icon: School, path: '/classes', roles: ['admin'] },
-  { id: 'subjects', label: 'Subjects', icon: Book, path: '/subjects', roles: ['admin','teacher'] },
+  {
+    id: "dashboard",
+    label: "Home",
+    icon: LayoutDashboard,
+    path: "/dashboard",
+    roles: ["admin", "teacher", "student", "parent"],
+  },
+  {
+    id: "students",
+    label: "Students",
+    icon: Users,
+    path: "/students",
+    roles: ["admin", "teacher"],
+  },
+  {
+    id: "teachers",
+    label: "Teachers",
+    icon: UserCheck,
+    path: "/teachers",
+    roles: ["admin"],
+  },
+  {
+    id: "classes",
+    label: "Classes",
+    icon: School,
+    path: "/classes",
+    roles: ["admin"],
+  },
+  {
+    id: "subjects",
+    label: "Subjects",
+    icon: Book,
+    path: "/subjects",
+    roles: ["admin", "teacher"],
+  },
   //{ id: 'courses', label: 'Courses', icon: BookOpen, path: '/courses', roles: ['admin','teacher','student'] },
-  { id: 'timetable', label: 'Timetable', icon: Calendar, path: '/timetable', roles: ['admin','teacher'] },
-  { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin','teacher','student','parent'] },
+  {
+    id: "timetable",
+    label: "Timetable",
+    icon: Calendar,
+    path: "/timetable",
+    roles: ["admin", "teacher"],
+  },
+  // { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin','teacher','student','parent'] },
   //{ id: 'assignments', label: 'Assignments', icon: FileText, path: '/assignments', roles: ['admin','teacher','student'] },
-  { id: 'exams', label: 'Exams', icon: FileText, path: '/exams', roles: ['admin','teacher','student','parent'] },
-  { id: 'reportcard', label: 'Report Card', icon: FileText, path: '/reportcard', roles: ['admin','teacher','student','parent'] },
-  { id: 'fees', label: 'Fees', icon: CreditCard, path: '/fees', roles: ['admin','student','parent'] },
-  { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages', roles: ['admin','teacher','student','parent'] },
+  {
+    id: "exams",
+    label: "Exams",
+    icon: FileText,
+    path: "/exams",
+    roles: ["admin", "teacher", "student", "parent"],
+  },
+  {
+    id: "reportcard",
+    label: "Report Card",
+    icon: FileText,
+    path: "/reportcard",
+    roles: ["admin", "teacher", "student", "parent"],
+  },
+  {
+    id: "fees",
+    label: "Fees",
+    icon: CreditCard,
+    path: "/fees",
+    roles: ["admin", "student", "parent"],
+  },
+  {
+    id: "messages",
+    label: "Messages",
+    icon: MessageSquare,
+    path: "/messages",
+    roles: ["admin", "teacher", "student", "parent"],
+  },
 ];
 
 export const Sidebar = () => {
@@ -58,25 +118,25 @@ export const Sidebar = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/login');
+    navigate("/login");
   };
 
-  const filteredItems = sidebarItems.filter(item => 
-    user && item.roles.includes(user.role)
+  const filteredItems = sidebarItems.filter(
+    (item) => user && item.roles.includes(user.role)
   );
 
   const isActivePath = (path: string) => {
-    if (path === '/dashboard') {
-      return location.pathname.startsWith('/dashboard');
+    if (path === "/dashboard") {
+      return location.pathname.startsWith("/dashboard");
     }
     return location.pathname.startsWith(path);
   };
 
   // --- derive safe initials ---
   const initials = user
-    ? (user.firstName?.[0] || user.email?.[0] || '').toUpperCase()
-      + (user.lastName?.[0] || '')
-    : '';
+    ? (user.firstName?.[0] || user.email?.[0] || "").toUpperCase() +
+      (user.lastName?.[0] || "")
+    : "";
 
   return (
     <aside
@@ -93,7 +153,9 @@ export const Sidebar = () => {
           </div>
           {!sidebarCollapsed && (
             <div>
-              <h1 className="font-bold text-lg text-gradient-primary">EduManage</h1>
+              <h1 className="font-bold text-lg text-gradient-primary">
+                EduManage
+              </h1>
               <p className="text-xs text-muted-foreground capitalize">
                 {user?.role} Portal
               </p>
@@ -112,7 +174,11 @@ export const Sidebar = () => {
           sidebarCollapsed && "right-2"
         )}
       >
-        {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        {sidebarCollapsed ? (
+          <ChevronRight className="w-3 h-3" />
+        ) : (
+          <ChevronLeft className="w-3 h-3" />
+        )}
       </Button>
 
       {/* User Info */}
@@ -121,7 +187,7 @@ export const Sidebar = () => {
           <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground font-medium text-sm">
-                {initials || 'U'}
+                {initials || "U"}
               </span>
             </div>
             <div className="flex-1 min-w-0">
@@ -154,7 +220,7 @@ export const Sidebar = () => {
                 isActive && "bg-primary text-primary-foreground shadow-sm"
               )}
               onClick={() => {
-                if (item.path === '/dashboard') {
+                if (item.path === "/dashboard") {
                   navigate(`${item.path}/${user?.role}`);
                 } else {
                   navigate(item.path);
@@ -172,14 +238,14 @@ export const Sidebar = () => {
 
       {/* Footer */}
       <div className="p-4 space-y-2 border-t border-border">
-        <Button
+        {/* <Button
           variant="ghost"
           className={cn("w-full justify-start h-11", sidebarCollapsed && "justify-center px-2")}
           onClick={() => navigate('/settings')}
         >
           <Settings className={cn("w-5 h-5", !sidebarCollapsed && "mr-3")} />
           {!sidebarCollapsed && <span>Settings</span>}
-        </Button>
+        </Button> */}
 
         <Button
           variant="ghost"
