@@ -33,6 +33,7 @@ import { CreatePeriodModal } from "./CreatePeriodModal";
 import { AutoGenerateModal } from "./AutoGenerateModal";
 import { FindFreeTeachersModal } from "./FindFreeTeachersModal";
 import { getClassTimetable, getTeacherTimetable } from "@/services/TimeTableApi";
+import { EditPeriodModal } from "./EditPeriodModal";
 
 // ✅ Helper to get token
 const getAuthHeaders = () => {
@@ -58,6 +59,8 @@ export const TimetableManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingDropdowns, setLoadingDropdowns] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editPeriodOpen, setEditPeriodOpen] = useState(false);
+
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const periods = Array.from({ length: 8 }, (_, i) => i + 1);
@@ -317,6 +320,11 @@ export const TimetableManagement: React.FC = () => {
             <Plus className="mr-2 h-4 w-4" />
             Add Period
           </Button>
+          <Button variant="outline" onClick={() => setEditPeriodOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Edit Period
+          </Button>
+
           <Button variant="outline" onClick={() => setAutoGenerateOpen(true)}>
             <Calendar className="mr-2 h-4 w-4" />
             Auto Generate
@@ -411,6 +419,7 @@ export const TimetableManagement: React.FC = () => {
 
       {/* Modals */}
       <CreatePeriodModal open={createPeriodOpen} onOpenChange={setCreatePeriodOpen} />
+      <EditPeriodModal open={editPeriodOpen} onOpenChange={setEditPeriodOpen} />
       <AutoGenerateModal open={autoGenerateOpen} onOpenChange={setAutoGenerateOpen} />
       <FindFreeTeachersModal open={findTeachersOpen} onOpenChange={setFindTeachersOpen} />
     </div>

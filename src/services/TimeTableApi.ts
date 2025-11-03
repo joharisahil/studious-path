@@ -114,3 +114,20 @@ export const getTeacherTimetable = async (teacherId: string) => {
     throw error;
   }
 };
+
+export const getPeriodByClassDayPeriod = async (classId: string, day: string, period: number) => {
+  const res = await axios.get(
+    `${API_BASE_URL}/timetable/getperiod/${classId}/${day}/${period}`,
+    getAuthHeaders()
+  );
+  return res.data.period;
+};
+
+export const updatePeriod = async (periodId: string, data: any) => {
+  const res = await axios.put(
+    `${API_BASE_URL}/timetable/update/${periodId}`,
+    data,
+    getAuthHeaders()
+  );
+  return res.data;
+};
