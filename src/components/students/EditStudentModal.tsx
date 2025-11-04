@@ -246,10 +246,6 @@ const EditStudentModal = ({
                 <Label>Date of Birth *</Label>
                 <Input type="date" {...form.register("dateOfBirth")} />
               </div>
-              <div>
-                <Label>Roll Number</Label>
-                <Input {...form.register("rollNumber")} />
-              </div>
             </div>
 
             <div>
