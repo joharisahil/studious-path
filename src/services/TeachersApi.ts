@@ -62,3 +62,20 @@ export const updateTeacher = async (id: string, teacherData: any) => {
     throw error.response?.data || { error: "Something went wrong" };
   }
 };
+
+export const deleteTeacher = async (id: string) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await axios.delete(`${API_BASE_URL}/teachers/delete/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: "Failed to delete teacher" };
+  }
+};

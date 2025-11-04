@@ -10,6 +10,7 @@ import {
   MoreVertical,
   Upload,
   Copy,
+  CheckCircle,
 } from "lucide-react";
 import {
   Card,
@@ -76,6 +77,7 @@ const StudentsManagement: React.FC = () => {
 
   const [classList, setClassList] = useState<any[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -246,14 +248,21 @@ const StudentsManagement: React.FC = () => {
   };
 
   // copy registration number
-  const handleCopy = async (text: string) => {
+  const handleCopy = async (value: string, key?: string) => {
+    if (!value) return;
+    const uniqueKey = key ?? `val-${value}`;
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(value);
+      setCopiedKey(uniqueKey);
+      // clear after 1.5s
+      window.setTimeout(() => {
+        setCopiedKey((prev) => (prev === uniqueKey ? null : prev));
+      }, 1500);
       toast({
         title: "Copied",
-        description: "Registration number copied to clipboard.",
+        description: "Registeration Number Copied to clipboard.",
       });
-    } catch {
+    } catch (err) {
       toast({
         title: "Failed",
         description: "Could not copy to clipboard.",
@@ -596,10 +605,17 @@ const StudentsManagement: React.FC = () => {
                             size="sm"
                             className="p-1"
                             onClick={() =>
-                              handleCopy(student.registrationNumber)
+                              handleCopy(
+                                student.registrationNumber,
+                                `reg-${student._id}`
+                              )
                             }
                           >
-                            <Copy className="w-4 h-4" />
+                            {copiedKey === `reg-${student._id}` ? (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
                           </Button>
                         )}
                       </div>

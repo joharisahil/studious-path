@@ -1,5 +1,5 @@
 // StudentDetailsModal.tsx
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Copy } from "lucide-react";
+import { Copy, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface StudentDetailsModalProps {
@@ -26,6 +26,8 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   student,
 }) => {
   if (!student) return null;
+
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const scholarshipMeta = student.scholarshipInfo ?? {};
   const scholarships = Array.isArray(scholarshipMeta.scholarships)
@@ -52,44 +54,54 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
     }
   };
 
-  // Generic copy function
-  const handleCopy = (text: string, label?: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label ?? "Information"} copied to clipboard!`);
+  // ✅ Copy with tick logic
+  const handleCopyWithTick = async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+
+      setTimeout(() => {
+        setCopiedKey((prev) => (prev === key ? null : prev));
+      }, 1500);
+
+      toast.success("Copied!");
+    } catch {
+      toast.error("Failed to copy");
+    }
   };
 
-  // Format sections as plain text for copying
+  // ✅ TEXT BLOCKS FOR COPY
   const studentInfoText = `
 Student: ${student.firstName ?? ""} ${student.lastName ?? ""}
 Registration No: ${student.registrationNumber ?? ""}
-Class: ${student.classId?.grade ?? student.grade ?? "—"}-${student.classId?.section ?? student.section ?? "—"}
-Date of Birth: ${student.dob ? new Date(student.dob).toLocaleDateString("en-IN") : "—"}
+Class: ${student.classId?.grade ?? "—"}-${student.classId?.section ?? "—"}
+DOB: ${student.dob ? new Date(student.dob).toLocaleDateString("en-IN") : "—"}
 Address: ${student.address ?? "N/A"}
 Email: ${student.email ?? "N/A"}
 Phone: ${student.phone ?? "N/A"}
 Created On: ${formatDate(student.createdAt)}
-  `.trim();
+`.trim();
 
   const fatherInfoText = `
 Father's Name: ${student.fatherName ?? "N/A"}
 Occupation: ${student.fatherOccupation ?? "N/A"}
 Phone: ${student.fatherphone ?? "N/A"}
 Email: ${student.fatherEmail ?? "N/A"}
-  `.trim();
+`.trim();
 
   const motherInfoText = `
 Mother's Name: ${student.motherName ?? "N/A"}
 Occupation: ${student.motherOccupation ?? "N/A"}
 Phone: ${student.motherphone ?? "N/A"}
 Email: ${student.motherEmail ?? "N/A"}
-  `.trim();
+`.trim();
 
   const guardianInfoText = `
 Contact Person: ${student.contactName ?? "N/A"}
 Relation: ${student.relation ?? "N/A"}
 Email: ${student.contactEmail ?? "N/A"}
 Phone: ${student.contactPhone ?? "N/A"}
-  `.trim();
+`.trim();
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -99,10 +111,8 @@ Phone: ${student.contactPhone ?? "N/A"}
             <span>
               {student.firstName} {student.lastName}
             </span>
-            {/* <Badge variant="outline" className="text-sm px-3 py-1">
-              {student.status ?? "Active"}
-            </Badge> */}
           </DialogTitle>
+
           <p className="text-sm text-muted-foreground mt-1">
             Registration No:{" "}
             <span className="font-medium">{student.registrationNumber}</span>
@@ -110,30 +120,37 @@ Phone: ${student.contactPhone ?? "N/A"}
         </DialogHeader>
 
         <div className="space-y-8 px-4 pb-6">
-          {/* === STUDENT INFORMATION === */}
+          {/* ✅ STUDENT INFO */}
           <section>
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold mb-2 text-primary">
                 🎓 Student Information
               </h3>
+
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs"
-                onClick={() => handleCopy(studentInfoText, "Student details")}
+                onClick={() =>
+                  handleCopyWithTick(studentInfoText, "student-info")
+                }
               >
-                <Copy className="w-4 h-4 mr-1" /> Copy
+                {copiedKey === "student-info" ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
               </Button>
             </div>
+
             <Separator className="mb-3" />
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
               <div>
-                <strong>Class:</strong>{" "}
-                {student.classId?.grade ?? student.grade ?? "—"} -{" "}
-                {student.classId?.section ?? student.section ?? "—"}
+                <strong>Class:</strong> {student.classId?.grade ?? "—"} -{" "}
+                {student.classId?.section ?? "—"}
               </div>
               <div>
-                <strong>Date of Birth:</strong>{" "}
+                <strong>DOB:</strong>{" "}
                 {student.dob
                   ? new Date(student.dob).toLocaleDateString("en-IN")
                   : "—"}
@@ -153,25 +170,32 @@ Phone: ${student.contactPhone ?? "N/A"}
             </div>
           </section>
 
-          {/* === PARENT / GUARDIAN INFO === */}
+          {/* ✅ PARENT INFO */}
           <section>
             <h3 className="text-lg font-semibold mb-2 text-primary">
               👨‍👩‍👧 Parent / Guardian Information
             </h3>
             <Separator className="mb-3" />
 
-            {/* --- Father --- */}
+            {/* FATHER */}
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold">Father</h4>
+
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs"
-                onClick={() => handleCopy(fatherInfoText, "Father details")}
+                onClick={() =>
+                  handleCopyWithTick(fatherInfoText, "father-info")
+                }
               >
-                <Copy className="w-4 h-4 mr-1" /> Copy
+                {copiedKey === "father-info" ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
               </Button>
             </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
               <div>
                 <strong>Name:</strong> {student.fatherName || "N/A"}
@@ -189,18 +213,25 @@ Phone: ${student.contactPhone ?? "N/A"}
 
             <Separator className="my-4" />
 
-            {/* --- Mother --- */}
+            {/* MOTHER */}
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold">Mother</h4>
+
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs"
-                onClick={() => handleCopy(motherInfoText, "Mother details")}
+                onClick={() =>
+                  handleCopyWithTick(motherInfoText, "mother-info")
+                }
               >
-                <Copy className="w-4 h-4 mr-1" /> Copy
+                {copiedKey === "mother-info" ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
               </Button>
             </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
               <div>
                 <strong>Name:</strong> {student.motherName || "N/A"}
@@ -218,21 +249,28 @@ Phone: ${student.contactPhone ?? "N/A"}
 
             <Separator className="my-4" />
 
-            {/* --- Guardian / Contact --- */}
+            {/* GUARDIAN */}
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold">Guardian / Contact</h4>
+              <h4 className="font-semibold">Guardian</h4>
+
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs"
-                onClick={() => handleCopy(guardianInfoText, "Guardian details")}
+                onClick={() =>
+                  handleCopyWithTick(guardianInfoText, "guardian-info")
+                }
               >
-                <Copy className="w-4 h-4 mr-1" /> Copy
+                {copiedKey === "guardian-info" ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
               </Button>
             </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
               <div>
-                <strong>Contact Person:</strong> {student.contactName || "N/A"}
+                <strong>Contact:</strong> {student.contactName || "N/A"}
               </div>
               <div>
                 <strong>Relation:</strong> {student.relation || "N/A"}
@@ -246,12 +284,13 @@ Phone: ${student.contactPhone ?? "N/A"}
             </div>
           </section>
 
-          {/* === SCHOLARSHIP INFO === */}
+          {/* ✅ SCHOLARSHIP INFO */}
           <section>
             <h3 className="text-lg font-semibold mb-2 text-primary">
               🎖️ Scholarship Information
             </h3>
             <Separator className="mb-3" />
+
             {scholarships.length > 0 ? (
               <div className="space-y-4">
                 {scholarships.map((scholarship: any, index: number) => (
@@ -263,6 +302,7 @@ Phone: ${student.contactPhone ?? "N/A"}
                       <h4 className="font-semibold text-base">
                         {scholarship.name ?? scholarship.scholarshipName ?? "—"}
                       </h4>
+
                       <Badge variant="default" className="capitalize">
                         {scholarship.type ?? "—"}
                       </Badge>
@@ -277,9 +317,11 @@ Phone: ${student.contactPhone ?? "N/A"}
                             : `${scholarship.value}%`
                           : "—"}
                       </div>
+
                       <div>
                         <strong>Period:</strong> {scholarship.period ?? "—"}
                       </div>
+
                       <div>
                         <strong>Months:</strong>{" "}
                         {Array.isArray(scholarship.months) &&
@@ -287,6 +329,7 @@ Phone: ${student.contactPhone ?? "N/A"}
                           ? scholarship.months.join(", ")
                           : "—"}
                       </div>
+
                       <div>
                         <strong>Applied Date:</strong>{" "}
                         {formatDate(scholarship.appliedAt)}

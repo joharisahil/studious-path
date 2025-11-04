@@ -166,3 +166,24 @@ export const getStudentsWithScholarships = async () => {
     throw new Error(msg);
   }
 };
+
+export const searchStudents = async (query: string, page = 1, limit = 10) => {
+  const token = localStorage.getItem("token");
+  const url = new URL(`${API_BASE_URL}/students/query/search`);
+  url.searchParams.append("query", query);
+  url.searchParams.append("page", String(page));
+  url.searchParams.append("limit", String(limit));
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to search students");
+  }
+
+  return response.json();
+};

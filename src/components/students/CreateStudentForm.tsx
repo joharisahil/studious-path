@@ -28,10 +28,11 @@ import { useToast } from "@/hooks/use-toast";
 import { getAllClasses } from "@/services/ClassesApi";
 import { createStudentApi } from "@/services/StudentsApi";
 
-// ✅ ZOD SCHEMA PERFECTLY MATCHED WITH BACKEND
+// ✅ LAST NAME MADE OPTIONAL HERE
 const studentSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(1, "Last name is required"),
+  lastName: z.string().optional(), // ✅ updated
+
   dob: z.string().min(1, "Date of birth is required"),
   classId: z.string().min(1, "Class is required"),
   session: z.string().min(1, "Session is required"),
@@ -39,7 +40,6 @@ const studentSchema = z.object({
   address: z.string().min(5, "Address must be at least 5 characters"),
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
 
-  // ✅ Optional Parents Fields
   fatherName: z.string().optional(),
   fatherphone: z.string().optional(),
   fatherEmail: z.string().email().optional().or(z.literal("")).optional(),
@@ -50,7 +50,6 @@ const studentSchema = z.object({
   motherEmail: z.string().email().optional().or(z.literal("")).optional(),
   motherOccupation: z.string().optional(),
 
-  // ✅ Emergency Contact Optional
   contactName: z.string().optional(),
   contactPhone: z.string().optional(),
   relation: z.string().optional(),
@@ -76,7 +75,7 @@ export function CreateStudentForm({
     resolver: zodResolver(studentSchema),
     defaultValues: {
       firstName: "",
-      lastName: "",
+      lastName: "", // ✅ remains empty but now optional
       dob: "",
       classId: "",
       session: "",
@@ -101,7 +100,6 @@ export function CreateStudentForm({
     },
   });
 
-  // ✅ Fetch All Classes Once
   useEffect(() => {
     fetchClasses();
   }, []);
@@ -119,7 +117,6 @@ export function CreateStudentForm({
     }
   };
 
-  // ✅ Submit Handler
   const onSubmit = async (data: StudentFormData) => {
     try {
       setLoading(true);
@@ -153,7 +150,6 @@ export function CreateStudentForm({
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* ✅ STUDENT INFO */}
             <h3 className="text-lg font-semibold">Student Information</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -174,15 +170,13 @@ export function CreateStudentForm({
                 )}
               />
 
-              {/* LAST NAME */}
+              {/* ✅ LAST NAME NOW OPTIONAL */}
               <FormField
                 control={form.control}
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Last Name <span className="text-red-600">*</span>
-                    </FormLabel>
+                    <FormLabel>Last Name (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter last name" {...field} />
                     </FormControl>
@@ -467,7 +461,6 @@ export function CreateStudentForm({
               />
             </div>
 
-            {/* ✅ BUTTONS */}
             <div className="flex justify-end mt-6 space-x-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
