@@ -79,3 +79,6 @@ export const deleteTeacher = async (id: string) => {
     throw error.response?.data || { message: "Failed to delete teacher" };
   }
 };
+
+export const getTeachersBySubject = async (subjectId: string) => {
+};

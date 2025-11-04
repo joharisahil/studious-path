@@ -271,3 +271,18 @@ export const fetchFilteredFees = async (filters: SearchFilters) => {
     throw error;
   }
 };
+
+export const removeScholarshipApi = async (
+  registrationNumber: string,
+  scholarshipId: string
+) => {
+  const res = await axios.delete(
+    `${API_BASE_URL}/fees/remove/scholarship/${registrationNumber}/${scholarshipId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return res.data;
+};

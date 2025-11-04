@@ -5,7 +5,6 @@ import { z } from "zod";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,28 +18,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Student } from "@/types";
 import {
   applyScholarship as applyScholarshipApi,
   getStudentFee,
+  removeScholarshipApi,
 } from "@/services/FeesApi";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 const scholarshipSchema = z.object({
   studentId: z.string().min(1, "Please enter registration number"),
   name: z.string().min(1, "Scholarship name is required"),
-  type: z.enum(["full", "half", "custom"]),
-  value: z.number().min(0).optional(),
+  type: z.literal("custom"), // fixed to custom
+  value: z.number().min(0, "Value required"),
   valueType: z.enum(["fixed", "percentage"]).optional(),
-  period: z.enum(["yearly", "monthly"]),
+  period: z.literal("monthly"), // fixed to monthly
   months: z.array(z.string()).optional(),
 });
 
@@ -67,17 +60,13 @@ export const ApplyScholarshipModal = ({
     defaultValues: {
       studentId: "",
       name: "",
-      type: "full",
+      type: "custom",
       value: 0,
       valueType: "fixed",
-      period: "yearly",
+      period: "monthly",
       months: [],
     },
   });
-
-  const registrationNumber = form.watch("studentId");
-  const selectedType = form.watch("type");
-  const selectedPeriod = form.watch("period");
 
   const fetchStudentFee = async (regNum: string) => {
     if (!regNum)
@@ -86,6 +75,7 @@ export const ApplyScholarshipModal = ({
         description: "Enter registration number",
         variant: "destructive",
       });
+
     setIsLoading(true);
     try {
       const data = await getStudentFee(regNum);
@@ -144,6 +134,33 @@ export const ApplyScholarshipModal = ({
     }
   };
 
+  const handleRemoveScholarship = async (scholarshipId: string) => {
+    try {
+      if (!selectedStudentData?.registrationNumber) {
+        throw new Error("Student data not found");
+      }
+
+      const res = await removeScholarshipApi(
+        selectedStudentData.registrationNumber,
+        scholarshipId
+      );
+
+      toast({
+        title: "Scholarship Removed",
+        description: res.message || "Scholarship removed successfully.",
+      });
+
+      await fetchStudentFee(selectedStudentData.registrationNumber);
+    } catch (error: any) {
+      console.error("RemoveScholarship API error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove scholarship",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleClose = () => {
     form.reset();
     setStudentFee(null);
@@ -154,101 +171,53 @@ export const ApplyScholarshipModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[1000px] flex flex-col md:flex-row gap-6 p-6 bg-gray-50 rounded-lg shadow-lg">
-        {/* Left Box: Student Details */}
+      <DialogContent className="sm:max-w-[1100px] flex flex-col md:flex-row gap-6 p-6 bg-gray-50 rounded-xl shadow-2xl">
+        {/* === Left Box: Student Info === */}
         {studentFee && selectedStudentData && (
-          <div className="w-full md:w-1/3 bg-white rounded-xl shadow-lg p-5 flex flex-col gap-4 border border-gray-100">
-            <h3 className="text-2xl font-bold mb-2 border-b pb-2 text-indigo-600">
+          <div className="w-full md:w-1/3 bg-white rounded-xl shadow p-5 border border-gray-100">
+            <h3 className="text-2xl font-bold mb-3 border-b pb-2 text-indigo-600">
               Student Info
             </h3>
-            <div className="space-y-1">
-              <p>
-                <span className="font-semibold">Name:</span>{" "}
-                {selectedStudentData.firstName} {selectedStudentData.lastName}
-              </p>
-              <p>
-                <span className="font-semibold">Registration:</span>{" "}
-                {selectedStudentData.registrationNumber}
-              </p>
-              <p>
-                <span className="font-semibold">Class:</span>{" "}
-                {studentFee.className}
-              </p>
-              <p>
-                <span className="font-semibold">Session:</span>{" "}
-                {studentFee.session}
-              </p>
-              <p>
-                <span className="font-semibold">Total Fee:</span> ₹
-                {studentFee.totalAmount}
-              </p>
-              <p>
-                <span className="font-semibold">Net Payable:</span> ₹
-                {studentFee.netPayable}
-              </p>
-              <p>
-                <span className="font-semibold">Balance:</span> ₹
-                {studentFee.balance}
-              </p>
+            <div className="space-y-1 text-gray-700">
+              <p><b>Name:</b> {selectedStudentData.firstName} {selectedStudentData.lastName}</p>
+              <p><b>Registration:</b> {selectedStudentData.registrationNumber}</p>
+              <p><b>Class:</b> {studentFee.className}</p>
+              <p><b>Session:</b> {studentFee.session}</p>
+              <p><b>Total Fee:</b> ₹{studentFee.totalAmount}</p>
+              <p><b>Balance:</b> ₹{studentFee.balance}</p>
             </div>
 
-            {/* Installments */}
             <div className="mt-4">
-              <span className="font-semibold text-indigo-600">
-                Installments
-              </span>
-              <div className="mt-2 border rounded-md divide-y divide-gray-100">
+              <h4 className="font-semibold text-indigo-600 mb-2">Installments</h4>
+              <div className="border rounded-md divide-y">
                 {studentFee.installments.map((inst: any) => (
                   <div
                     key={inst.month}
-                    className="flex justify-between items-center px-3 py-2 hover:bg-gray-50"
+                    className="flex justify-between items-center px-3 py-2"
                   >
-                    <span className="font-medium">{inst.month}</span>
+                    <span>{inst.month}</span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-sm font-semibold ${
-                        inst.amount > 0
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-green-100 text-green-800"
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        inst.status === "Paid"
+                          ? "bg-green-100 text-green-700"
+                          : inst.status === "Pending"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
                       }`}
                     >
-                      ₹{inst.amount} ({inst.status})
+                      ₹{inst.amount - inst.amountPaid} ({inst.status})
                     </span>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Scholarships */}
-            {studentFee.scholarships.length > 0 && (
-              <div className="mt-4">
-                <span className="font-semibold text-indigo-600">
-                  Scholarships Applied
-                </span>
-                <ul className="mt-2 flex flex-col gap-2">
-                  {studentFee.scholarships.map((sch: any) => (
-                    <li
-                      key={sch._id}
-                      className="flex justify-between items-center bg-blue-50 px-3 py-1 rounded-md shadow-sm hover:bg-blue-100"
-                    >
-                      <span>
-                        {sch.name} ({sch.type})
-                      </span>
-                      <span className="text-gray-500 text-sm">
-                        {new Date(sch.appliedAt).toLocaleDateString()}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         )}
 
-        {/* Right Box: Scholarship Form */}
-        <div className="w-full md:w-2/3 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        {/* === Center Box: Scholarship Form === */}
+        <div className="w-full md:w-2/3 bg-white rounded-xl shadow p-6 border border-gray-100">
           <Form {...form}>
             <form className="space-y-6">
-              {/* Registration Number + Search */}
               <div className="flex gap-2 items-end">
                 <FormField
                   control={form.control}
@@ -257,10 +226,7 @@ export const ApplyScholarshipModal = ({
                     <FormItem className="flex-1">
                       <FormLabel>Registration Number</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Enter registration number"
-                          {...field}
-                        />
+                        <Input placeholder="Enter registration number" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -268,14 +234,12 @@ export const ApplyScholarshipModal = ({
                 />
                 <Button
                   type="button"
-                  className="mb-1"
                   onClick={() => fetchStudentFee(form.getValues("studentId"))}
                 >
                   Search
                 </Button>
               </div>
 
-              {/* Scholarship Name */}
               <FormField
                 control={form.control}
                 name="name"
@@ -290,138 +254,81 @@ export const ApplyScholarshipModal = ({
                 )}
               />
 
-              {/* Type */}
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="full">Full</SelectItem>
-                        <SelectItem value="half">Half</SelectItem>
-                        <SelectItem value="custom">Custom</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Value & ValueType if custom */}
-              {selectedType === "custom" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="value"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Value</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="valueType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Value Type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="fixed">Fixed</SelectItem>
-                            <SelectItem value="percentage">
-                              Percentage
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              {/* Fixed Values Display */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <FormLabel>Type</FormLabel>
+                  <p className="border rounded-md px-3 py-2 bg-gray-50 text-gray-600">
+                    Custom
+                  </p>
                 </div>
-              )}
+                <div>
+                  <FormLabel>Period</FormLabel>
+                  <p className="border rounded-md px-3 py-2 bg-gray-50 text-gray-600">
+                    Monthly
+                  </p>
+                </div>
+              </div>
 
-              {/* Period */}
+              {/* Value Field */}
               <FormField
                 control={form.control}
-                name="period"
+                name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Period</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Value (₹)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="0" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Months if monthly */}
-              {selectedPeriod === "monthly" && studentFee && (
+              {/* Monthly selection grid */}
+              {studentFee && (
                 <FormField
                   control={form.control}
                   name="months"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Select Months</FormLabel>
-                      <Select
-                        onValueChange={(val) => field.onChange([val])}
-                        defaultValue=""
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select month" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {studentFee.installments.map((inst: any) => (
-                            <SelectItem key={inst.month} value={inst.month}>
-                              {inst.month} - ₹{inst.amount}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Select Month(s)</FormLabel>
+                      <div className="grid grid-cols-3 gap-2">
+                        {studentFee.installments.map((inst: any) => {
+                          const disabled = inst.status === "Paid";
+                          return (
+                            <Button
+                              key={inst.month}
+                              type="button"
+                              variant={
+                                field.value.includes(inst.month)
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className={`w-full ${
+                                disabled ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                              onClick={() => {
+                                if (disabled) return;
+                                const updated = field.value.includes(inst.month)
+                                  ? field.value.filter((m) => m !== inst.month)
+                                  : [...field.value, inst.month];
+                                field.onChange(updated);
+                              }}
+                            >
+                              {inst.month}
+                            </Button>
+                          );
+                        })}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               )}
 
-              {/* Buttons */}
-              <div className="flex justify-end gap-3 mt-2">
-                <Button type="button" variant="outline" onClick={handleClose}>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={handleClose}>
                   Cancel
                 </Button>
                 <Button
@@ -436,23 +343,64 @@ export const ApplyScholarshipModal = ({
           </Form>
         </div>
 
-        {/* Confirmation Dialog */}
+        {/* === Right Box: Remove Scholarships === */}
+        {studentFee && studentFee.scholarships.length > 0 && (
+          <div className="w-full md:w-1/3 bg-white rounded-xl shadow p-5 border border-gray-100">
+            <h3 className="text-2xl font-bold mb-3 border-b pb-2 text-red-600">
+              Remove Scholarships
+            </h3>
+            {studentFee.scholarships.map((sch: any) => (
+              <div
+                key={sch._id}
+                className="border rounded-lg p-3 shadow-sm mb-3 hover:shadow-md"
+              >
+                <div className="flex justify-between items-center">
+                  <h4 className="font-semibold text-gray-800">{sch.name}</h4>
+                  <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                    Custom
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500">
+                  {new Date(sch.appliedAt).toLocaleDateString()}
+                </p>
+                {sch.months?.length > 0 && (
+                  <ul className="text-sm text-gray-700 mt-1">
+                    {sch.months.map((m: string, i: number) => (
+                      <li key={i}>{m} — ₹{sch.value || "N/A"}</li>
+                    ))}
+                  </ul>
+                )}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="mt-2 w-full"
+                  onClick={() => handleRemoveScholarship(sch._id)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* === Confirmation Dialog === */}
         {showConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl shadow-xl w-96 border border-gray-200">
-              <div className="flex flex-col items-center gap-3">
-                <AlertCircle className="w-12 h-12 text-red-500" />
-                <h3 className="text-xl font-semibold">Confirm Scholarship</h3>
-                <p>Are you sure you want to apply this scholarship to:</p>
-                <p className="font-medium text-lg">
+            <div className="bg-white p-6 rounded-xl shadow-xl w-96 border border-gray-200 text-center">
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold mb-2">Confirm Scholarship</h3>
+              <p>
+                Apply this scholarship to{" "}
+                <b>
                   {selectedStudentData?.firstName}{" "}
                   {selectedStudentData?.lastName}
-                </p>
-                <p className="text-gray-500">
-                  Registration: {selectedStudentData?.registrationNumber}
-                </p>
-              </div>
-              <div className="flex justify-end gap-3 mt-5">
+                </b>
+                ?
+              </p>
+              <p className="text-gray-500 text-sm mb-4">
+                Reg: {selectedStudentData?.registrationNumber}
+              </p>
+              <div className="flex justify-center gap-3">
                 <Button variant="outline" onClick={() => setShowConfirm(false)}>
                   Cancel
                 </Button>
