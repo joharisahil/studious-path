@@ -192,13 +192,13 @@ export const ViewFeeStructure: FC<Props> = ({
                           </Badge>
                         </CardTitle>
                         <div className="flex gap-2">
-                          <Button
+                          {/* <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleEdit(fs)}
                           >
                             Edit
-                          </Button>
+                          </Button> */}
                           <Button
                             size="sm"
                             variant="destructive"
@@ -264,7 +264,7 @@ export const ViewFeeStructure: FC<Props> = ({
         )}
 
         {/* Edit Modal */}
-        {editingStructure && (
+        {/* {editingStructure && (
           <Dialog
             open={!!editingStructure}
             onOpenChange={() => setEditingStructure(null)}
@@ -378,7 +378,7 @@ export const ViewFeeStructure: FC<Props> = ({
               </div>
             </DialogContent>
           </Dialog>
-        )}
+        )} */}
 
         <div className="flex justify-end mt-4">
           <Button onClick={onClose} variant="outline">
