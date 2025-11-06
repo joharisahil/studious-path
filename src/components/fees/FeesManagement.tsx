@@ -130,26 +130,24 @@ export const FeesManagement = () => {
   }, []);
 
   /** Fetch Fee Structures */
-  useEffect(() => {
-    const fetchFeeStructures = async () => {
-      try {
-        const data = await getAllFeeStructures();
-        if (data && Array.isArray(data)) {
-          const mapped = data.map((fs: any) => {
-            const cls = classes.find((c) => c._id === fs.classId._id);
-            return {
-              ...fs,
-              className: cls ? `${cls.grade} ${cls.section}` : "Unknown",
-            };
-          });
-          setFeeStructures(mapped);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    if (classes.length > 0) fetchFeeStructures();
-  }, [classes]);
+
+const fetchFeeStructuresOnClick = async () => {
+  try {
+    const data = await getAllFeeStructures();
+    if (data && Array.isArray(data)) {
+      const mapped = data.map((fs: any) => {
+        const cls = classes.find((c) => c._id === fs.classId._id);
+        return {
+          ...fs,
+          className: cls ? `${cls.grade} ${cls.section}` : "Unknown",
+        };
+      });
+      setFeeStructures(mapped);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   /** Fetch Fee Records */
   const fetchFeeRecords = async (page: number = 1) => {
@@ -272,12 +270,17 @@ export const FeesManagement = () => {
                 <Settings className="w-4 h-4 mr-2" /> Create Fee Structure
               </Button>
               
+             
               <Button
-                onClick={() => setViewFeeStructureModalOpen(true)}
-                variant="outline"
-              >
-                <Eye className="w-4 h-4 mr-2" /> View All Structures
-              </Button>
+  onClick={async () => {
+    await fetchFeeStructuresOnClick();
+    setViewFeeStructureModalOpen(true);
+  }}
+  variant="outline"
+>
+  <Eye className="w-4 h-4 mr-2" /> View All Structures
+</Button>
+
               <Button onClick={() => setApplyScholarshipModalOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" /> Apply Scholarship
               </Button>
