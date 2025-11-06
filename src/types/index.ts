@@ -35,6 +35,8 @@ export interface RegisterData extends LoginCredentials {
   // firstName: string;
   // lastName: string;
   confirmPassword: string;
+  schoolName: string;
+  planDays: number;
 }
 
 // Student Management

@@ -1,7 +1,5 @@
-// src/components/dashboards/AdminDashboard.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
   Users,
   UserCheck,
@@ -9,22 +7,21 @@ import {
   IndianRupee,
   ClipboardList,
 } from "lucide-react";
-
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
-// ✅ API Services
-import { getAllStudents } from "@/services/StudentsApi";
-import { getAllTeachers } from "@/services/TeachersApi";
-import { getAllClasses } from "@/services/ClassesApi"; // ✅ new
-// import { getPendingFeesSummary } from "@/services/FeesApi";  // ✅ new helper
+import { getKpiData } from "@/services/kpiApi"; // ✅ Import KPI API
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
-  const [studentsCount, setStudentsCount] = useState(0);
-  const [teachersCount, setTeachersCount] = useState(0);
-  const [classesCount, setClassesCount] = useState(0);
-  const [feesPending, setFeesPending] = useState(0);
+  // ✅ Dashboard State
+  const [kpiData, setKpiData] = useState({
+    schoolName: "",
+    planDays: 0,
+    studentsCount: 0,
+    teachersCount: 0,
+    classesCount: 0,
+    feesPending: 0,
+  });
 
   const today = new Date();
   const dateString = today.toLocaleDateString("en-IN", {
@@ -34,59 +31,22 @@ const AdminDashboard = () => {
     year: "numeric",
   });
 
-  // ✅ Load Students Count
+  // ✅ Load KPI Data from API
   useEffect(() => {
-    const load = async () => {
+    const fetchData = async () => {
       try {
-        const res = await getAllStudents(1, 1);
-        setStudentsCount(res?.pagination?.total || 0);
+        const res = await getKpiData();
+        if (res?.success) {
+          setKpiData(res.data);
+        }
       } catch (err) {
-        console.error("Failed to load students", err);
+        console.error("Failed to load KPI data", err);
       }
     };
-    load();
+    fetchData();
   }, []);
 
-  // ✅ Load Teachers Count
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await getAllTeachers(1, 1);
-        setTeachersCount(res?.pagination?.total || 0);
-      } catch (err) {
-        console.error("Failed to load teachers", err);
-      }
-    };
-    load();
-  }, []);
-
-  // ✅ Load Classes Count
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const classes = await getAllClasses();
-        setClassesCount(classes?.length || 0);
-      } catch (error) {
-        console.error("Failed to load classes", error);
-      }
-    };
-    load();
-  }, []);
-
-  // ✅ Load Pending Fees
-  // useEffect(() => {
-  //   const load = async () => {
-  //     try {
-  //       const pending = await getPendingFeesSummary();
-  //       setFeesPending(pending);
-  //     } catch (error) {
-  //       console.error("Failed to load pending fees", error);
-  //     }
-  //   };
-  //   load();
-  // }, []);
-
-  // ✅ ACTION BUTTONS
+  // ✅ Quick Actions
   const actions = [
     {
       title: "View Students",
@@ -129,16 +89,14 @@ const AdminDashboard = () => {
 
         <div className="relative z-10 text-center text-white">
           <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/30 backdrop-blur-lg flex items-center justify-center shadow-xl border border-white/40 text-3xl font-bold">
-            GV
+            {kpiData.schoolName ? kpiData.schoolName.charAt(0) : "S"}
           </div>
 
           <h1 className="text-4xl font-bold tracking-wide drop-shadow-lg">
             Welcome to School ERP
           </h1>
 
-          <p className="text-xl opacity-95 mt-1">
-            Green Valley International School
-          </p>
+          <p className="text-xl opacity-95 mt-1">{kpiData.schoolName}</p>
 
           <p className="mt-4 inline-block bg-white/20 px-4 py-2 rounded-xl text-sm shadow">
             {dateString}
@@ -146,7 +104,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* ✅ QUICK ACTION BUTTONS */}
+      {/* ✅ QUICK ACTIONS */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
         {actions.map((a, i) => (
           <button
@@ -169,22 +127,22 @@ const AdminDashboard = () => {
         {[
           {
             title: "Total Students",
-            value: studentsCount,
+            value: kpiData.studentsCount,
             icon: <Users className="h-8 w-8 text-blue-600" />,
           },
           {
             title: "Total Teachers",
-            value: teachersCount,
+            value: kpiData.teachersCount,
             icon: <UserCheck className="h-8 w-8 text-blue-700" />,
           },
           {
             title: "Total Classes",
-            value: classesCount,
+            value: kpiData.classesCount,
             icon: <BookOpen className="h-8 w-8 text-blue-500" />,
           },
           {
             title: "Fees Pending",
-            value: `₹ ${feesPending.toLocaleString()}`,
+            value: `₹ ${kpiData.feesPending?.toLocaleString() || 0}`,
             icon: <IndianRupee className="h-8 w-8 text-blue-800" />,
           },
         ].map((kpi, i) => (
@@ -205,6 +163,7 @@ const AdminDashboard = () => {
           </Card>
         ))}
       </div>
+
       {/* ✅ PLAN EXPIRING */}
       <div className="w-full flex justify-center">
         <Card className="rounded-2xl p-6 shadow-xl bg-white/70 backdrop-blur-lg border border-blue-200 w-full max-w-md">
@@ -213,13 +172,17 @@ const AdminDashboard = () => {
           </CardTitle>
 
           <div className="mt-5 text-center">
-            <p className="text-6xl font-bold text-blue-700">200</p>
+            <p className="text-6xl font-bold text-blue-700">
+              {kpiData.planDays}
+            </p>
             <p className="text-sm text-blue-900 mt-1">Days Remaining</p>
 
             <div className="mt-6 w-full h-3 bg-blue-200 rounded-full">
               <div
-                className="h-full bg-blue-700 rounded-full"
-                style={{ width: "40%" }}
+                className="h-full bg-blue-700 rounded-full transition-all"
+                style={{
+                  width: `${((kpiData.planDays / 360) * 100).toFixed(0)}%`,
+                }}
               />
             </div>
           </div>
