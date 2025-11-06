@@ -7,7 +7,6 @@ import {
   UserCheck,
   BookOpen,
   IndianRupee,
-  PlusCircle,
   ClipboardList,
 } from "lucide-react";
 
@@ -16,25 +15,16 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 // ✅ API Services
 import { getAllStudents } from "@/services/StudentsApi";
 import { getAllTeachers } from "@/services/TeachersApi";
-
-// ✅ MODALS
-import CreateStudentModal from "@/components/students/CreateStudentModal";
-import CreateTeacherModal from "@/components/teachers/CreateTeacherModal";
-import CreateSubjectModal from "@/components/subjects/CreateSubjectModal";
+import { getAllClasses } from "@/services/ClassesApi"; // ✅ new
+// import { getPendingFeesSummary } from "@/services/FeesApi";  // ✅ new helper
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
-  // ✅ COUNTS
   const [studentsCount, setStudentsCount] = useState(0);
   const [teachersCount, setTeachersCount] = useState(0);
-  const [subjectsCount, setSubjectsCount] = useState(0);
-  const [feesPending, setFeesPending] = useState(450000);
-
-  // ✅ MODAL STATES
-  const [createStudentOpen, setCreateStudentOpen] = useState(false);
-  const [createTeacherOpen, setCreateTeacherOpen] = useState(false);
-  const [createSubjectOpen, setCreateSubjectOpen] = useState(false);
+  const [classesCount, setClassesCount] = useState(0);
+  const [feesPending, setFeesPending] = useState(0);
 
   const today = new Date();
   const dateString = today.toLocaleDateString("en-IN", {
@@ -44,71 +34,89 @@ const AdminDashboard = () => {
     year: "numeric",
   });
 
-  // ✅ Fetch Students
+  // ✅ Load Students Count
   useEffect(() => {
-    const fetchStudents = async () => {
+    const load = async () => {
       try {
         const res = await getAllStudents(1, 1);
-        setStudentsCount(res.pagination?.total ?? 0);
+        setStudentsCount(res?.pagination?.total || 0);
       } catch (err) {
         console.error("Failed to load students", err);
       }
     };
-    fetchStudents();
+    load();
   }, []);
 
-  // ✅ Fetch Teachers
+  // ✅ Load Teachers Count
   useEffect(() => {
-    const fetchTeachers = async () => {
+    const load = async () => {
       try {
         const res = await getAllTeachers(1, 1);
-        setTeachersCount(res.pagination?.total ?? 0);
+        setTeachersCount(res?.pagination?.total || 0);
       } catch (err) {
         console.error("Failed to load teachers", err);
       }
     };
-    fetchTeachers();
+    load();
   }, []);
 
-  // ✅ Quick Action Handlers
-  const handleAddStudent = () => setCreateStudentOpen(true);
-  const handleAddTeacher = () => setCreateTeacherOpen(true);
-  const handleAddSubject = () => setCreateSubjectOpen(true);
+  // ✅ Load Classes Count
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const classes = await getAllClasses();
+        setClassesCount(classes?.length || 0);
+      } catch (error) {
+        console.error("Failed to load classes", error);
+      }
+    };
+    load();
+  }, []);
 
-  const handleViewFees = () => navigate("/fees");
-  const handleTimetable = () => navigate("/timetable");
+  // ✅ Load Pending Fees
+  // useEffect(() => {
+  //   const load = async () => {
+  //     try {
+  //       const pending = await getPendingFeesSummary();
+  //       setFeesPending(pending);
+  //     } catch (error) {
+  //       console.error("Failed to load pending fees", error);
+  //     }
+  //   };
+  //   load();
+  // }, []);
 
   // ✅ ACTION BUTTONS
   const actions = [
     {
-      title: "Add Student",
-      icon: <PlusCircle className="h-6 w-6" />,
+      title: "View Students",
+      icon: <Users className="h-6 w-6" />,
       color: "bg-blue-600",
-      onClick: handleAddStudent,
+      onClick: () => navigate("/students"),
     },
     {
-      title: "Add Teacher",
+      title: "View Teachers",
       icon: <UserCheck className="h-6 w-6" />,
       color: "bg-blue-700",
-      onClick: handleAddTeacher,
+      onClick: () => navigate("/teachers"),
     },
     {
-      title: "Add Subject",
+      title: "View Classes",
       icon: <BookOpen className="h-6 w-6" />,
       color: "bg-blue-500",
-      onClick: handleAddSubject,
+      onClick: () => navigate("/classes"),
     },
     {
       title: "View Fees",
       icon: <IndianRupee className="h-6 w-6" />,
       color: "bg-blue-800",
-      onClick: handleViewFees,
+      onClick: () => navigate("/fees"),
     },
     {
       title: "View Timetable",
       icon: <ClipboardList className="h-6 w-6" />,
       color: "bg-blue-600",
-      onClick: handleTimetable,
+      onClick: () => navigate("/timetable"),
     },
   ];
 
@@ -138,7 +146,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* ✅ QUICK ACTIONS */}
+      {/* ✅ QUICK ACTION BUTTONS */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
         {actions.map((a, i) => (
           <button
@@ -170,8 +178,8 @@ const AdminDashboard = () => {
             icon: <UserCheck className="h-8 w-8 text-blue-700" />,
           },
           {
-            title: "Total Classes", // ✅ CHANGED (was Total Subjects)
-            value: subjectsCount, // ✅ Keep count coming from subject modal
+            title: "Total Classes",
+            value: classesCount,
             icon: <BookOpen className="h-8 w-8 text-blue-500" />,
           },
           {
@@ -197,7 +205,6 @@ const AdminDashboard = () => {
           </Card>
         ))}
       </div>
-
       {/* ✅ PLAN EXPIRING */}
       <div className="w-full flex justify-center">
         <Card className="rounded-2xl p-6 shadow-xl bg-white/70 backdrop-blur-lg border border-blue-200 w-full max-w-md">
@@ -218,37 +225,6 @@ const AdminDashboard = () => {
           </div>
         </Card>
       </div>
-
-      {/* ✅ MODALS */}
-      <CreateStudentModal
-        open={createStudentOpen}
-        onOpenChange={setCreateStudentOpen}
-        onSuccess={async () => {
-          setCreateStudentOpen(false);
-          const res = await getAllStudents(1, 1);
-          setStudentsCount(res.pagination.total);
-        }}
-      />
-
-      <CreateTeacherModal
-        open={createTeacherOpen}
-        onOpenChange={setCreateTeacherOpen}
-        onSuccess={async () => {
-          setCreateTeacherOpen(false);
-          const res = await getAllTeachers(1, 1);
-          setTeachersCount(res.pagination.total);
-        }}
-      />
-
-      {/* ✅ SUBJECT MODAL (opens when Add Subject is clicked) */}
-      <CreateSubjectModal
-        open={createSubjectOpen}
-        onOpenChange={setCreateSubjectOpen}
-        onSuccess={async () => {
-          setCreateSubjectOpen(false);
-          setSubjectsCount((prev) => prev + 1);
-        }}
-      />
     </div>
   );
 };

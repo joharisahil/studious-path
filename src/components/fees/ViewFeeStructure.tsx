@@ -10,9 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateFeeStructure, deleteFeeStructure } from "@/services/FeesApi";
-//import { toast } from "@/hooks/use-toast";
 import toast from "react-hot-toast";
-
+import { Loader2 } from "lucide-react"; // ✅ Added spinner icon
 
 interface MonthDetail {
   month: string;
@@ -50,6 +49,8 @@ export const ViewFeeStructure: FC<Props> = ({
   const [monthDetails, setMonthDetails] = useState<MonthDetail[]>([]);
   const [updating, setUpdating] = useState(false);
 
+  const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null); // ✅ loading spinner for delete
+
   // Sort structures by session, then class name
   useEffect(() => {
     const sorted = [...structures].sort((a, b) => {
@@ -66,12 +67,15 @@ export const ViewFeeStructure: FC<Props> = ({
     if (!confirm("Are you sure you want to delete this fee structure?")) return;
 
     try {
+      setLoadingDeleteId(id); // ✅ Start loader
       await deleteFeeStructure(id);
       setLocalStructures((prev) => prev.filter((s) => s._id !== id));
       toast.success("Fee structure deleted successfully");
     } catch (err) {
       console.error("Delete failed:", err);
       toast.error("Failed to delete fee structure");
+    } finally {
+      setLoadingDeleteId(null); // ✅ Stop loader
     }
   };
 
@@ -191,23 +195,25 @@ export const ViewFeeStructure: FC<Props> = ({
                             {fs.status}
                           </Badge>
                         </CardTitle>
+
                         <div className="flex gap-2">
-                          {/* <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(fs)}
-                          >
-                            Edit
-                          </Button> */}
+
                           <Button
                             size="sm"
                             variant="destructive"
                             onClick={() => handleDelete(fs._id)}
+                            disabled={loadingDeleteId === fs._id}
                           >
-                            Delete
+                            {loadingDeleteId === fs._id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Delete"
+                            )}
                           </Button>
+
                         </div>
                       </CardHeader>
+
                       <CardContent>
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm border rounded-md">
@@ -244,6 +250,7 @@ export const ViewFeeStructure: FC<Props> = ({
                             </tbody>
                           </table>
                         </div>
+
                         <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2">
                           <span>Total Fee</span>
                           <span className="text-primary">
@@ -262,123 +269,6 @@ export const ViewFeeStructure: FC<Props> = ({
             No fee structures found.
           </div>
         )}
-
-        {/* Edit Modal */}
-        {/* {editingStructure && (
-          <Dialog
-            open={!!editingStructure}
-            onOpenChange={() => setEditingStructure(null)}
-          >
-            <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  Edit Fee Structure - {editingStructure.className}
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full text-sm border rounded-md">
-                  <thead className="bg-gray-100 sticky top-0">
-                    <tr>
-                      <th className="p-2 text-left">Month</th>
-                      <th className="p-2 text-left">Start Date</th>
-                      <th className="p-2 text-left">Due Date</th>
-                      <th className="p-2 text-right">Amount</th>
-                      <th className="p-2 text-right">Late Fine</th>
-                      <th className="p-2">Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthDetails.map((m, idx) => (
-                      <tr key={idx} className="border-t hover:bg-gray-50">
-                        <td className="p-2">
-                          <Input
-                            value={m.month}
-                            onChange={(e) =>
-                              handleChange(idx, "month", e.target.value)
-                            }
-                          />
-                        </td>
-                        <td className="p-2">
-                          <Input
-                            type="date"
-                            value={
-                              m.startDate
-                                ? new Date(m.startDate)
-                                    .toISOString()
-                                    .slice(0, 10)
-                                : ""
-                            }
-                            onChange={(e) =>
-                              handleChange(idx, "startDate", e.target.value)
-                            }
-                          />
-                        </td>
-                        <td className="p-2">
-                          <Input
-                            type="date"
-                            value={
-                              m.dueDate
-                                ? new Date(m.dueDate).toISOString().slice(0, 10)
-                                : ""
-                            }
-                            onChange={(e) =>
-                              handleChange(idx, "dueDate", e.target.value)
-                            }
-                          />
-                        </td>
-                        <td className="p-2">
-                          <Input
-                            type="number"
-                            value={m.amount}
-                            onChange={(e) =>
-                              handleChange(idx, "amount", e.target.value)
-                            }
-                          />
-                        </td>
-                        <td className="p-2">
-                          <Input
-                            type="number"
-                            value={m.lateFine}
-                            onChange={(e) =>
-                              handleChange(idx, "lateFine", e.target.value)
-                            }
-                          />
-                        </td>
-                        <td className="p-2">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleRemoveMonth(idx)}
-                          >
-                            Remove
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="flex justify-start mt-2">
-                  <Button size="sm" onClick={handleAddMonth}>
-                    Add Month
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditingStructure(null)}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleUpdate} disabled={updating}>
-                  {updating ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )} */}
 
         <div className="flex justify-end mt-4">
           <Button onClick={onClose} variant="outline">

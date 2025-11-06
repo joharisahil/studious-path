@@ -316,6 +316,12 @@ export interface FeeRecord {
 }
 
 export interface Payment {
+  regNo: any;
+  session: any;
+  className: any;
+  studentName: any;
+  student: any;
+  registrationNumber: any;
   id: string;
   amount: number;
   paymentDate: string;

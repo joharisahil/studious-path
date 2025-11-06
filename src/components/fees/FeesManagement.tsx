@@ -1,3 +1,4 @@
+// src/components/fees/FeesManagement.tsx
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
@@ -73,6 +74,15 @@ interface FeeRecord {
   payments?: { id: string; amount: number; date?: string; mode?: string }[];
 }
 
+/** Small reusable spinner component */
+const Spinner = ({ size = 32 }: { size?: number }) => (
+  <div
+    role="status"
+    style={{ width: size, height: size }}
+    className="inline-block rounded-full border-4 border-gray-200 border-t-gray-800 animate-spin"
+  />
+);
+
 export const FeesManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("all");
@@ -130,24 +140,23 @@ export const FeesManagement = () => {
   }, []);
 
   /** Fetch Fee Structures */
-
-const fetchFeeStructuresOnClick = async () => {
-  try {
-    const data = await getAllFeeStructures();
-    if (data && Array.isArray(data)) {
-      const mapped = data.map((fs: any) => {
-        const cls = classes.find((c) => c._id === fs.classId._id);
-        return {
-          ...fs,
-          className: cls ? `${cls.grade} ${cls.section}` : "Unknown",
-        };
-      });
-      setFeeStructures(mapped);
+  const fetchFeeStructuresOnClick = async () => {
+    try {
+      const data = await getAllFeeStructures();
+      if (data && Array.isArray(data)) {
+        const mapped = data.map((fs: any) => {
+          const cls = classes.find((c) => c._id === fs.classId._id);
+          return {
+            ...fs,
+            className: cls ? `${cls.grade} ${cls.section}` : "Unknown",
+          };
+        });
+        setFeeStructures(mapped);
+      }
+    } catch (err) {
+      console.error(err);
     }
-  } catch (err) {
-    console.error(err);
-  }
-};
+  };
 
   /** Fetch Fee Records */
   const fetchFeeRecords = async (page: number = 1) => {
@@ -166,11 +175,9 @@ const fetchFeeStructuresOnClick = async () => {
 
       const res = await fetchFilteredFees(filters);
 
-      const mappedFees: FeeRecord[] = res.fees.map((fee: any) => ({
+      const mappedFees: FeeRecord[] = (res.fees || []).map((fee: any) => ({
         id: fee._id,
-        studentName: `${fee.studentId.firstName} ${
-          fee.studentId.lastName || ""
-        }`.trim(),
+        studentName: `${fee.studentId.firstName} ${fee.studentId.lastName || ""}`.trim(),
         studentId: fee.studentId.registrationNumber,
         grade: `${fee.classId.grade} ${fee.classId.section}`,
         academicYear: fee.session,
@@ -184,18 +191,17 @@ const fetchFeeStructuresOnClick = async () => {
             : fee.totalPaid === 0
             ? "Pending"
             : "Partial",
-        scholarshipType: fee.scholarships.length
+        scholarshipType: fee.scholarships?.length
           ? fee.scholarships[0].type || "None"
           : "None",
-        nextDueDate: fee.installments?.find(
-          (inst: any) => inst.status !== "Paid"
-        )?.dueDate,
-        payments: fee.payments.map((p: any) => ({ ...p, id: p._id })),
+        nextDueDate: fee.installments?.find((inst: any) => inst.status !== "Paid")
+          ?.dueDate,
+        payments: (fee.payments || []).map((p: any) => ({ ...p, id: p._id })),
       }));
 
       setFeeRecords(mappedFees);
       setCurrentPage(res.page || 1);
-      setTotalPages(Math.ceil((res.totalStudents || 0) / 10));
+      setTotalPages(Math.max(1, Math.ceil((res.totalStudents || 0) / 10)));
 
       setTotalCollected(res.totalCollected || 0);
       setTotalPending(res.totalPending || 0);
@@ -203,6 +209,10 @@ const fetchFeeStructuresOnClick = async () => {
     } catch (err) {
       console.error(err);
       setFeeRecords([]);
+      setTotalCollected(0);
+      setTotalPending(0);
+      setTotalStudents(0);
+      setTotalPages(1);
     } finally {
       setLoadingFees(false);
     }
@@ -228,13 +238,14 @@ const fetchFeeStructuresOnClick = async () => {
 
   useEffect(() => {
     fetchFeeRecords();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearch = () => fetchFeeRecords(1);
   const handlePageChange = (page: number) => fetchFeeRecords(page);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
@@ -269,17 +280,16 @@ const fetchFeeStructuresOnClick = async () => {
               >
                 <Settings className="w-4 h-4 mr-2" /> Create Fee Structure
               </Button>
-              
-             
+
               <Button
-  onClick={async () => {
-    await fetchFeeStructuresOnClick();
-    setViewFeeStructureModalOpen(true);
-  }}
-  variant="outline"
->
-  <Eye className="w-4 h-4 mr-2" /> View All Structures
-</Button>
+                onClick={async () => {
+                  await fetchFeeStructuresOnClick();
+                  setViewFeeStructureModalOpen(true);
+                }}
+                variant="outline"
+              >
+                <Eye className="w-4 h-4 mr-2" /> View All Structures
+              </Button>
 
               <Button onClick={() => setApplyScholarshipModalOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" /> Apply Scholarship
@@ -293,9 +303,7 @@ const fetchFeeStructuresOnClick = async () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Collected
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -305,11 +313,10 @@ const fetchFeeStructuresOnClick = async () => {
             <p className="text-xs text-muted-foreground">This academic year</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Amount
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Amount</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -319,11 +326,10 @@ const fetchFeeStructuresOnClick = async () => {
             <p className="text-xs text-muted-foreground">Outstanding dues</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Students
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -331,11 +337,10 @@ const fetchFeeStructuresOnClick = async () => {
             <p className="text-xs text-muted-foreground">Fee records tracked</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Late Submitters
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Late Submitters</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -360,18 +365,6 @@ const fetchFeeStructuresOnClick = async () => {
             className="pl-10"
           />
         </div>
-
-        {/* <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Periods</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
-            <SelectItem value="quarterly">Quarterly</SelectItem>
-            <SelectItem value="yearly">Yearly</SelectItem>
-          </SelectContent>
-        </Select> */}
 
         <Select value={selectedGrade} onValueChange={setSelectedGrade}>
           <SelectTrigger className="w-[140px]">
@@ -416,8 +409,19 @@ const fetchFeeStructuresOnClick = async () => {
           </SelectContent>
         </Select>
 
-        <Button className="h-10" onClick={handleSearch}>
-          Search
+        <Button
+          className="h-10"
+          onClick={handleSearch}
+          disabled={loadingFees}
+        >
+          {loadingFees ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              <span>Searching</span>
+            </div>
+          ) : (
+            "Search"
+          )}
         </Button>
       </div>
 
@@ -448,77 +452,75 @@ const fetchFeeStructuresOnClick = async () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {feeRecords.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{record.studentName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          ID: {record.studentId}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{record.grade}</TableCell>
-                    <TableCell>{record.academicYear}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{record.collectionPeriod}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      ₹{record.totalFee?.toLocaleString() || 0}
-                    </TableCell>
-                    <TableCell className="text-emerald-600">
-                      ₹{record.paidAmount?.toLocaleString() || 0}
-                    </TableCell>
-                    <TableCell className="text-red-600">
-                      ₹{record.dueAmount?.toLocaleString() || 0}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(record.status)}>
-                        {record.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{record.scholarshipType || "None"}</TableCell>
-                    <TableCell>
-                      {record.nextDueDate
-                        ? new Date(record.nextDueDate).toLocaleDateString()
-                        : "Not set"}
-                    </TableCell>
-                    <TableCell>
-                      {record.payments?.length > 0 ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const latestPayment =
-                              record.payments[record.payments.length - 1];
-                            setSelectedPaymentForReceipt(latestPayment);
-                            setPrintReceiptModalOpen(true);
-                          }}
-                        >
-                          Print Receipt
-                        </Button>
-                      ) : null
-                      // <Button
-                      //   size="sm"
-                      //   variant="destructive"
-                      //   onClick={() => {
-                      //     setSelectedPaymentForReceipt(record);
-                      //     setPendingReceiptModalOpen(true);
-                      //   }}
-                      // >
-                      //   Pending
-                      // </Button>
-                      }
+                {loadingFees ? (
+                  <TableRow>
+                    <TableCell colSpan={11} className="py-10 text-center">
+                      <Spinner size={36} />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : feeRecords.length > 0 ? (
+                  feeRecords.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{record.studentName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            ID: {record.studentId}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{record.grade}</TableCell>
+                      <TableCell>{record.academicYear}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{record.collectionPeriod}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        ₹{record.totalFee?.toLocaleString() || 0}
+                      </TableCell>
+                      <TableCell className="text-emerald-600">
+                        ₹{record.paidAmount?.toLocaleString() || 0}
+                      </TableCell>
+                      <TableCell className="text-red-600">
+                        ₹{record.dueAmount?.toLocaleString() || 0}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusColor(record.status)}>
+                          {record.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{record.scholarshipType || "None"}</TableCell>
+                      <TableCell>
+                        {record.nextDueDate
+                          ? new Date(record.nextDueDate).toLocaleDateString()
+                          : "Not set"}
+                      </TableCell>
+                      <TableCell>
+                        {record.payments?.length > 0 ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const latestPayment =
+                                record.payments![record.payments!.length - 1];
+                              setSelectedPaymentForReceipt(latestPayment);
+                              setPrintReceiptModalOpen(true);
+                            }}
+                          >
+                            Print Receipt
+                          </Button>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">
+                      No fee records found matching your criteria.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
-            {feeRecords.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                No fee records found matching your criteria.
-              </div>
-            )}
           </div>
 
           {/* Pagination */}
@@ -543,30 +545,45 @@ const fetchFeeStructuresOnClick = async () => {
       {applyScholarshipModalOpen && (
         <ApplyScholarshipModal
           isOpen={applyScholarshipModalOpen}
-          onClose={() => setApplyScholarshipModalOpen(false)}
+          onClose={() => {
+            setApplyScholarshipModalOpen(false);
+            fetchFeeRecords(currentPage);
+          }}
         />
       )}
       {collectFeeModalOpen && (
         <CollectFeeModal
           isOpen={collectFeeModalOpen}
-          onClose={() => setCollectFeeModalOpen(false)}
+          onClose={() => {
+            setCollectFeeModalOpen(false);
+            fetchFeeRecords(currentPage);
+          }}
           students={students}
         />
       )}
       {feeStructureModalOpen && (
         <FeeStructureModal
           isOpen={feeStructureModalOpen}
-          onClose={() => setFeeStructureModalOpen(false)}
+          onClose={() => {
+            setFeeStructureModalOpen(false);
+            fetchFeeRecords(currentPage);
+          }}
         />
       )}
       <ClassFeeStructureModal
         isOpen={classFeeStructureModalOpen}
-        onClose={() => setClassFeeStructureModalOpen(false)}
+        onClose={() => {
+          setClassFeeStructureModalOpen(false);
+          fetchFeeRecords(currentPage);
+        }}
         classes={classes}
       />
       <ViewFeeStructure
         isOpen={viewFeeStructureModalOpen}
-        onClose={() => setViewFeeStructureModalOpen(false)}
+        onClose={() => {
+          setViewFeeStructureModalOpen(false);
+          fetchFeeRecords(currentPage);
+        }}
         structures={feeStructures}
       />
       {printReceiptModalOpen && selectedPaymentForReceipt && (
@@ -575,6 +592,8 @@ const fetchFeeStructuresOnClick = async () => {
           onClose={() => {
             setPrintReceiptModalOpen(false);
             setSelectedPaymentForReceipt(null);
+            // printing doesn't change data normally, but refresh anyway to be safe
+            fetchFeeRecords(currentPage);
           }}
           payment={selectedPaymentForReceipt}
           studentName={
@@ -595,10 +614,20 @@ const fetchFeeStructuresOnClick = async () => {
           onClose={() => {
             setPendingReceiptModalOpen(false);
             setSelectedPaymentForReceipt(null);
+            fetchFeeRecords(currentPage);
           }}
           payment={selectedPaymentForReceipt} // <-- changed from student to payment
         />
       )}
+
+      {/* Full-screen overlay loader (non-blocking visuals for background loads)
+      {(loadingFees || loadingClasses || loadingStudents) && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 pointer-events-none">
+          <div className="p-4 rounded-full bg-white/10">
+            <Spinner size={48} />
+          </div>
+        </div>
+      )} */}
     </div>
   );
 };
