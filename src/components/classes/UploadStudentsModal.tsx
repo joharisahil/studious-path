@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { useState, useRef } from "react";
 import {
   Upload,
@@ -61,203 +61,94 @@ export const UploadStudentsModal = ({
     }
   };
 
+  // Function to download Excel template
 
+  const downloadTemplate = async () => {
+    const headers = [
+      { name: "firstName", required: true },
+      { name: "lastName", required: false },
+      { name: "phone", required: true },
+      { name: "dob", required: false },
+      { name: "address", required: false },
+      { name: "aadhaarNumber", required: false },
+      { name: "caste", required: false },
+      { name: "contactEmail", required: false },
+      { name: "contactName", required: false },
+      { name: "contactPhone", required: false },
+      { name: "relation", required: false },
+      { name: "fatherName", required: false },
+      { name: "motherName", required: false },
+      { name: "fatherphone", required: false },
+      { name: "motherphone", required: false },
+      { name: "fatherEmail", required: false },
+      { name: "motherEmail", required: false },
+      { name: "fatherOccupation", required: false },
+      { name: "motherOccupation", required: false },
+    ];
 
-
-
-// Function to download Excel template
- const downloadTemplate = () => {
-  const headers = [
-    { name: "firstName", required: true },
-    { name: "lastName", required: false },
-    { name: "phone", required: true },
-    { name: "dob", required: false },
-    { name: "address", required: false },
-    { name: "aadhaarNumber", required: false },
-    { name: "caste", required: false },
-    { name: "contactEmail", required: false },
-    { name: "contactName", required: false },
-    { name: "contactPhone", required: false },
-    { name: "relation", required: false },
-    { name: "fatherName", required: false },
-    { name: "motherName", required: false },
-    { name: "fatherphone", required: false },
-    { name: "motherphone", required: false },
-    { name: "fatherEmail", required: false },
-    { name: "motherEmail", required: false },
-    { name: "fatherOccupation", required: false },
-    { name: "motherOccupation", required: false },
-  ];
-
-  const exampleRow = {
-    firstName: "Rahul",
-    lastName: "Sharma",
-    phone: "9876543210",
-    dob: "2008-05-12",
-    address: "123, MG Road, Delhi",
-    aadhaarNumber: "123412341234",
-    caste: "General",
-    contactEmail: "parent@example.com",
-    contactName: "Mr. Sharma",
-    contactPhone: "9876543211",
-    relation: "Father",
-    fatherName: "Mr. Sharma",
-    motherName: "Mrs. Sharma",
-    fatherphone: "9876543211",
-    motherphone: "9876543212",
-    fatherEmail: "father@example.com",
-    motherEmail: "mother@example.com",
-    fatherOccupation: "Engineer",
-    motherOccupation: "Teacher",
-  };
-
-  const ws = XLSX.utils.json_to_sheet([exampleRow], {
-    header: headers.map((h) => h.name),
-  });
-
-  // Style header row
-  const range = XLSX.utils.decode_range(ws["!ref"]!);
-  for (let C = range.s.c; C <= range.e.c; ++C) {
-    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
-    if (!ws[cellAddress]) continue;
-
-    const headerInfo = headers[C];
-    ws[cellAddress].s = {
-      font: { bold: true, color: { rgb: headerInfo.required ? "FF0000" : "008000" } },
-      alignment: { horizontal: "center" },
-      fill: { fgColor: { rgb: "FFFFFF" } },
+    const exampleRow = {
+      firstName: "Rahul",
+      lastName: "Sharma",
+      phone: "9876543210",
+      dob: "2008-05-12",
+      address: "123, MG Road, Delhi",
+      aadhaarNumber: "123412341234",
+      caste: "General",
+      contactEmail: "parent@example.com",
+      contactName: "Mr. Sharma",
+      contactPhone: "9876543211",
+      relation: "Father",
+      fatherName: "Mr. Sharma",
+      motherName: "Mrs. Sharma",
+      fatherphone: "9876543211",
+      motherphone: "9876543212",
+      fatherEmail: "father@example.com",
+      motherEmail: "mother@example.com",
+      fatherOccupation: "Engineer",
+      motherOccupation: "Teacher",
     };
-  }
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "StudentsTemplate");
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("StudentsTemplate");
 
-  XLSX.writeFile(wb, "student_upload_template.xlsx", { bookType: "xlsx" });
-};
+    // Add header row
+    const headerRow = sheet.addRow(headers.map((h) => h.name));
 
-//   const headers = [
-//     "firstName",
-//     "lastName",
-//     "phone",
-//     "dob",
-//     "address",
-//     "aadhaarNumber",
-//     "caste",
-//     "contactEmail",
-//     "contactName",
-//     "contactPhone",
-//     "relation",
-//     "fatherName",
-//     "motherName",
-//     "fatherphone",
-//     "motherphone",
-//     "fatherEmail",
-//     "motherEmail",
-//     "fatherOccupation",
-//     "motherOccupation",
-//   ];
-//    const exampleRow = {
-//     firstName: "Rahul",
-//     lastName: "Sharma",
-//     phone: "9876543210",
-//     dob: "2008-05-12",
-//     address: "123, MG Road, Delhi",
-//     aadhaarNumber: "123412341234",
-//     caste: "General",
-//     contactEmail: "parent@example.com",
-//     contactName: "Mr. Sharma",
-//     contactPhone: "9876543211",
-//     relation: "Father",
-//     fatherName: "Mr. Sharma",
-//     motherName: "Mrs. Sharma",
-//     fatherphone: "9876543211",
-//     motherphone: "9876543212",
-//     fatherEmail: "father@example.com",
-//     motherEmail: "mother@example.com",
-//     fatherOccupation: "Engineer",
-//     motherOccupation: "Teacher",
-//   };
+    // Style header row
+    headerRow.eachCell((cell, colNumber) => {
+      const headerInfo = headers[colNumber - 1];
+      cell.font = {
+        bold: true,
+        color: { argb: headerInfo.required ? "FFFF0000" : "FF008000" },
+      };
+      cell.alignment = { horizontal: "center" };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFFFFFF" }, // white background
+      };
+    });
 
-//   // Optional: Add an example row (all empty for now)
+    // Add example row
+    sheet.addRow(headers.map((h) => exampleRow[h.name]));
 
+    // Adjust column widths
+    sheet.columns.forEach((col) => {
+      col.width = 18;
+    });
 
-//   const ws = XLSX.utils.json_to_sheet([exampleRow]);
-//   const wb = XLSX.utils.book_new();
-//   XLSX.utils.book_append_sheet(wb, ws, "StudentsTemplate");
-
-//   XLSX.writeFile(wb, "student_upload_template.xlsx");
-// };
-
-// const downloadTemplate = () => {
-//   // Define headers with info about required/optional
-//   const headers = [
-//     { name: "firstName", required: true },
-//     { name: "lastName", required: false },
-//     { name: "phone", required: true },
-//     { name: "dob", required: false },
-//     { name: "address", required: false },
-//     { name: "aadhaarNumber", required: false },
-//     { name: "caste", required: false },
-//     { name: "contactEmail", required: false },
-//     { name: "contactName", required: false },
-//     { name: "contactPhone", required: false },
-//     { name: "relation", required: false },
-//     { name: "fatherName", required: false },
-//     { name: "motherName", required: false },
-//     { name: "fatherphone", required: false },
-//     { name: "motherphone", required: false },
-//     { name: "fatherEmail", required: false },
-//     { name: "motherEmail", required: false },
-//     { name: "fatherOccupation", required: false },
-//     { name: "motherOccupation", required: false },
-//   ];
-
-//   // Example row
-//   const exampleRow = {
-//     firstName: "Rahul",
-//     lastName: "Sharma",
-//     phone: "9876543210",
-//     dob: "2008-05-12",
-//     address: "123, MG Road, Delhi",
-//     aadhaarNumber: "123412341234",
-//     caste: "General",
-//     contactEmail: "parent@example.com",
-//     contactName: "Mr. Sharma",
-//     contactPhone: "9876543211",
-//     relation: "Father",
-//     fatherName: "Mr. Sharma",
-//     motherName: "Mrs. Sharma",
-//     fatherphone: "9876543211",
-//     motherphone: "9876543212",
-//     fatherEmail: "father@example.com",
-//     motherEmail: "mother@example.com",
-//     fatherOccupation: "Engineer",
-//     motherOccupation: "Teacher",
-//   };
-
-//   // Create worksheet
-//   const ws = XLSX.utils.json_to_sheet([exampleRow], {
-//     header: headers.map((h) => h.name),
-//   });
-
-//   // Style header row
-//   const range = XLSX.utils.decode_range(ws["!ref"]!);
-//   for (let C = range.s.c; C <= range.e.c; ++C) {
-//     const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
-//     if (!ws[cellAddress]) continue;
-
-//     const headerInfo = headers[C];
-
-//     ws[cellAddress].s = {
-//       font: { bold: true, color: { rgb: headerInfo.required ? "FF0000" : "008000" } },
-//     };
-//   }
-
-//   // Create workbook and download
-//   const wb = XLSX.utils.book_new();
-//   XLSX.utils.book_append_sheet(wb, ws, "StudentsTemplate");
-//   XLSX.writeFile(wb, "student_upload_template.xlsx");
-// };
+    // Write to file
+    const buf = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "student_upload_template.xlsx";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const resetModal = () => {
     setUploadResults(null);
@@ -331,7 +222,8 @@ export const UploadStudentsModal = ({
               <Alert>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Uploaded {uploadResults.summary.success} students successfully.
+                  Uploaded {uploadResults.summary.success} students
+                  successfully.
                 </AlertDescription>
               </Alert>
 
