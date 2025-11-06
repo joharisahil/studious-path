@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -32,19 +31,15 @@ import { CreateClassModal } from "./CreateClassModal";
 import { UploadStudentsModal } from "./UploadStudentsModal";
 import { AddStudentsModal } from "./AddStudentsModal";
 
-// ✅ Define Student type (or import from your types file)
 interface Student {
   _id: string;
   name: string;
   classId: string;
-  // add other fields if needed
 }
 
 export const ClassManagement = () => {
   const [classes, setClasses] = useState<any[]>([]);
-  const [classStudents, setClassStudents] = useState<{
-    [key: string]: Student[];
-  }>({});
+  const [classStudents, setClassStudents] = useState<{ [key: string]: Student[] }>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,38 +49,38 @@ export const ClassManagement = () => {
   const [showAddStudentsModal, setShowAddStudentsModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
 
-  // ✅ Fetch classes once on mount
+  // ✅ Session year dropdowns
+  const [fromYear, setFromYear] = useState("2025");
+  const [toYear, setToYear] = useState("26");
+
+  // ✅ Fetch all classes
   useEffect(() => {
     const fetchClasses = async () => {
       try {
         setIsLoading(true);
         const data = await getAllClasses();
-        setClasses(data); // data is already array of classes
+        setClasses(data);
       } catch (err) {
         console.error("Failed to fetch classes:", err);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchClasses();
   }, []);
 
-  // ✅ Fetch students per class after classes are loaded
+  // ✅ Fetch students per class
   useEffect(() => {
     const fetchStudentsPerClass = async () => {
       try {
         const students = await getAllStudents();
-
-        // group students by class id
         const studentsMap: { [key: string]: any[] } = {};
         students.forEach((student) => {
-          const classId = student.classId; // classId is already a string
-          if (!classId) return; // skip if no classId
+          const classId = student.classId;
+          if (!classId) return;
           if (!studentsMap[classId]) studentsMap[classId] = [];
           studentsMap[classId].push(student);
         });
-
         setClassStudents(studentsMap);
       } catch (err) {
         console.error("Failed to fetch students per class:", err);
@@ -97,27 +92,17 @@ export const ClassManagement = () => {
     }
   }, [classes]);
 
-  // ✅ Derived stats
   const totalStudents = Object.values(classStudents).reduce(
     (sum, students) => sum + (students?.length || 0),
     0
   );
-  const avgClassSize =
-    classes.length > 0 ? Math.round(totalStudents / classes.length) : 0;
-
-  const getStatusColor = () => "bg-green-100 text-green-800 border-green-200";
+  const avgClassSize = classes.length > 0 ? Math.round(totalStudents / classes.length) : 0;
 
   const handleUploadStudents = (classId: string) => {
     setSelectedClass(classId);
     setShowUploadModal(true);
   };
 
-  const handleAddStudents = (classId: string) => {
-    setSelectedClass(classId);
-    setShowAddStudentsModal(true);
-  };
-
-  // ✅ Filtered classes
   const filteredClasses = classes.filter(
     (cls) =>
       (!filterGrade || filterGrade === "all" || cls.grade === filterGrade) &&
@@ -129,12 +114,8 @@ export const ClassManagement = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">
-            Class Management
-          </h1>
-          <p className="text-muted-foreground">
-            Manage classes and student enrollments
-          </p>
+          <h1 className="text-3xl font-bold text-gradient-primary">Class Management</h1>
+          <p className="text-muted-foreground">Manage classes and student enrollments</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
@@ -162,9 +143,7 @@ export const ClassManagement = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Students
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -174,9 +153,7 @@ export const ClassManagement = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Avg Class Size
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Avg Class Size</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -220,100 +197,143 @@ export const ClassManagement = () => {
         </CardContent>
       </Card>
 
+      {/* Session Dropdowns */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Academic Session</CardTitle>
+          <CardDescription>Select session for student uploads</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Select value={fromYear} onValueChange={setFromYear}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="From Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 10 }).map((_, i) => {
+                  const year = 2020 + i;
+                  return (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+
+            <Select value={toYear} onValueChange={setToYear}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="To Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 10 }).map((_, i) => {
+                  const year = 21 + i;
+                  return (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Classes Table */}
       <Card>
-  <CardHeader>
-    <CardTitle>Classes</CardTitle>
-    <CardDescription>
-      Manage all classes and their student enrollments
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    {isLoading ? (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    ) : filteredClasses.length === 0 ? (
-      <div className="text-center py-8">
-        <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">No classes found</h3>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <Plus className="w-4 h-4 mr-2" /> Create Class
-        </Button>
-      </div>
-    ) : (
-      <div className="space-y-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Class Name</TableHead>
-              <TableHead>Grade</TableHead>
-              <TableHead>Academic Year</TableHead>
-              <TableHead>Class Teacher</TableHead>
-              <TableHead>Students</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {/* ✅ Sort classes by grade (numeric) and section (A–Z) */}
-            {filteredClasses
-              .slice() // avoid mutating original array
-              .sort((a, b) => {
-                // convert grade to number if possible
-                const gradeA = parseInt(a.grade) || 0;
-                const gradeB = parseInt(b.grade) || 0;
-
-                if (gradeA !== gradeB) return gradeA - gradeB;
-
-                // sort section alphabetically
-                return a.section.localeCompare(b.section);
-              })
-              .map((cls) => (
-                <TableRow key={cls._id}>
-                  <TableCell className="font-medium">
-                    {cls.grade}-{cls.section}
-                  </TableCell>
-                  <TableCell>{cls.grade}</TableCell>
-                  <TableCell>2025-26</TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">Not assigned</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm">
-                        {classStudents[cls._id]?.length || 0}/30
-                      </div>
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-primary rounded-full h-2"
-                          style={{
-                            width: `${
-                              ((classStudents[cls._id]?.length || 0) / 30) *
-                              100
-                            }%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-      </div>
-    )}
-  </CardContent>
+        <CardHeader>
+          <CardTitle>Classes</CardTitle>
+          <CardDescription>Manage all classes and their student enrollments</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredClasses.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No classes found</h3>
+              <Button onClick={() => setShowCreateModal(true)}>
+                <Plus className="w-4 h-4 mr-2" /> Create Class
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Class Name</TableHead>
+                    <TableHead>Grade</TableHead>
+                    <TableHead>Academic Year</TableHead>
+                    <TableHead>Class Teacher</TableHead>
+                    <TableHead>Students</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredClasses
+                    .slice()
+                    .sort((a, b) => {
+                      const gradeA = parseInt(a.grade) || 0;
+                      const gradeB = parseInt(b.grade) || 0;
+                      if (gradeA !== gradeB) return gradeA - gradeB;
+                      return a.section.localeCompare(b.section);
+                    })
+                    .map((cls) => (
+                      <TableRow key={cls._id}>
+                        <TableCell className="font-medium">
+                          {cls.grade}-{cls.section}
+                        </TableCell>
+                        <TableCell>{cls.grade}</TableCell>
+                        <TableCell>
+                          {fromYear}-{toYear}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-muted-foreground">Not assigned</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm">
+                              {classStudents[cls._id]?.length || 0}/30
+                            </div>
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-primary rounded-full h-2"
+                                style={{
+                                  width: `${
+                                    ((classStudents[cls._id]?.length || 0) / 30) * 100
+                                  }%`,
+                                }}
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!fromYear || !toYear}
+                              onClick={() => handleUploadStudents(cls._id)}
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Upload Students
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       {/* Modals */}
-      <CreateClassModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-      />
+      <CreateClassModal open={showCreateModal} onOpenChange={setShowCreateModal} />
       <UploadStudentsModal
         open={showUploadModal}
         onOpenChange={setShowUploadModal}
         classId={selectedClass}
+        session={`${fromYear}-${toYear}`}
       />
       <AddStudentsModal
         open={showAddStudentsModal}

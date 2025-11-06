@@ -1,285 +1,346 @@
+import * as XLSX from "xlsx";
 import { useState, useRef } from "react";
 import {
   Upload,
   Download,
-  AlertCircle,
   CheckCircle,
+  AlertCircle,
   FileSpreadsheet,
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useUploadStudentsToClassMutation } from "@/store/api/classesApi";
 import { toast } from "sonner";
-import { StudentUploadData } from "@/types";
-
+import { uploadStudentsExcelApi } from "@/services/ClassesApi";
 interface UploadStudentsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   classId: string | null;
+  session: string; // pass session from parent (e.g., 2025-26)
 }
 
 export const UploadStudentsModal = ({
   open,
   onOpenChange,
   classId,
+  session,
 }: UploadStudentsModalProps) => {
-  const [uploadStudents, { isLoading }] = useUploadStudentsToClassMutation();
-  const [dragActive, setDragActive] = useState(false);
-  const [uploadResults, setUploadResults] = useState<{
-    addedCount: number;
-    errors: string[];
-  } | null>(null);
-
+  const [uploadResults, setUploadResults] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+  const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && classId) {
+      await handleFile(file);
+    } else {
+      toast.error("Please select a class before uploading.");
     }
   };
 
   const handleFile = async (file: File) => {
     if (!classId) return;
 
-    const validTypes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-excel",
-      "text/csv",
-    ];
-
-    if (!validTypes.includes(file.type)) {
-      toast.error("Please upload an Excel (.xlsx, .xls) or CSV file");
-      return;
-    }
-
     try {
-      // Mock CSV/Excel parsing - in real implementation, use a library like xlsx or papaparse
-      const text = await file.text();
-      const lines = text.split("\n").filter((line) => line.trim());
-
-      if (lines.length < 2) {
-        toast.error("File must contain header row and at least one data row");
-        return;
-      }
-
-      // Expected headers: firstName,lastName,email,phone,dateOfBirth,address,parentEmail,emergencyContactName,emergencyContactPhone,emergencyContactRelation
-      const headers = lines[0].split(",").map((h) => h.trim());
-      const requiredHeaders = [
-        "firstName",
-        "lastName",
-        "email",
-        "dateOfBirth",
-        "address",
-        "emergencyContactName",
-        "emergencyContactPhone",
-        "emergencyContactRelation",
-      ];
-
-      const missingHeaders = requiredHeaders.filter(
-        (h) => !headers.includes(h)
-      );
-      if (missingHeaders.length > 0) {
-        toast.error(`Missing required columns: ${missingHeaders.join(", ")}`);
-        return;
-      }
-
-      const students: StudentUploadData[] = [];
-
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(",").map((v) => v.trim());
-        if (values.length !== headers.length) continue;
-
-        const student: any = {};
-        headers.forEach((header, index) => {
-          student[header] = values[index];
-        });
-
-        students.push(student as StudentUploadData);
-      }
-
-      const result = await uploadStudents({
-        classId,
-        students,
-      }).unwrap();
-
-      setUploadResults(result.data);
-      toast.success(result.message);
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to upload students");
+      setLoading(true);
+      const res = await uploadStudentsExcelApi(file, classId, session);
+      setUploadResults(res);
+      toast.success("Upload completed successfully!");
+    } catch (err: any) {
+      console.error("Upload Error:", err.response || err.message);
+      toast.error(err?.response?.data?.error || "Failed to upload Excel file");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = [
-      "firstName",
-      "lastName",
-      "email",
-      "phone",
-      "dateOfBirth",
-      "address",
-      "parentEmail",
-      "emergencyContactName",
-      "emergencyContactPhone",
-      "emergencyContactRelation",
-    ];
 
-    const sampleData = [
-      "John,Doe,john.doe@email.com,1234567890,2005-01-15,123 Main St,parent@email.com,Jane Doe,9876543210,Mother",
-    ];
 
-    const csvContent = [headers.join(","), ...sampleData].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "student_upload_template.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+
+
+// Function to download Excel template
+ const downloadTemplate = () => {
+  const headers = [
+    { name: "firstName", required: true },
+    { name: "lastName", required: false },
+    { name: "phone", required: true },
+    { name: "dob", required: false },
+    { name: "address", required: false },
+    { name: "aadhaarNumber", required: false },
+    { name: "caste", required: false },
+    { name: "contactEmail", required: false },
+    { name: "contactName", required: false },
+    { name: "contactPhone", required: false },
+    { name: "relation", required: false },
+    { name: "fatherName", required: false },
+    { name: "motherName", required: false },
+    { name: "fatherphone", required: false },
+    { name: "motherphone", required: false },
+    { name: "fatherEmail", required: false },
+    { name: "motherEmail", required: false },
+    { name: "fatherOccupation", required: false },
+    { name: "motherOccupation", required: false },
+  ];
+
+  const exampleRow = {
+    firstName: "Rahul",
+    lastName: "Sharma",
+    phone: "9876543210",
+    dob: "2008-05-12",
+    address: "123, MG Road, Delhi",
+    aadhaarNumber: "123412341234",
+    caste: "General",
+    contactEmail: "parent@example.com",
+    contactName: "Mr. Sharma",
+    contactPhone: "9876543211",
+    relation: "Father",
+    fatherName: "Mr. Sharma",
+    motherName: "Mrs. Sharma",
+    fatherphone: "9876543211",
+    motherphone: "9876543212",
+    fatherEmail: "father@example.com",
+    motherEmail: "mother@example.com",
+    fatherOccupation: "Engineer",
+    motherOccupation: "Teacher",
   };
+
+  const ws = XLSX.utils.json_to_sheet([exampleRow], {
+    header: headers.map((h) => h.name),
+  });
+
+  // Style header row
+  const range = XLSX.utils.decode_range(ws["!ref"]!);
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+    if (!ws[cellAddress]) continue;
+
+    const headerInfo = headers[C];
+    ws[cellAddress].s = {
+      font: { bold: true, color: { rgb: headerInfo.required ? "FF0000" : "008000" } },
+      alignment: { horizontal: "center" },
+      fill: { fgColor: { rgb: "FFFFFF" } },
+    };
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "StudentsTemplate");
+
+  XLSX.writeFile(wb, "student_upload_template.xlsx", { bookType: "xlsx" });
+};
+
+//   const headers = [
+//     "firstName",
+//     "lastName",
+//     "phone",
+//     "dob",
+//     "address",
+//     "aadhaarNumber",
+//     "caste",
+//     "contactEmail",
+//     "contactName",
+//     "contactPhone",
+//     "relation",
+//     "fatherName",
+//     "motherName",
+//     "fatherphone",
+//     "motherphone",
+//     "fatherEmail",
+//     "motherEmail",
+//     "fatherOccupation",
+//     "motherOccupation",
+//   ];
+//    const exampleRow = {
+//     firstName: "Rahul",
+//     lastName: "Sharma",
+//     phone: "9876543210",
+//     dob: "2008-05-12",
+//     address: "123, MG Road, Delhi",
+//     aadhaarNumber: "123412341234",
+//     caste: "General",
+//     contactEmail: "parent@example.com",
+//     contactName: "Mr. Sharma",
+//     contactPhone: "9876543211",
+//     relation: "Father",
+//     fatherName: "Mr. Sharma",
+//     motherName: "Mrs. Sharma",
+//     fatherphone: "9876543211",
+//     motherphone: "9876543212",
+//     fatherEmail: "father@example.com",
+//     motherEmail: "mother@example.com",
+//     fatherOccupation: "Engineer",
+//     motherOccupation: "Teacher",
+//   };
+
+//   // Optional: Add an example row (all empty for now)
+
+
+//   const ws = XLSX.utils.json_to_sheet([exampleRow]);
+//   const wb = XLSX.utils.book_new();
+//   XLSX.utils.book_append_sheet(wb, ws, "StudentsTemplate");
+
+//   XLSX.writeFile(wb, "student_upload_template.xlsx");
+// };
+
+// const downloadTemplate = () => {
+//   // Define headers with info about required/optional
+//   const headers = [
+//     { name: "firstName", required: true },
+//     { name: "lastName", required: false },
+//     { name: "phone", required: true },
+//     { name: "dob", required: false },
+//     { name: "address", required: false },
+//     { name: "aadhaarNumber", required: false },
+//     { name: "caste", required: false },
+//     { name: "contactEmail", required: false },
+//     { name: "contactName", required: false },
+//     { name: "contactPhone", required: false },
+//     { name: "relation", required: false },
+//     { name: "fatherName", required: false },
+//     { name: "motherName", required: false },
+//     { name: "fatherphone", required: false },
+//     { name: "motherphone", required: false },
+//     { name: "fatherEmail", required: false },
+//     { name: "motherEmail", required: false },
+//     { name: "fatherOccupation", required: false },
+//     { name: "motherOccupation", required: false },
+//   ];
+
+//   // Example row
+//   const exampleRow = {
+//     firstName: "Rahul",
+//     lastName: "Sharma",
+//     phone: "9876543210",
+//     dob: "2008-05-12",
+//     address: "123, MG Road, Delhi",
+//     aadhaarNumber: "123412341234",
+//     caste: "General",
+//     contactEmail: "parent@example.com",
+//     contactName: "Mr. Sharma",
+//     contactPhone: "9876543211",
+//     relation: "Father",
+//     fatherName: "Mr. Sharma",
+//     motherName: "Mrs. Sharma",
+//     fatherphone: "9876543211",
+//     motherphone: "9876543212",
+//     fatherEmail: "father@example.com",
+//     motherEmail: "mother@example.com",
+//     fatherOccupation: "Engineer",
+//     motherOccupation: "Teacher",
+//   };
+
+//   // Create worksheet
+//   const ws = XLSX.utils.json_to_sheet([exampleRow], {
+//     header: headers.map((h) => h.name),
+//   });
+
+//   // Style header row
+//   const range = XLSX.utils.decode_range(ws["!ref"]!);
+//   for (let C = range.s.c; C <= range.e.c; ++C) {
+//     const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+//     if (!ws[cellAddress]) continue;
+
+//     const headerInfo = headers[C];
+
+//     ws[cellAddress].s = {
+//       font: { bold: true, color: { rgb: headerInfo.required ? "FF0000" : "008000" } },
+//     };
+//   }
+
+//   // Create workbook and download
+//   const wb = XLSX.utils.book_new();
+//   XLSX.utils.book_append_sheet(wb, ws, "StudentsTemplate");
+//   XLSX.writeFile(wb, "student_upload_template.xlsx");
+// };
 
   const resetModal = () => {
     setUploadResults(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(open) => {
-        onOpenChange(open);
-        if (!open) resetModal();
+      onOpenChange={(val) => {
+        onOpenChange(val);
+        if (!val) resetModal();
       }}
     >
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Upload Students to Class</DialogTitle>
+          <DialogTitle>Upload Students Excel</DialogTitle>
           <DialogDescription>
-            Upload an Excel or CSV file to add multiple students to this class
+            Upload your Excel (.xlsx, .xls) file containing student details
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Template Download */}
+          {/* Download Template */}
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Download Template</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Get the correct format for uploading students
-                  </p>
-                </div>
-                <Button variant="outline" onClick={downloadTemplate}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Template
-                </Button>
+            <CardContent className="pt-6 flex justify-between items-center">
+              <div>
+                <h4 className="font-medium">Download Template</h4>
+                <p className="text-sm text-muted-foreground">
+                  Get the correct format for uploading students
+                </p>
               </div>
+              <Button variant="outline" onClick={downloadTemplate}>
+                <Download className="w-4 h-4 mr-2" />
+                Template
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Upload Area */}
+          {/* Upload Section */}
           {!uploadResults && (
-            <Card
-              className={`border-2 border-dashed transition-colors ${
-                dragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-muted-foreground/25"
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <CardContent className="pt-6">
-                <div className="flex flex-col items-center justify-center py-8">
-                  <FileSpreadsheet className="w-12 h-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Upload Student Data
-                  </h3>
-                  <p className="text-muted-foreground text-center mb-4">
-                    Drag and drop your Excel or CSV file here, or click to
-                    browse
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {isLoading ? "Uploading..." : "Choose File"}
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx,.xls,.csv"
-                    onChange={handleFileInput}
-                    className="hidden"
-                  />
-                </div>
+            <Card className="border-2 border-dashed">
+              <CardContent className="pt-6 flex flex-col items-center py-8">
+                <FileSpreadsheet className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Upload Excel File</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Click below to upload your Excel file (.xlsx or .xls)
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading || !classId}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {loading ? "Uploading..." : "Choose File"}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={handleFileInput}
+                />
               </CardContent>
             </Card>
           )}
 
           {/* Upload Results */}
           {uploadResults && (
-            <div className="space-y-4">
+            <>
               <Alert>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Successfully added {uploadResults.addedCount} students to the
-                  class
+                  Uploaded {uploadResults.summary.success} students successfully.
                 </AlertDescription>
               </Alert>
 
-              {uploadResults.errors.length > 0 && (
+              {uploadResults.results.failed.length > 0 && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <div className="font-medium mb-2">
-                      {uploadResults.errors.length} errors occurred:
-                    </div>
-                    <ul className="list-disc list-inside space-y-1 text-sm">
-                      {uploadResults.errors.slice(0, 5).map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                      {uploadResults.errors.length > 5 && (
-                        <li>
-                          ... and {uploadResults.errors.length - 5} more errors
-                        </li>
-                      )}
-                    </ul>
+                    {uploadResults.results.failed.length} failed rows. Please
+                    check your Excel file.
                   </AlertDescription>
                 </Alert>
               )}
@@ -287,32 +348,8 @@ export const UploadStudentsModal = ({
               <div className="flex justify-center">
                 <Button onClick={resetModal}>Upload Another File</Button>
               </div>
-            </div>
+            </>
           )}
-
-          {/* Instructions */}
-          <Card>
-            <CardContent className="pt-6">
-              <h4 className="font-medium mb-2">File Requirements:</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Supported formats: Excel (.xlsx, .xls) or CSV</li>
-                <li>• First row must contain headers</li>
-                <li>
-                  • Required columns: firstName, lastName, email, dateOfBirth,
-                  address, emergencyContactName, emergencyContactPhone,
-                  emergencyContactRelation
-                </li>
-                <li>• Optional columns: phone, parentEmail</li>
-                <li>• Maximum 100 students per upload</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
