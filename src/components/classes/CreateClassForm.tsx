@@ -195,7 +195,7 @@ export const CreateClassForm = ({
             </div>
 
             <div>
-              <Label>Subjects</Label>
+              <label className="text-sm font-medium">Subjects</label>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 {availableSubjects.map((subject) => (
                   <label key={subject} className="flex items-center gap-2">

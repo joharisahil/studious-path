@@ -57,7 +57,7 @@ const MessageCenter = () => {
       getAllStudents().then((data)=>setStudents(data.students)).catch(console.error);
     }
     if (recipientType === "teachers") {
-      getAllTeachers().then(setTeachers).catch(console.error);
+      getAllTeachers().then((data)=>setTeachers(data.teachers)).catch(console.error);
     }
     if (recipientType === "class") {
       getAllClasses().then(setClasses).catch(console.error);

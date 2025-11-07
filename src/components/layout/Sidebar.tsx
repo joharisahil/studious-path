@@ -142,21 +142,22 @@ export const Sidebar = () => {
     <aside
       className={cn(
         "bg-card border-r border-border flex flex-col transition-all duration-300 relative",
-        sidebarCollapsed ? "w-16" : "w-64"
+        "fixed md:relative inset-0 md:inset-auto z-50 md:z-auto",
+        sidebarCollapsed ? "w-16 -translate-x-full md:translate-x-0" : "w-64"
       )}
     >
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="p-3 md:p-4 border-b border-border">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
             <GraduationCap className="w-5 h-5 text-primary-foreground" />
           </div>
           {!sidebarCollapsed && (
-            <div>
-              <h1 className="font-bold text-lg text-gradient-primary">
+            <div className="min-w-0">
+              <h1 className="font-bold text-base md:text-lg text-gradient-primary truncate">
                 EduManage
               </h1>
-              <p className="text-xs text-muted-foreground capitalize">
+              <p className="text-xs text-muted-foreground capitalize truncate">
                 {user?.role} Portal
               </p>
             </div>
@@ -170,7 +171,24 @@ export const Sidebar = () => {
         size="sm"
         onClick={() => dispatch(toggleSidebar())}
         className={cn(
-          "absolute -right-3 top-20 z-10 w-6 h-6 rounded-full border border-border bg-background shadow-sm hover:bg-accent",
+          "absolute top-4 z-10 w-8 h-8 rounded-full border border-border bg-background shadow-sm hover:bg-accent md:hidden",
+          sidebarCollapsed ? "right-4" : "right-4"
+        )}
+      >
+        {sidebarCollapsed ? (
+          <ChevronRight className="w-4 h-4" />
+        ) : (
+          <ChevronLeft className="w-4 h-4" />
+        )}
+      </Button>
+      
+      {/* Desktop Toggle */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => dispatch(toggleSidebar())}
+        className={cn(
+          "hidden md:block absolute -right-3 top-20 z-10 w-6 h-6 rounded-full border border-border bg-background shadow-sm hover:bg-accent",
           sidebarCollapsed && "right-2"
         )}
       >
@@ -183,15 +201,15 @@ export const Sidebar = () => {
 
       {/* User Info */}
       {!sidebarCollapsed && user && (
-        <div className="p-4">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-primary-foreground font-medium text-sm">
+        <div className="p-3 md:p-4">
+          <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-accent/50">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-primary-foreground font-medium text-xs md:text-sm">
                 {initials || "U"}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">
+              <p className="font-medium text-xs md:text-sm truncate">
                 {user.firstName && user.lastName
                   ? `${user.firstName} ${user.lastName}`
                   : user.email}
@@ -205,7 +223,7 @@ export const Sidebar = () => {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-2 md:p-4 space-y-1 md:space-y-2 overflow-y-auto">
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive = isActivePath(item.path);
@@ -215,7 +233,7 @@ export const Sidebar = () => {
               key={item.id}
               variant={isActive ? "default" : "ghost"}
               className={cn(
-                "w-full justify-start h-11",
+                "w-full justify-start h-9 md:h-11 text-sm md:text-base",
                 sidebarCollapsed && "justify-center px-2",
                 isActive && "bg-primary text-primary-foreground shadow-sm"
               )}
@@ -227,9 +245,9 @@ export const Sidebar = () => {
                 }
               }}
             >
-              <Icon className={cn("w-5 h-5", !sidebarCollapsed && "mr-3")} />
+              <Icon className={cn("w-4 h-4 md:w-5 md:h-5", !sidebarCollapsed && "mr-2 md:mr-3")} />
               {!sidebarCollapsed && (
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium truncate">{item.label}</span>
               )}
             </Button>
           );
@@ -237,7 +255,7 @@ export const Sidebar = () => {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 space-y-2 border-t border-border">
+      <div className="p-2 md:p-4 space-y-1 md:space-y-2 border-t border-border">
         {/* <Button
           variant="ghost"
           className={cn("w-full justify-start h-11", sidebarCollapsed && "justify-center px-2")}
@@ -250,12 +268,12 @@ export const Sidebar = () => {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start h-11 text-destructive hover:text-destructive hover:bg-destructive-light",
+            "w-full justify-start h-9 md:h-11 text-sm md:text-base text-destructive hover:text-destructive hover:bg-destructive-light",
             sidebarCollapsed && "justify-center px-2"
           )}
           onClick={handleLogout}
         >
-          <LogOut className={cn("w-5 h-5", !sidebarCollapsed && "mr-3")} />
+          <LogOut className={cn("w-4 h-4 md:w-5 md:h-5", !sidebarCollapsed && "mr-2 md:mr-3")} />
           {!sidebarCollapsed && <span>Logout</span>}
         </Button>
       </div>
