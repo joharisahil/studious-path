@@ -81,4 +81,19 @@ export const deleteTeacher = async (id: string) => {
 };
 
 export const getTeachersBySubject = async (subjectId: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.get(`${API_BASE_URL}/teachers/by-subject/${subjectId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      withCredentials: true,
+    });
+    return {
+      teachers: response.data.teachers || [],
+    };
+  } catch (error: any) {
+    console.error("Error fetching teachers by subject:", error);
+    return { teachers: [] };
+  }
 };

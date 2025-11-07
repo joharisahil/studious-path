@@ -24,16 +24,16 @@ interface ClassType {
 
 export interface FeeStructure {
   id: string;
-  classId: string;
-  session: string;
-  status: string;
-  totalAmount: number;
-  months: {
+  classId?: string;
+  session?: string;
+  status?: string;
+  totalAmount?: number;
+  months?: {
     month: string;
     startDate: string;
     dueDate: string;
     amount: number;
-    lateFine: number;
+    lateFine?: number;
   }[];
 }
 
@@ -118,7 +118,7 @@ export const ClassFeeStructureModal: FC<Props> = ({
             </thead>
 
             <tbody>
-              {feeStructure.months.map((m, idx) => (
+              {feeStructure.months?.map((m, idx) => (
                 <tr key={idx} className="border-t">
                   <td className="p-2">{m.month}</td>
                   <td className="p-2">
@@ -131,7 +131,7 @@ export const ClassFeeStructureModal: FC<Props> = ({
                     ₹{m.amount.toLocaleString()}
                   </td>
                   <td className="p-2 text-right">
-                    ₹{m.lateFine.toLocaleString()}
+                    ₹{m.lateFine?.toLocaleString() || 0}
                   </td>
                 </tr>
               ))}
@@ -142,7 +142,7 @@ export const ClassFeeStructureModal: FC<Props> = ({
         <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
           <span>Total Fee</span>
           <span className="text-primary">
-            ₹{feeStructure.totalAmount.toLocaleString()}
+            ₹{feeStructure.totalAmount?.toLocaleString() || 0}
           </span>
         </div>
       </div>

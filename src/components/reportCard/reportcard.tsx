@@ -46,7 +46,7 @@ const ReportCard = () => {
   };
 
   const updateSubject = (index: number, key: "marks" | "grade", value: any) => {
-    const newSubjects = [...student.subjects];
+    const newSubjects: any[] = [...student.subjects];
     newSubjects[index][key] = value;
     setStudent({ ...student, subjects: newSubjects });
   };

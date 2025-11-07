@@ -117,8 +117,8 @@ const EditStudentModal = ({
         phone: student.phone || "",
         dateOfBirth: formatDateForInput(student.dob),
         address: student.address || "",
-        grade: student.classId?.grade || "",
-        section: student.classId?.section || "",
+        grade: student.grade || "",
+        section: student.section || "",
         rollNumber: student.rollNumber || "",
         admissionDate: formatDateForInput(student.admissionDate),
         guardian: {
@@ -134,7 +134,7 @@ const EditStudentModal = ({
         motherContact: student.motherphone || "",
         motherOccupation: student.motherOccupation || "",
         motherEmail: student.motherEmail || "",
-        _classId: student.classId?._id || "", // store ObjectId for backend
+        _classId: student.classId || "", // store classId for backend
       });
     }
   }, [student, open, form]);
@@ -149,7 +149,7 @@ const EditStudentModal = ({
         phone: data.phone,
         dob: data.dateOfBirth,
         address: data.address,
-        classId: data._classId || student.classId?._id, // send ObjectId
+        classId: data._classId || student.classId, // send classId
         rollNumber: data.rollNumber || "",
         admissionDate: data.admissionDate || "",
         contactName: data.guardian.name,

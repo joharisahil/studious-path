@@ -558,7 +558,6 @@ export const FeesManagement = () => {
             setCollectFeeModalOpen(false);
             fetchFeeRecords(currentPage);
           }}
-          students={students}
         />
       )}
       {feeStructureModalOpen && (
