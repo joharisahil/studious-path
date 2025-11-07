@@ -24,7 +24,7 @@ import {
 } from "@/services/TimeTableApi";
 import { Loader2 } from "lucide-react";
 
-export const EditPeriodModal = ({ open, onOpenChange,  }) => {
+export const EditPeriodModal = ({ open, onOpenChange }) => {
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
