@@ -45,3 +45,29 @@ export const createClass = async (classData: { grade: string; section: string })
   }
 };
 
+export const uploadStudentsExcelApi = async (file: File, classId: string, session: string) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("classId", classId);
+    formData.append("session", session);
+
+    const token = localStorage.getItem("token");
+
+    const response = await axios.post(
+      `${API_BASE_URL}/students/upload-excel/forStudent`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Error uploading Excel:", error.response || error.message);
+    throw error;
+  }
+};

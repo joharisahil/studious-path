@@ -24,16 +24,16 @@ interface ClassType {
 
 export interface FeeStructure {
   id: string;
-  classId: string;
-  session: string;
-  status: string;
-  totalAmount: number;
-  months: {
+  classId?: string;
+  session?: string;
+  status?: string;
+  totalAmount?: number;
+  months?: {
     month: string;
     startDate: string;
     dueDate: string;
     amount: number;
-    lateFine: number;
+    lateFine?: number;
   }[];
 }
 
@@ -43,6 +43,13 @@ interface Props {
   classes: ClassType[];
 }
 
+/* ✅ GLOBAL SPINNER COMPONENT */
+const Spinner = () => (
+  <div className="flex justify-center items-center py-6">
+    <div className="h-8 w-8 border-4 border-gray-300 border-t-primary rounded-full animate-spin" />
+  </div>
+);
+
 export const ClassFeeStructureModal: FC<Props> = ({
   isOpen,
   onClose,
@@ -51,8 +58,18 @@ export const ClassFeeStructureModal: FC<Props> = ({
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [feeStructure, setFeeStructure] = useState<FeeStructure | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isClassLoading, setIsClassLoading] = useState(false); // spinner for dropdown
   const [error, setError] = useState<string | null>(null);
 
+  /* ✅ Trigger loading when modal opens (class dropdown shimmer) */
+  useEffect(() => {
+    if (isOpen) {
+      setIsClassLoading(true);
+      setTimeout(() => setIsClassLoading(false), 500); // Fake small delay - smooth UI
+    }
+  }, [isOpen]);
+
+  /* ✅ Fetch fee structure */
   useEffect(() => {
     if (!selectedClassId) return;
 
@@ -66,12 +83,12 @@ export const ClassFeeStructureModal: FC<Props> = ({
       .finally(() => setIsLoading(false));
   }, [selectedClassId]);
 
+  /* ✅ RENDER FEE TABLE */
   const renderFeeBreakdown = () => {
     if (!feeStructure) return null;
 
     return (
       <div className="space-y-4">
-        {/* Session & Status */}
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm text-muted-foreground">
             Session: {feeStructure.session}
@@ -87,7 +104,7 @@ export const ClassFeeStructureModal: FC<Props> = ({
           </span>
         </div>
 
-        {/* Month-wise Table */}
+        {/* ✅ Month Table */}
         <div className="border rounded-md overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-100">
@@ -99,8 +116,9 @@ export const ClassFeeStructureModal: FC<Props> = ({
                 <th className="p-2 text-right">Late Fine</th>
               </tr>
             </thead>
+
             <tbody>
-              {feeStructure.months.map((m, idx) => (
+              {feeStructure.months?.map((m, idx) => (
                 <tr key={idx} className="border-t">
                   <td className="p-2">{m.month}</td>
                   <td className="p-2">
@@ -113,7 +131,7 @@ export const ClassFeeStructureModal: FC<Props> = ({
                     ₹{m.amount.toLocaleString()}
                   </td>
                   <td className="p-2 text-right">
-                    ₹{m.lateFine.toLocaleString()}
+                    ₹{m.lateFine?.toLocaleString() || 0}
                   </td>
                 </tr>
               ))}
@@ -121,11 +139,10 @@ export const ClassFeeStructureModal: FC<Props> = ({
           </table>
         </div>
 
-        {/* Total */}
         <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
           <span>Total Fee</span>
           <span className="text-primary">
-            ₹{feeStructure.totalAmount.toLocaleString()}
+            ₹{feeStructure.totalAmount?.toLocaleString() || 0}
           </span>
         </div>
       </div>
@@ -140,13 +157,16 @@ export const ClassFeeStructureModal: FC<Props> = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {classes.length === 0 ? (
+          {/* ✅ Class dropdown loading spinner */}
+          {isClassLoading ? (
+            <Spinner />
+          ) : classes.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               No classes available
             </div>
           ) : (
             <>
-              {/* Class Selector */}
+              {/* ✅ Class Selector */}
               <Select
                 value={selectedClassId}
                 onValueChange={setSelectedClassId}
@@ -154,6 +174,7 @@ export const ClassFeeStructureModal: FC<Props> = ({
                 <SelectTrigger className="w-60">
                   <SelectValue placeholder="Select Class" />
                 </SelectTrigger>
+
                 <SelectContent>
                   {classes.map((cls) => (
                     <SelectItem key={cls._id} value={cls._id}>
@@ -163,13 +184,11 @@ export const ClassFeeStructureModal: FC<Props> = ({
                 </SelectContent>
               </Select>
 
-              {/* Fee Structure */}
+              {/* ✅ Fee Structure Section */}
               {selectedClassId && (
                 <div className="mt-4">
                   {isLoading ? (
-                    <div className="text-center py-4">
-                      Loading fee structure...
-                    </div>
+                    <Spinner />
                   ) : error ? (
                     <div className="text-center py-4 text-red-600">{error}</div>
                   ) : feeStructure ? (
@@ -200,6 +219,7 @@ export const ClassFeeStructureModal: FC<Props> = ({
             </>
           )}
 
+          {/* ✅ Footer */}
           <div className="flex justify-end mt-4">
             <Button variant="outline" onClick={onClose}>
               Close

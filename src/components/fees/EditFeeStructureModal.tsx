@@ -15,9 +15,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import axios from "axios";
-import { updateFeeStructure } from "@/services/FeesApi"; // your API function
-import { toast } from "react-hot-toast"; // optional for notifications
+import { updateFeeStructure } from "@/services/FeesApi";
+import { toast } from "react-hot-toast";
+import { Loader2 } from "lucide-react";
 
 interface MonthDetail {
   month: string;
@@ -48,6 +48,7 @@ export const EditFeeStructureModal: FC<Props> = ({
   onSave,
 }) => {
   const [monthDetails, setMonthDetails] = useState<MonthDetail[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (structure) {
@@ -63,18 +64,23 @@ export const EditFeeStructureModal: FC<Props> = ({
     const updated = [...monthDetails];
     (updated[index] as Record<string, any>)[field] =
       field === "amount" || field === "lateFine" ? Number(value) : value;
+
     setMonthDetails(updated);
   };
 
   const handleSave = async () => {
+    setLoading(true);
     try {
       await updateFeeStructure(structure._id, monthDetails);
+
       toast.success("Fee structure updated successfully!");
       onSave(monthDetails);
       onClose();
     } catch (error) {
       toast.error("Failed to update fee structure.");
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,47 +104,57 @@ export const EditFeeStructureModal: FC<Props> = ({
                 <TableHead>Late Fine</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {monthDetails.map((m, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
                     <Input
                       value={m.month}
+                      disabled={loading}
                       onChange={(e) =>
                         handleChange(idx, "month", e.target.value)
                       }
                     />
                   </TableCell>
+
                   <TableCell>
                     <Input
                       type="date"
+                      disabled={loading}
                       value={new Date(m.startDate).toISOString().slice(0, 10)}
                       onChange={(e) =>
                         handleChange(idx, "startDate", e.target.value)
                       }
                     />
                   </TableCell>
+
                   <TableCell>
                     <Input
                       type="date"
+                      disabled={loading}
                       value={new Date(m.dueDate).toISOString().slice(0, 10)}
                       onChange={(e) =>
                         handleChange(idx, "dueDate", e.target.value)
                       }
                     />
                   </TableCell>
+
                   <TableCell>
                     <Input
                       type="number"
+                      disabled={loading}
                       value={m.amount}
                       onChange={(e) =>
                         handleChange(idx, "amount", e.target.value)
                       }
                     />
                   </TableCell>
+
                   <TableCell>
                     <Input
                       type="number"
+                      disabled={loading}
                       value={m.lateFine}
                       onChange={(e) =>
                         handleChange(idx, "lateFine", e.target.value)
@@ -152,10 +168,20 @@ export const EditFeeStructureModal: FC<Props> = ({
         </div>
 
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

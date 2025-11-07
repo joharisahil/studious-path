@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { deleteFeeStructure } from "@/services/FeesApi";
+import { Loader2 } from "lucide-react";
 
 interface DeleteFeeStructureModalProps {
   isOpen: boolean;
@@ -27,7 +28,6 @@ export const DeleteFeeStructureModal = ({
     setLoading(true);
     try {
       await deleteFeeStructure(structureId);
-      alert("Fee structure deleted!");
       onDeleted?.();
       onClose();
     } catch (err) {
@@ -44,17 +44,29 @@ export const DeleteFeeStructureModal = ({
         <DialogHeader>
           <DialogTitle>Delete Fee Structure</DialogTitle>
         </DialogHeader>
+
         <p>Are you sure you want to delete this fee structure?</p>
+
         <div className="flex justify-end gap-2 mt-4">
-          <Button onClick={onClose} variant="outline">
+          {/* Cancel button */}
+          <Button onClick={onClose} variant="outline" disabled={loading}>
             Cancel
           </Button>
+
+          {/* Delete button with spinner */}
           <Button
             onClick={handleDelete}
             variant="destructive"
             disabled={loading}
           >
-            {loading ? "Deleting..." : "Delete"}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete"
+            )}
           </Button>
         </div>
       </DialogContent>

@@ -7,8 +7,9 @@ import {
   Eye,
   Download,
   MoreVertical,
-  Upload, // Added for the Import button
+  Upload,
 } from "lucide-react";
+
 import {
   Card,
   CardContent,
@@ -16,8 +17,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
 import {
   Table,
   TableBody,
@@ -26,19 +29,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,35 +48,43 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 import { useToast } from "@/hooks/use-toast";
 
 import CreateTeacherModal from "./CreateTeacherModal";
 import EditTeacherModal from "./EditTeacherModal";
 import TeacherDetailsModal from "./TeacherDetailsModal";
-import ImportTeacherModal from "./ImportTeacherModal.tsx"; // Import the new modal
+import ImportTeacherModal from "./ImportTeacherModal.tsx";
+
 import { TeacherFormData } from "@/types";
-import { getAllTeachers } from "@/services/TeachersApi";
+import { getAllTeachers, deleteTeacher } from "@/services/TeachersApi"; // ✅ ADDED deleteTeacher
+
 
 const TeachersManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [importModalOpen, setImportModalOpen] = useState(false); // New state for import modal
+  const [importModalOpen, setImportModalOpen] = useState(false);
+
   const [selectedTeacher, setSelectedTeacher] =
     useState<TeacherFormData | null>(null);
+
   const [teachers, setTeachers] = useState<TeacherFormData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { toast } = useToast();
 
-  // Fetch teachers from API
+  // ✅ Fetch teachers
   const fetchTeachers = async () => {
     try {
       setLoading(true);
+
       const data = await getAllTeachers();
-      const formattedTeachers = (data.teachers || []).map((t) => ({
+
+      const formatted = (data.teachers || []).map((t) => ({
         ...t,
         _id: t._id || t.id,
         experienceYears: t.experienceYears || 0,
@@ -87,7 +93,8 @@ const TeachersManagement = () => {
         registrationNumber: t.registrationNumber || t.teacherId || "",
         status: t.status || "active",
       }));
-      setTeachers(formattedTeachers);
+
+      setTeachers(formatted);
     } catch (error) {
       toast({
         title: "Error",
@@ -113,25 +120,32 @@ const TeachersManagement = () => {
     setDetailsModalOpen(true);
   };
 
+  // ✅ PROPER DELETE FUNCTION — now calling API
   const handleDeleteTeacher = async (teacherId: string) => {
-    try {
-      setTeachers((prev) => prev.filter((t) => t._id !== teacherId));
-      toast({
-        title: "Teacher Deleted",
-        description: "Teacher has been successfully deleted.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete teacher. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  try {
+    const res = await deleteTeacher(teacherId); // ✅ API call added
+
+    setTeachers((prev) => prev.filter((t) => t._id !== teacherId));
+
+    toast({
+      title: "Teacher Deleted",
+      description: res.message || "Teacher has been successfully deleted.",
+    });
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description:
+        error?.message || "Failed to delete teacher. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+
 
   const filteredTeachers = teachers.filter((teacher) => {
     const matchesStatus =
       selectedStatus === "all" || teacher.status === selectedStatus;
+
     const matchesSearch = (
       teacher.firstName +
       " " +
@@ -141,6 +155,7 @@ const TeachersManagement = () => {
     )
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
+
     return matchesStatus && matchesSearch;
   });
 
@@ -156,6 +171,7 @@ const TeachersManagement = () => {
             Manage teacher profiles, details, and status
           </p>
         </div>
+
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -164,16 +180,18 @@ const TeachersManagement = () => {
           >
             <Upload className="w-4 h-4" /> Import
           </Button>
+
           <Button variant="outline" className="gap-2">
             <Download className="w-4 h-4" /> Export
           </Button>
+
           <Button onClick={() => setCreateModalOpen(true)} className="gap-2">
             <Plus className="w-4 h-4" /> Add Teacher
           </Button>
         </div>
       </div>
 
-      {/* Teacher Stats Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="kpi-card">
           <CardHeader className="pb-2">
@@ -183,9 +201,9 @@ const TeachersManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{teachers.length}</div>
-            <div className="text-sm text-muted-foreground">All registered</div>
           </CardContent>
         </Card>
+
         <Card className="kpi-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -196,11 +214,9 @@ const TeachersManagement = () => {
             <div className="text-2xl font-bold text-warning">
               {teachers.filter((t) => t.experienceYears <= 5).length}
             </div>
-            <div className="text-sm text-muted-foreground">
-              0–5 years of experience
-            </div>
           </CardContent>
         </Card>
+
         <Card className="kpi-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -211,11 +227,9 @@ const TeachersManagement = () => {
             <div className="text-2xl font-bold text-success">
               {teachers.filter((t) => t.experienceYears > 5).length}
             </div>
-            <div className="text-sm text-muted-foreground">
-              6+ years of experience
-            </div>
           </CardContent>
         </Card>
+
         <Card className="kpi-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -232,14 +246,11 @@ const TeachersManagement = () => {
               ).padStart(2, "0")}{" "}
               yrs
             </div>
-            <div className="text-sm text-muted-foreground">
-              Across all teachers
-            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Search */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Search & Filter Teachers</CardTitle>
@@ -247,6 +258,7 @@ const TeachersManagement = () => {
             Find teachers by name, email, or status
           </CardDescription>
         </CardHeader>
+
         <CardContent className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1 relative">
@@ -258,24 +270,11 @@ const TeachersManagement = () => {
                 className="pl-10"
               />
             </div>
-            {/* <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="onLeave">On Leave</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
-                <SelectItem value="retired">Retired</SelectItem>
-              </SelectContent>
-            </Select> */}
           </div>
         </CardContent>
       </Card>
 
-      {/* Teachers Table */}
+      {/* Table */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Teachers List</CardTitle>
@@ -285,6 +284,7 @@ const TeachersManagement = () => {
               : `Showing ${filteredTeachers.length} of ${teachers.length} teachers`}
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8 text-muted-foreground">
@@ -292,7 +292,7 @@ const TeachersManagement = () => {
             </div>
           ) : filteredTeachers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No teachers found. Try adjusting your search terms or filters.
+              No teachers found.
             </div>
           ) : (
             <Table>
@@ -306,12 +306,12 @@ const TeachersManagement = () => {
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {filteredTeachers.map((teacher) => (
                   <TableRow key={teacher._id}>
-                    <TableCell className="font-medium">
-                      {teacher.registrationNumber}
-                    </TableCell>
+                    <TableCell>{teacher.registrationNumber}</TableCell>
+
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -325,11 +325,14 @@ const TeachersManagement = () => {
                         </div>
                       </div>
                     </TableCell>
+
                     <TableCell>{teacher.email}</TableCell>
                     <TableCell>{teacher.phone || "-"}</TableCell>
+
                     <TableCell>
                       {String(teacher.experienceYears).padStart(2, "0")}
                     </TableCell>
+
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -337,17 +340,23 @@ const TeachersManagement = () => {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
+
                         <DropdownMenuContent align="end">
+                          {/* View */}
                           <DropdownMenuItem
                             onClick={() => handleViewTeacher(teacher)}
                           >
                             <Eye className="mr-2 h-4 w-4" /> View Details
                           </DropdownMenuItem>
+
+                          {/* Edit */}
                           <DropdownMenuItem
                             onClick={() => handleEditTeacher(teacher)}
                           >
                             <Edit className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
+
+                          {/* Delete */}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem
@@ -357,23 +366,29 @@ const TeachersManagement = () => {
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                               </DropdownMenuItem>
                             </AlertDialogTrigger>
+
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
                                   Delete Teacher
                                 </AlertDialogTitle>
+
                                 <AlertDialogDescription>
                                   Are you sure you want to delete{" "}
                                   {teacher.firstName} {teacher.lastName}? This
                                   action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
+
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>
+                                  Cancel
+                                </AlertDialogCancel>
+
                                 <AlertDialogAction
                                   onClick={() =>
                                     handleDeleteTeacher(teacher._id!)
-                                  }
+                                  } // ✅ NOW CALLING API
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete
@@ -398,6 +413,7 @@ const TeachersManagement = () => {
         onOpenChange={setCreateModalOpen}
         onSuccess={fetchTeachers}
       />
+
       {selectedTeacher && (
         <>
           <EditTeacherModal
@@ -409,6 +425,7 @@ const TeachersManagement = () => {
               setSelectedTeacher(null);
             }}
           />
+
           <TeacherDetailsModal
             open={detailsModalOpen}
             onOpenChange={setDetailsModalOpen}
@@ -427,10 +444,11 @@ const TeachersManagement = () => {
           />
         </>
       )}
+
       <ImportTeacherModal
         open={importModalOpen}
         onOpenChange={setImportModalOpen}
-        onSuccess={fetchTeachers} // Refresh teachers after import
+        onSuccess={fetchTeachers}
       />
     </div>
   );

@@ -4,9 +4,13 @@ import { Subject, Teacher, ApiResponse, PaginatedResponse, SubjectFormData, Assi
 // Mock subjects data
 const mockSubjects: Subject[] = [
   {
+    _id: '1',
     id: '1',
     name: 'Advanced Mathematics',
     code: 'MATH301',
+    admin: 'admin1',
+    classes: [],
+    teachers: [],
     description: 'Advanced calculus and algebra concepts for grade 11-12 students',
     department: 'Mathematics',
     credits: 4,
@@ -27,9 +31,13 @@ const mockSubjects: Subject[] = [
     updatedAt: '2024-01-15T00:00:00Z',
   },
   {
+    _id: '2',
     id: '2',
     name: 'Physics Laboratory',
     code: 'PHY201',
+    admin: 'admin1',
+    classes: [],
+    teachers: [],
     description: 'Hands-on physics experiments and practical applications',
     department: 'Science',
     credits: 3,
@@ -49,9 +57,13 @@ const mockSubjects: Subject[] = [
     updatedAt: '2024-01-15T00:00:00Z',
   },
   {
+    _id: '3',
     id: '3',
     name: 'English Literature',
     code: 'ENG401',
+    admin: 'admin1',
+    classes: [],
+    teachers: [],
     description: 'Classic and contemporary literature analysis',
     department: 'English',
     credits: 3,
@@ -65,9 +77,13 @@ const mockSubjects: Subject[] = [
     updatedAt: '2024-01-15T00:00:00Z',
   },
   {
+    _id: '4',
     id: '4',
     name: 'Computer Programming',
     code: 'CS101',
+    admin: 'admin1',
+    classes: [],
+    teachers: [],
     description: 'Introduction to programming concepts and languages',
     department: 'Computer Science',
     credits: 4,
@@ -91,6 +107,7 @@ const mockSubjects: Subject[] = [
 // Mock teachers data for assignment
 const mockTeachers: Teacher[] = [
   {
+    _id: '1',
     id: '1',
     userId: '1',
     teacherId: 'TEA001',
@@ -120,6 +137,7 @@ const mockTeachers: Teacher[] = [
     updatedAt: '2024-01-15T00:00:00Z',
   },
   {
+    _id: '2',
     id: '2',
     userId: '2',
     teacherId: 'TEA002',
@@ -255,7 +273,11 @@ export const subjectsApi = createApi({
         await mockApiDelay(800);
 
         const newSubject: Subject = {
+          _id: (mockSubjects.length + 1).toString(),
           id: (mockSubjects.length + 1).toString(),
+          admin: 'admin1',
+          classes: [],
+          teachers: [],
           ...subjectData,
           isActive: true,
           resources: [],

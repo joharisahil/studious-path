@@ -10,6 +10,7 @@ import {
   MoreVertical,
   Upload,
   Copy,
+  CheckCircle,
 } from "lucide-react";
 import {
   Card,
@@ -65,6 +66,7 @@ const StudentsManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
+  const [selectedSection, setSelectedSection] = useState<string>("all");
   const [scholarshipFilter, setScholarshipFilter] = useState<string>("all"); // 'all' | 'yes'
   const [currentPage, setCurrentPage] = useState(1);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -75,6 +77,7 @@ const StudentsManagement: React.FC = () => {
 
   const [classList, setClassList] = useState<any[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -245,14 +248,21 @@ const StudentsManagement: React.FC = () => {
   };
 
   // copy registration number
-  const handleCopy = async (text: string) => {
+  const handleCopy = async (value: string, key?: string) => {
+    if (!value) return;
+    const uniqueKey = key ?? `val-${value}`;
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(value);
+      setCopiedKey(uniqueKey);
+      // clear after 1.5s
+      window.setTimeout(() => {
+        setCopiedKey((prev) => (prev === uniqueKey ? null : prev));
+      }, 1500);
       toast({
         title: "Copied",
-        description: "Registration number copied to clipboard.",
+        description: "Registeration Number Copied to clipboard.",
       });
-    } catch {
+    } catch (err) {
       toast({
         title: "Failed",
         description: "Could not copy to clipboard.",
@@ -272,21 +282,29 @@ const StudentsManagement: React.FC = () => {
         ? base.filter((s) => s.scholarshipInfo != null)
         : base;
 
-    // apply grade filter
+    // apply grade filter (separate from section)
     const gradeFiltered =
       selectedGrade === "all"
         ? scholarshipFiltered
         : scholarshipFiltered.filter((s) => {
             const clsGrade = s.classId?.grade ?? s.grade ?? "";
+            return clsGrade?.toString() === selectedGrade?.toString();
+          });
+
+    // apply section filter
+    const sectionFiltered =
+      selectedSection === "all"
+        ? gradeFiltered
+        : gradeFiltered.filter((s) => {
             const clsSection = s.classId?.section ?? s.section ?? "";
-            return `${clsGrade}-${clsSection}` === selectedGrade;
+            return clsSection?.toString() === selectedSection?.toString();
           });
 
     // apply search
     const search = searchTerm.trim().toLowerCase();
-    if (!search) return gradeFiltered;
+    if (!search) return sectionFiltered;
 
-    return gradeFiltered.filter((student) => {
+    return sectionFiltered.filter((student) => {
       return (
         (student.firstName ?? "").toString().toLowerCase().includes(search) ||
         (student.lastName ?? "").toString().toLowerCase().includes(search) ||
@@ -297,7 +315,7 @@ const StudentsManagement: React.FC = () => {
         (student.email ?? "").toString().toLowerCase().includes(search)
       );
     });
-  }, [students, scholarshipFilter, selectedGrade, searchTerm]);
+  }, [students, scholarshipFilter, selectedGrade, selectedSection, searchTerm]);
 
   // top performing class (by scholarship students count)
   const topPerformingClass = useMemo(() => {
@@ -314,6 +332,41 @@ const StudentsManagement: React.FC = () => {
     const arr = Object.values(map).sort((a, b) => b.count - a.count);
     return arr.length ? arr[0] : { name: "None", count: 0 };
   }, [students]);
+
+  // helper: unique grades (sorted) from classList
+  const uniqueGrades = useMemo(() => {
+    const set = new Set<string>();
+    classList.forEach((c) => {
+      if (c?.grade !== undefined && c?.grade !== null) {
+        set.add(String(c.grade));
+      }
+    });
+    // convert to array and try to sort numerically when possible
+    const arr = Array.from(set);
+    arr.sort((a, b) => {
+      const na = Number(a);
+      const nb = Number(b);
+      if (isFinite(na) && isFinite(nb)) return na - nb;
+      return a.localeCompare(b);
+    });
+    return arr;
+  }, [classList]);
+
+  // helper: sections for selected grade
+  const sectionsForSelectedGrade = useMemo(() => {
+    if (selectedGrade === "all") return [];
+    const set = new Set<string>();
+    classList.forEach((c) => {
+      if (String(c.grade) === String(selectedGrade)) {
+        if (c?.section !== undefined && c?.section !== null) {
+          set.add(String(c.section));
+        }
+      }
+    });
+    const arr = Array.from(set);
+    arr.sort((a, b) => a.localeCompare(b));
+    return arr;
+  }, [classList, selectedGrade]);
 
   // ------------------------------
   // Render
@@ -332,13 +385,13 @@ const StudentsManagement: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          <Button
+          {/* <Button
             variant="outline"
             className="gap-2"
             onClick={() => setImportModalOpen(true)}
           >
             <Upload className="w-4 h-4" /> Import
-          </Button>
+          </Button> */}
           <Button variant="outline" className="gap-2">
             <Download className="w-4 h-4" /> Export
           </Button>
@@ -430,7 +483,14 @@ const StudentsManagement: React.FC = () => {
               />
             </div>
 
-            <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+            {/* Grade select */}
+            <Select
+              value={selectedGrade}
+              onValueChange={(value) => {
+                setSelectedGrade(value);
+                setSelectedSection("all"); // reset section when grade changes
+              }}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select Grade" />
               </SelectTrigger>
@@ -440,14 +500,47 @@ const StudentsManagement: React.FC = () => {
                   <SelectItem value="loading" disabled>
                     Loading...
                   </SelectItem>
-                ) : classList.length === 0 ? (
+                ) : uniqueGrades.length === 0 ? (
                   <SelectItem value="none" disabled>
-                    No classes found
+                    No grades found
                   </SelectItem>
                 ) : (
-                  classList.map((cls: any, i: number) => (
-                    <SelectItem key={i} value={`${cls.grade}-${cls.section}`}>
-                      Class {cls.grade} ({cls.section})
+                  uniqueGrades.map((grade, i) => (
+                    <SelectItem key={grade + i} value={grade}>
+                      Grade {grade}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+
+            {/* Section select (dependent on grade) */}
+            <Select
+              value={selectedSection}
+              onValueChange={setSelectedSection}
+              // disable until a grade is chosen
+              // keep width same as other selects
+            >
+              <SelectTrigger
+                className="w-48"
+                disabled={selectedGrade === "all"}
+              >
+                <SelectValue placeholder="Select Section" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sections</SelectItem>
+                {selectedGrade === "all" ? (
+                  <SelectItem value="na" disabled>
+                    Select a grade first
+                  </SelectItem>
+                ) : sectionsForSelectedGrade.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No sections found
+                  </SelectItem>
+                ) : (
+                  sectionsForSelectedGrade.map((section, i) => (
+                    <SelectItem key={section + i} value={section}>
+                      Section {section}
                     </SelectItem>
                   ))
                 )}
@@ -512,10 +605,17 @@ const StudentsManagement: React.FC = () => {
                             size="sm"
                             className="p-1"
                             onClick={() =>
-                              handleCopy(student.registrationNumber)
+                              handleCopy(
+                                student.registrationNumber,
+                                `reg-${student._id}`
+                              )
                             }
                           >
-                            <Copy className="w-4 h-4" />
+                            {copiedKey === `reg-${student._id}` ? (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
                           </Button>
                         )}
                       </div>

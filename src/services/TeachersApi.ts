@@ -63,20 +63,37 @@ export const updateTeacher = async (id: string, teacherData: any) => {
   }
 };
 
+export const deleteTeacher = async (id: string) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await axios.delete(`${API_BASE_URL}/teachers/delete/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: "Failed to delete teacher" };
+  }
+};
+
 export const getTeachersBySubject = async (subjectId: string) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${API_BASE_URL}/teachers/subject/${subjectId}`,{
-        headers: {
-        Authorization: `Bearer ${token}`, // required for verifyToken
+    const response = await axios.get(`${API_BASE_URL}/teachers/by-subject/${subjectId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
       withCredentials: true,
-      }
-    );
-    return response.data;
+    });
+    return {
+      teachers: response.data.teachers || [],
+    };
   } catch (error: any) {
     console.error("Error fetching teachers by subject:", error);
-    throw error.response?.data || { message: "Failed to fetch teachers" };
+    return { teachers: [] };
   }
 };

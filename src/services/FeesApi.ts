@@ -1,4 +1,5 @@
 import axios from "axios";
+import { FeeStructure, ScholarshipFormData } from "@/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -270,4 +271,19 @@ export const fetchFilteredFees = async (filters: SearchFilters) => {
     console.error("Error fetching filtered fees:", error);
     throw error;
   }
+};
+
+export const removeScholarshipApi = async (
+  registrationNumber: string,
+  scholarshipId: string
+) => {
+  const res = await axios.delete(
+    `${API_BASE_URL}/fees/remove/scholarship/${registrationNumber}/${scholarshipId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }
+  );
+  return res.data;
 };

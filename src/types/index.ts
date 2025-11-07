@@ -35,6 +35,8 @@ export interface RegisterData extends LoginCredentials {
   // firstName: string;
   // lastName: string;
   confirmPassword: string;
+  schoolName: string;
+  planDays: number;
 }
 
 // Student Management
@@ -43,9 +45,9 @@ export interface RegisterData extends LoginCredentials {
 export interface Student {
   studentId: string;
   id: string;
-  firstName: string;
+  firstName?: string;
   lastName?: string;
-  email: string;
+  email?: string;
   phone?: string;
   dateOfBirth?: string;
   address?: string;
@@ -162,7 +164,7 @@ export interface ClassSchedule {
 
 // Teacher Management
 export interface Teacher {
-  _id: string;
+  _id?: string;
   id: string;
   userId: string;
   teacherId: string; // like studentId
@@ -280,16 +282,21 @@ export interface ExamResult {
 // Fee Management
 export interface FeeStructure {
   id: string;
-  grade: string;
-  academicYear: string;
-  tuitionFee: number;
-  labFee: number;
-  libraryFee: number;
+  classId?: string;
+  session?: string;
+  status?: string;
+  totalAmount?: number;
+  months?: any;
+  grade?: string;
+  academicYear?: string;
+  tuitionFee?: number;
+  labFee?: number;
+  libraryFee?: number;
   transportFee?: number;
   hostelFee?: number;
-  otherFees: { [key: string]: number };
-  totalFee: number;
-  paymentSchedule: PaymentSchedule[];
+  otherFees?: { [key: string]: number };
+  totalFee?: number;
+  paymentSchedule?: PaymentSchedule[];
 }
 
 export interface PaymentSchedule {
@@ -316,6 +323,12 @@ export interface FeeRecord {
 }
 
 export interface Payment {
+  regNo?: any;
+  session?: any;
+  className?: any;
+  studentName?: any;
+  student?: any;
+  registrationNumber?: any;
   id: string;
   amount: number;
   paymentDate: string;
@@ -453,39 +466,49 @@ export interface Guardian {
 
 export interface StudentFormData {
   id?: string;
-  firstName: string;
+  firstName?: string;
   lastName?: string;
-  email: string;
+  email?: string;
   phone?: string;
   dateOfBirth?: string;
-  address?: string; // Make optional
-  parentEmail?: string; // Add parentEmail
-  grade?: string; // Make optional
-  section?: string; // Make optional
+  dob?: string;
+  address?: string;
+  parentEmail?: string;
+  grade?: string;
+  section?: string;
   rollNumber?: string;
   admissionDate?: string;
   classId?: string;
-
-  // Guardian info
-  guardian?: Guardian; // Make optional for compatibility
-
-  // Parent info (for compatibility with EditStudentModal)
+  session?: string;
+  guardian?: Guardian;
   fatherName?: string;
   fatherEmail?: string;
   fatherContact?: string;
+  fatherphone?: string;
   fatherOccupation?: string;
   motherName?: string;
   motherEmail?: string;
   motherContact?: string;
+  motherphone?: string;
   motherOccupation?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  relation?: string;
+  _id?: string;
 }
 
 export interface ScholarshipFormData {
-  studentId: string;
-  type: string; // e.g., 'Merit' | 'Need-Based'
-  amount: number;
+  studentId?: string;
+  type?: string; // e.g., 'Merit' | 'Need-Based'
+  amount?: number;
   notes?: string;
   academicYear?: string;
+  name?: string;
+  value?: number;
+  valueType?: "fixed" | "percentage";
+  period?: string;
+  months?: string[];
 }
 
 export interface CourseFormData {
@@ -511,7 +534,7 @@ export interface AssignmentFormData {
 
 // Class Management
 export interface Class {
-  _id: string;
+  _id?: string;
   id: string;
   name: string;
   grade: string;
@@ -570,23 +593,31 @@ export interface TeacherList {
 }
 export interface Subject {
   _id: string;
+  id?: string; // For compatibility with mock data
   name: string;
   code: string;
   admin: string;
   classes: ClassRef[];
   teachers: TeacherList[];
+  teacherId?: string; // For compatibility with mock data
+  teacherName?: string; // For compatibility with mock data
   department?: string;
   type?: string;
   grade:string;
   credits?: number;
   description?: string;
+  syllabus?: string[];
+  resources?: string[];
+  prerequisites?: string[];
+  isActive?: boolean;
   classSchedule?: {
     dayOfWeek: number; // 0-6 (Sunday-Saturday)
     startTime: string;
     endTime: string;
     room: string;
   }[];
-
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SubjectResponse {

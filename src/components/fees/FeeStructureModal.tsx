@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react"; // ✅ Spinner icon
 import { useToast } from "@/hooks/use-toast";
 import { createFeeStructure as apiCreateFeeStructure } from "@/services/FeesApi";
 import { getAllClasses } from "@/services/ClassesApi";
@@ -85,7 +86,7 @@ interface FeeStructureModalProps {
   isOpen: boolean;
   onClose: () => void;
   mode?: "create" | "view" | "edit" | "delete";
-  initialData?: FeeStructureFormData; // for edit/view
+  initialData?: FeeStructureFormData;
 }
 
 export const FeeStructureModal = ({
@@ -95,9 +96,14 @@ export const FeeStructureModal = ({
   initialData,
 }: FeeStructureModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+
+  // ✅ Added loading for fetching classes
+  const [isClassLoading, setIsClassLoading] = useState(true);
+
   const [classes, setClasses] = useState<
     { _id: string; grade: string; section: string }[]
   >([]);
+
   const { toast } = useToast();
 
   const form = useForm<FeeStructureFormData>({
@@ -115,10 +121,13 @@ export const FeeStructureModal = ({
   useEffect(() => {
     const fetchClasses = async () => {
       try {
+        setIsClassLoading(true); // ✅ Spinner ON
         const data = await getAllClasses();
         setClasses(data);
       } catch (err) {
         console.error("Failed to fetch classes:", err);
+      } finally {
+        setIsClassLoading(false); // ✅ Spinner OFF
       }
     };
     fetchClasses();
@@ -136,11 +145,10 @@ export const FeeStructureModal = ({
   });
 
   const onSubmit = async (data: FeeStructureFormData) => {
-    if (mode === "view" || mode === "delete") return; // no submit in view/delete
+    if (mode === "view" || mode === "delete") return;
 
-    setIsLoading(true);
+    setIsLoading(true); // ✅ Spinner ON
     try {
-      // ✅ Sanitize and ensure all required fields exist
       const sanitizedMonthDetails = data.monthDetails.map((m) => ({
         month: m.month || "",
         startDate: m.startDate || "",
@@ -152,7 +160,7 @@ export const FeeStructureModal = ({
       await apiCreateFeeStructure({
         classIds: data.classIds,
         session: data.session,
-        monthDetails: sanitizedMonthDetails, // ✅ cleaned data
+        monthDetails: sanitizedMonthDetails,
       });
 
       toast({
@@ -170,7 +178,7 @@ export const FeeStructureModal = ({
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // ✅ Spinner OFF
     }
   };
 
@@ -205,280 +213,321 @@ export const FeeStructureModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Classes */}
-            <FormField
-              control={form.control}
-              name="classIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Classes</FormLabel>
-                  <div className="flex flex-col gap-2 max-h-40 overflow-y-auto border rounded p-2">
-                    {Object.keys(classesByGrade).map((grade) => (
-                      <div key={grade} className="flex gap-2">
-                        {classesByGrade[grade].map((cls) => {
-                          const isChecked = field.value.includes(cls._id);
-                          return (
-                            <label
-                              key={cls._id}
-                              className="flex items-center gap-2 cursor-pointer border rounded px-2 py-1"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  if (!isReadOnly) {
-                                    if (e.target.checked)
-                                      field.onChange([...field.value, cls._id]);
-                                    else
-                                      field.onChange(
-                                        field.value.filter(
-                                          (id) => id !== cls._id
-                                        )
-                                      );
-                                  }
-                                }}
-                                disabled={isReadOnly}
-                              />
-                              <span>
-                                {grade}-{cls.section}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Session */}
-            <FormField
-              control={form.control}
-              name="session"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Session</FormLabel>
-                  <FormControl>
-                    <Input {...field} disabled={isReadOnly} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Months */}
-            <FormField
-              control={form.control}
-              name="monthDetails"
-              render={({ field }) => {
-                const sortedSelectedMonths = [...field.value].sort(
-                  (a, b) =>
-                    monthsList.indexOf(a.month) - monthsList.indexOf(b.month)
-                );
-
-                const handleMonthToggle = (month: string) => {
-                  if (isReadOnly) return;
-                  const existingIndex = field.value.findIndex(
-                    (m) => m.month === month
-                  );
-                  if (existingIndex === -1) {
-                    const { startDate, dueDate } = getMonthDates(
-                      month,
-                      sessionValue
-                    );
-                    field.onChange([
-                      ...field.value,
-                      { month, startDate, dueDate, amount: 0, lateFine: 0 },
-                    ]);
-                  } else {
-                    field.onChange(
-                      field.value.filter((m) => m.month !== month)
-                    );
-                  }
-                };
-
-                return (
+        {/* ✅ Show loader while classes are loading */}
+        {isClassLoading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* CLASSES */}
+              <FormField
+                control={form.control}
+                name="classIds"
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Collection Months</FormLabel>
-
-                    <div className="flex flex-wrap gap-3 mt-3">
-                      {monthsList.map((month) => {
-                        const isSelected = field.value.some(
-                          (m) => m.month === month
-                        );
-                        return (
-                          <div
-                            key={month}
-                            onClick={() => handleMonthToggle(month)}
-                            className={`cursor-pointer border rounded-lg px-4 py-3 flex items-center justify-between min-w-[110px] hover:shadow-md transition-all
-                              ${
-                                isSelected
-                                  ? "bg-blue-50 border-blue-500"
-                                  : "bg-white border-gray-300"
-                              }`}
-                          >
-                            <span className="font-medium">{month}</span>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              readOnly
-                              className="h-4 w-4 cursor-pointer"
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="mt-5 grid grid-cols-1 gap-4">
-                      {sortedSelectedMonths.map((monthObj, index) => (
-                        <div
-                          key={monthObj.month}
-                          className="border rounded-lg p-4 bg-gray-50 shadow-sm"
-                        >
-                          <h4 className="font-semibold mb-3">
-                            {monthObj.month}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-4">
-                            <Controller
-                              control={form.control}
-                              name={`monthDetails.${index}.startDate`}
-                              render={({ field: startField }) => (
-                                <FormItem>
-                                  <FormLabel className="text-sm">
-                                    Start Date
-                                  </FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="date"
-                                      {...startField}
-                                      required
-                                      className="text-sm"
-                                      disabled={isReadOnly}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <Controller
-                              control={form.control}
-                              name={`monthDetails.${index}.dueDate`}
-                              render={({ field: dueField }) => (
-                                <FormItem>
-                                  <FormLabel className="text-sm">
-                                    Due Date
-                                  </FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="date"
-                                      {...dueField}
-                                      required
-                                      className="text-sm"
-                                      disabled={isReadOnly}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <Controller
-                              control={form.control}
-                              name={`monthDetails.${index}.amount`}
-                              render={({ field: amtField }) => (
-                                <FormItem>
-                                  <FormLabel className="text-sm">
-                                    Amount (₹)
-                                  </FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      placeholder="Amount"
-                                      {...amtField}
-                                      min={1}
-                                      className="text-sm"
-                                      disabled={isReadOnly}
-                                      onChange={(e) =>
-                                        !isReadOnly &&
-                                        amtField.onChange(
-                                          Number(e.target.value) || ""
-                                        )
-                                      }
-                                      onWheel={(e) => e.currentTarget.blur()}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <Controller
-                              control={form.control}
-                              name={`monthDetails.${index}.lateFine`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-sm">
-                                    Late Fine (₹)
-                                  </FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      placeholder="Late Fine"
-                                      min={0}
-                                      value={field.value ?? 0}
-                                      disabled={isReadOnly}
-                                      onChange={(e) =>
-                                        !isReadOnly &&
+                    <FormLabel>Classes</FormLabel>
+                    <div className="flex flex-col gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                      {Object.keys(classesByGrade).map((grade) => (
+                        <div key={grade} className="flex gap-2">
+                          {classesByGrade[grade].map((cls) => {
+                            const isChecked = field.value.includes(cls._id);
+                            return (
+                              <label
+                                key={cls._id}
+                                className="flex items-center gap-2 cursor-pointer border rounded px-2 py-1"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    if (!isReadOnly) {
+                                      if (e.target.checked)
+                                        field.onChange([
+                                          ...field.value,
+                                          cls._id,
+                                        ]);
+                                      else
                                         field.onChange(
-                                          e.target.value === ""
-                                            ? ""
-                                            : Number(e.target.value)
-                                        )
-                                      }
-                                      onWheel={(e) => e.currentTarget.blur()}
-                                    />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </div>
+                                          field.value.filter(
+                                            (id) => id !== cls._id
+                                          )
+                                        );
+                                    }
+                                  }}
+                                  disabled={isReadOnly}
+                                />
+                                <span>
+                                  {grade}-{cls.section}
+                                </span>
+                              </label>
+                            );
+                          })}
                         </div>
                       ))}
                     </div>
-
                     <FormMessage />
                   </FormItem>
-                );
-              }}
-            />
+                )}
+              />
 
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              {(mode === "create" || mode === "edit") && (
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading
-                    ? "Saving..."
-                    : mode === "create"
-                    ? "Create Structure"
-                    : "Save Changes"}
+              {/* SESSION */}
+              <FormField
+                control={form.control}
+                name="session"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Session</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={isReadOnly} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* MONTH DETAILS */}
+              <FormField
+                control={form.control}
+                name="monthDetails"
+                render={({ field }) => {
+                  const sortedSelectedMonths = [...field.value].sort(
+                    (a, b) =>
+                      monthsList.indexOf(a.month) -
+                      monthsList.indexOf(b.month)
+                  );
+
+                  const handleMonthToggle = (month: string) => {
+                    if (isReadOnly) return;
+
+                    const existingIndex = field.value.findIndex(
+                      (m) => m.month === month
+                    );
+
+                    if (existingIndex === -1) {
+                      const { startDate, dueDate } = getMonthDates(
+                        month,
+                        sessionValue
+                      );
+
+                      field.onChange([
+                        ...field.value,
+                        { month, startDate, dueDate, amount: 0, lateFine: 0 },
+                      ]);
+                    } else {
+                      field.onChange(
+                        field.value.filter((m) => m.month !== month)
+                      );
+                    }
+                  };
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Collection Months</FormLabel>
+
+                      <div className="flex flex-wrap gap-3 mt-3">
+                        {monthsList.map((month) => {
+                          const isSelected = field.value.some(
+                            (m) => m.month === month
+                          );
+                          return (
+                            <div
+                              key={month}
+                              onClick={() => handleMonthToggle(month)}
+                              className={`cursor-pointer border rounded-lg px-4 py-3 flex items-center justify-between min-w-[110px] hover:shadow-md transition-all
+                                ${
+                                  isSelected
+                                    ? "bg-blue-50 border-blue-500"
+                                    : "bg-white border-gray-300"
+                                }`}
+                            >
+                              <span className="font-medium">{month}</span>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                readOnly
+                                className="h-4 w-4 cursor-pointer"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-5 grid grid-cols-1 gap-4">
+                        {sortedSelectedMonths.map((monthObj, index) => (
+                          <div
+                            key={monthObj.month}
+                            className="border rounded-lg p-4 bg-gray-50 shadow-sm"
+                          >
+                            <h4 className="font-semibold mb-3">
+                              {monthObj.month}
+                            </h4>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              {/* START DATE */}
+                              <Controller
+                                control={form.control}
+                                name={`monthDetails.${index}.startDate`}
+                                render={({ field: startField }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">
+                                      Start Date
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        {...startField}
+                                        required
+                                        className="text-sm"
+                                        disabled={isReadOnly}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              {/* DUE DATE */}
+                              <Controller
+                                control={form.control}
+                                name={`monthDetails.${index}.dueDate`}
+                                render={({ field: dueField }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">
+                                      Due Date
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        {...dueField}
+                                        required
+                                        className="text-sm"
+                                        disabled={isReadOnly}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              {/* AMOUNT */}
+                              <Controller
+                                control={form.control}
+                                name={`monthDetails.${index}.amount`}
+                                render={({ field: amtField }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">
+                                      Amount (₹)
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="number"
+                                        placeholder="Amount"
+                                        {...amtField}
+                                        min={1}
+                                        className="text-sm"
+                                        disabled={isReadOnly}
+                                        onChange={(e) =>
+                                          !isReadOnly &&
+                                          amtField.onChange(
+                                            Number(e.target.value) || ""
+                                          )
+                                        }
+                                        onWheel={(e) =>
+                                          e.currentTarget.blur()
+                                        }
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              {/* LATE FINE */}
+                              <Controller
+                                control={form.control}
+                                name={`monthDetails.${index}.lateFine`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm">
+                                      Late Fine (₹)
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="number"
+                                        placeholder="Late Fine"
+                                        min={0}
+                                        value={field.value ?? 0}
+                                        disabled={isReadOnly}
+                                        onChange={(e) =>
+                                          !isReadOnly &&
+                                          field.onChange(
+                                            e.target.value === ""
+                                              ? ""
+                                              : Number(e.target.value)
+                                          )
+                                        }
+                                        onWheel={(e) =>
+                                          e.currentTarget.blur()
+                                        }
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+
+              {/* ACTION BUTTONS */}
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
                 </Button>
-              )}
-              {mode === "delete" && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={isLoading}
-                  onClick={() => {
-                    /* call delete API */
-                  }}
-                >
-                  Delete
-                </Button>
-              )}
-            </div>
-          </form>
-        </Form>
+
+                {(mode === "create" || mode === "edit") && (
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : mode === "create" ? (
+                      "Create Structure"
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                )}
+
+                {mode === "delete" && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={isLoading}
+                    onClick={() => {
+                      /* your delete API */
+                    }}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      "Delete"
+                    )}
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   );
