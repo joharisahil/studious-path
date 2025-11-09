@@ -102,9 +102,9 @@ export const CreatePeriodModal: React.FC<CreatePeriodModalProps> = ({
   const fetchClasses = async () => {
     try {
       setIsClassesLoading(true);
-      const classesData = await getAllClasses();
-      if (Array.isArray(classesData)) {
-        setClasses(classesData);
+      const {data} = await getAllClasses();
+      if (Array.isArray(data)) {
+        setClasses(data);
       } else {
         throw new Error("Invalid API response");
       }
