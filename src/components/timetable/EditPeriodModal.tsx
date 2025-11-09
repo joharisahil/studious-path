@@ -51,7 +51,7 @@ export const EditPeriodModal = ({ open, onOpenChange }) => {
   }, [open]);
 
   const fetchClasses = async () => {
-    const data = await getAllClasses();
+    const { data } = await getAllClasses();
     setClasses(data || []);
   };
 

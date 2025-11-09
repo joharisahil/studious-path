@@ -106,8 +106,8 @@ export function CreateStudentForm({
 
   const fetchClasses = async () => {
     try {
-      const result = await getAllClasses();
-      setClasses(Array.isArray(result) ? result : []);
+      const {data} = await getAllClasses();
+      setClasses(Array.isArray(data) ? data : []);
     } catch (error) {
       toast({
         title: "Error",

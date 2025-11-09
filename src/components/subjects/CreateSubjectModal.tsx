@@ -89,7 +89,7 @@ const CreateSubjectModal = ({
 
   const fetchClasses = async () => {
     try {
-      const data = await getAllClasses();
+      const { data } = await getAllClasses();
       setClasses(data || []);
     } catch {
       toast({

@@ -175,7 +175,7 @@ const StudentsManagement: React.FC = () => {
     const fetchClasses = async () => {
       setLoadingClasses(true);
       try {
-        const data: any[] = await getAllClasses();
+        const { data } = await getAllClasses();
         // sort by numeric grade when possible, then section
         const sorted = (data || []).slice().sort((a: any, b: any) => {
           const ag = isFinite(Number(a.grade))

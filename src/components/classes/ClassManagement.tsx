@@ -31,6 +31,7 @@ import { UploadStudentsModal } from "./UploadStudentsModal";
 
 export const ClassManagement = () => {
   const [classes, setClasses] = useState<any[]>([]);
+  const [getAllClassList, setGetAllClassList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,23 +44,39 @@ export const ClassManagement = () => {
   // Session dropdowns
   const [fromYear, setFromYear] = useState("2025");
   const [toYear, setToYear] = useState("26");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalResults: 0,
+  });
 
   // Fetch classes
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        setIsLoading(true);
-        const data = await getAllClasses();
-        setClasses(data);
-      } catch (err) {
-        console.error("Failed to fetch classes:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchClasses();
-  }, []);
+const fetchClasses = async (page = 1) => {
+  try {
+    setIsLoading(true);
+    const { classes, pagination: pageInfo, data } = await getAllClasses(page, pagination.limit);
+    setGetAllClassList(data);
+    setClasses(classes);
+    setPagination(pageInfo);
+  } catch (err) {
+    console.error("Failed to fetch classes:", err);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
+  useEffect(() => {
+    fetchClasses(pagination.page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.page]);
+
+  // handle pagination change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      setPagination((prev) => ({ ...prev, page: newPage }));
+    }
+  };
   const totalStudents = classes.reduce(
     (sum, cls) => sum + (cls.studentCount || 0),
     0
@@ -72,7 +89,7 @@ export const ClassManagement = () => {
   };
 
   // Filter classes
-  const filteredClasses = classes.filter(
+  const filteredClasses = getAllClassList.filter(
     (cls) =>
       (!filterGrade || cls.grade === filterGrade) &&
       (!filterSection || cls.section === filterSection) &&
@@ -80,7 +97,7 @@ export const ClassManagement = () => {
   );
 
   // Get unique grades
-  const grades = Array.from(new Set(classes.map((cls) => cls.grade)));
+  const grades = Array.from(new Set(getAllClassList.map((cls) => cls.grade)));
 
   // Get sections for selected grade
   const sections = filterGrade
@@ -325,6 +342,33 @@ export const ClassManagement = () => {
           )}
         </CardContent>
       </Card>
+      {/* Pagination */}
+{pagination.totalPages > 1 && (
+  <div className="flex justify-between items-center mt-6">
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={pagination.page === 1}
+      onClick={() => handlePageChange(pagination.page - 1)}
+    >
+      Previous
+    </Button>
+    <div className="text-sm text-muted-foreground">
+      Page <span className="font-medium">{pagination.page}</span> of{" "}
+      <span className="font-medium">{pagination.totalPages}</span> | Total{" "}
+      <span className="font-medium">{pagination.totalResults}</span> classes
+    </div>
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={pagination.page === pagination.totalPages}
+      onClick={() => handlePageChange(pagination.page + 1)}
+    >
+      Next
+    </Button>
+  </div>
+)}
+
 
       {/* Modals */}
       <CreateClassModal open={showCreateModal} onOpenChange={setShowCreateModal} />
