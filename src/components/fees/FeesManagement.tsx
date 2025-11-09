@@ -128,7 +128,7 @@ export const FeesManagement = () => {
     const fetchClasses = async () => {
       setLoadingClasses(true);
       try {
-        const data = await getAllClasses();
+        const { data } = await getAllClasses();
         setClasses(data);
       } catch (err) {
         console.error(err);

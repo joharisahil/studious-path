@@ -38,6 +38,7 @@ const studentSchema = z.object({
   session: z.string().min(1, "Session is required"),
 
   address: z.string().min(5, "Address must be at least 5 characters"),
+  aadhaarNumber: z.string().min(5, "AdhaarNumber must be of 12 digits"),
   phone: z.string().min(10, "Phone number must be at least 10 digits"),
 
   fatherName: z.string().optional(),
@@ -82,6 +83,7 @@ export function CreateStudentForm({
 
       phone: "",
       address: "",
+      aadhaarNumber: "",
 
       fatherName: "",
       fatherphone: "",
@@ -106,7 +108,7 @@ export function CreateStudentForm({
 
   const fetchClasses = async () => {
     try {
-      const {data} = await getAllClasses();
+      const { data } = await getAllClasses();
       setClasses(Array.isArray(data) ? data : []);
     } catch (error) {
       toast({
@@ -278,6 +280,22 @@ export function CreateStudentForm({
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="Enter full address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="aadhaarNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Adhaar Number
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter adhaar number" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

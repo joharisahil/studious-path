@@ -187,3 +187,22 @@ export const searchStudents = async (query: string, page = 1, limit = 10) => {
 
   return response.json();
 };
+
+export const getStudentById = async (studentId: string) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/students/get/${studentId}`,{
+        headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    },
+    );
+    return response.data; // expect { success: true, student: {...} }
+  } catch (error: any) {
+    console.error("Error fetching student details:", error);
+    throw (
+      error.response?.data ||
+      new Error("Failed to fetch student details. Please try again.")
+    );
+  }
+};

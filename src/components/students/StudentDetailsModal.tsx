@@ -28,6 +28,7 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   if (!student) return null;
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const scholarshipMeta = student.scholarshipInfo ?? {};
   const scholarships = Array.isArray(scholarshipMeta.scholarships)
