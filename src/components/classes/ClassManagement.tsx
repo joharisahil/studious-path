@@ -52,19 +52,19 @@ export const ClassManagement = () => {
   });
 
   // Fetch classes
-const fetchClasses = async (page = 1) => {
-  try {
-    setIsLoading(true);
-    const { classes, pagination: pageInfo, data } = await getAllClasses(page, pagination.limit);
-    setGetAllClassList(data);
-    setClasses(classes);
-    setPagination(pageInfo);
-  } catch (err) {
-    console.error("Failed to fetch classes:", err);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const fetchClasses = async (page = 1) => {
+    try {
+      setIsLoading(true);
+      const { classes, pagination: pageInfo, data } = await getAllClasses(page, pagination.limit);
+      setGetAllClassList(data);
+      setClasses(classes);
+      setPagination(pageInfo);
+    } catch (err) {
+      console.error("Failed to fetch classes:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchClasses(pagination.page);
@@ -89,12 +89,17 @@ const fetchClasses = async (page = 1) => {
   };
 
   // Filter classes
-  const filteredClasses = getAllClassList.filter(
-    (cls) =>
-      (!filterGrade || cls.grade === filterGrade) &&
-      (!filterSection || cls.section === filterSection) &&
-      (cls.grade.includes(searchTerm) || cls.section.includes(searchTerm))
-  );
+  const filteredClasses =
+    filterGrade || filterSection || searchTerm
+      ? getAllClassList.filter(
+        (cls) =>
+          (!filterGrade || cls.grade === filterGrade) &&
+          (!filterSection || cls.section === filterSection) &&
+          (`${cls.grade}${cls.section}`
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()))
+      )
+      : classes;
 
   // Get unique grades
   const grades = Array.from(new Set(getAllClassList.map((cls) => cls.grade)));
@@ -102,8 +107,8 @@ const fetchClasses = async (page = 1) => {
   // Get sections for selected grade
   const sections = filterGrade
     ? Array.from(
-        new Set(classes.filter((cls) => cls.grade === filterGrade).map((cls) => cls.section))
-      )
+      new Set(getAllClassList.filter((cls) => cls.grade === filterGrade).map((cls) => cls.section))
+    )
     : [];
 
   return (
@@ -127,43 +132,43 @@ const fetchClasses = async (page = 1) => {
       </div>
 
       {/* Modern KPI Cards */}
-<div className="grid gap-6 md:grid-cols-3">
-  {/* Total Classes */}
-  <Card className="rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
-    <CardContent className="flex flex-col items-center justify-center text-center py-6">
-      <div className="bg-indigo-100 rounded-full p-3 mb-3">
-        <Users className="h-6 w-6 text-indigo-600" />
-      </div>
-      <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Total Classes</CardTitle>
-      <div className="text-4xl font-extrabold text-indigo-600">{classes.length}</div>
-      <p className="text-xs text-gray-400 mt-1">Active classes this year</p>
-    </CardContent>
-  </Card>
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Total Classes */}
+        <Card className="rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
+          <CardContent className="flex flex-col items-center justify-center text-center py-6">
+            <div className="bg-indigo-100 rounded-full p-3 mb-3">
+              <Users className="h-6 w-6 text-indigo-600" />
+            </div>
+            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Total Classes</CardTitle>
+            <div className="text-4xl font-extrabold text-indigo-600">{classes.length}</div>
+            <p className="text-xs text-gray-400 mt-1">Active classes this year</p>
+          </CardContent>
+        </Card>
 
-  {/* Total Students */}
-  <Card className="rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
-    <CardContent className="flex flex-col items-center justify-center text-center py-6">
-      <div className="bg-green-100 rounded-full p-3 mb-3">
-        <Users className="h-6 w-6 text-green-600" />
-      </div>
-      <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Total Students</CardTitle>
-      <div className="text-4xl font-extrabold text-green-600">{totalStudents}</div>
-      <p className="text-xs text-gray-400 mt-1">Students enrolled</p>
-    </CardContent>
-  </Card>
+        {/* Total Students */}
+        <Card className="rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
+          <CardContent className="flex flex-col items-center justify-center text-center py-6">
+            <div className="bg-green-100 rounded-full p-3 mb-3">
+              <Users className="h-6 w-6 text-green-600" />
+            </div>
+            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Total Students</CardTitle>
+            <div className="text-4xl font-extrabold text-green-600">{totalStudents}</div>
+            <p className="text-xs text-gray-400 mt-1">Students enrolled</p>
+          </CardContent>
+        </Card>
 
-  {/* Avg Class Size */}
-  <Card className="rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
-    <CardContent className="flex flex-col items-center justify-center text-center py-6">
-      <div className="bg-purple-100 rounded-full p-3 mb-3">
-        <Users className="h-6 w-6 text-purple-600" />
+        {/* Avg Class Size */}
+        <Card className="rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
+          <CardContent className="flex flex-col items-center justify-center text-center py-6">
+            <div className="bg-purple-100 rounded-full p-3 mb-3">
+              <Users className="h-6 w-6 text-purple-600" />
+            </div>
+            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Avg Class Size</CardTitle>
+            <div className="text-4xl font-extrabold text-purple-600">{avgClassSize}</div>
+            <p className="text-xs text-gray-400 mt-1">Average students per class</p>
+          </CardContent>
+        </Card>
       </div>
-      <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Avg Class Size</CardTitle>
-      <div className="text-4xl font-extrabold text-purple-600">{avgClassSize}</div>
-      <p className="text-xs text-gray-400 mt-1">Average students per class</p>
-    </CardContent>
-  </Card>
-</div>
 
 
       {/* Filters */}
@@ -304,70 +309,71 @@ const fetchClasses = async (page = 1) => {
                     if (gradeA !== gradeB) return gradeA - gradeB;
                     return a.section.localeCompare(b.section);
                   })
-                  .map((cls) => (
-                    <TableRow key={cls._id}>
-                      <TableCell className="font-medium">{cls.grade}-{cls.section}</TableCell>
-                      <TableCell>{cls.grade}</TableCell>
-                      <TableCell>{fromYear}-{toYear}</TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">Not assigned</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="text-sm">{cls.studentCount || 0}/50</div>
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-primary rounded-full h-2"
-                              style={{
-                                width: `${((cls.studentCount || 0) / 50) * 100}%`,
-                              }}
-                            />
+                  .map((cls) => {
+                    const studentCount = cls.studentCount ?? cls.students?.length ?? 0; // <-- fix student count
+                    return (
+                      <TableRow key={cls._id}>
+                        <TableCell className="font-medium">{cls.grade}-{cls.section}</TableCell>
+                        <TableCell>{cls.grade}</TableCell>
+                        <TableCell>{fromYear}-{toYear}</TableCell>
+                        <TableCell>
+                          <span className="text-muted-foreground">Not assigned</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm">{studentCount}/50</div>
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-primary rounded-full h-2"
+                                style={{ width: `${(studentCount / 50) * 100}%` }}
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!fromYear || !toYear}
+                              onClick={() => handleUploadStudents(cls._id)}
+                              className="ml-auto"
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Upload Students
+                            </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={!fromYear || !toYear}
-                            onClick={() => handleUploadStudents(cls._id)}
-                            className="ml-auto"
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload Students
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
       {/* Pagination */}
-{pagination.totalPages > 1 && (
-  <div className="flex justify-between items-center mt-6">
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={pagination.page === 1}
-      onClick={() => handlePageChange(pagination.page - 1)}
-    >
-      Previous
-    </Button>
-    <div className="text-sm text-muted-foreground">
-      Page <span className="font-medium">{pagination.page}</span> of{" "}
-      <span className="font-medium">{pagination.totalPages}</span> | Total{" "}
-      <span className="font-medium">{pagination.totalResults}</span> classes
-    </div>
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={pagination.page === pagination.totalPages}
-      onClick={() => handlePageChange(pagination.page + 1)}
-    >
-      Next
-    </Button>
-  </div>
-)}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={pagination.page === 1}
+            onClick={() => handlePageChange(pagination.page - 1)}
+          >
+            Previous
+          </Button>
+          <div className="text-sm text-muted-foreground">
+            Page <span className="font-medium">{pagination.page}</span> of{" "}
+            <span className="font-medium">{pagination.totalPages}</span> | Total{" "}
+            <span className="font-medium">{pagination.totalResults}</span> classes
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={pagination.page === pagination.totalPages}
+            onClick={() => handlePageChange(pagination.page + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
 
       {/* Modals */}
