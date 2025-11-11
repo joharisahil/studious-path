@@ -122,7 +122,7 @@ export const FeeStructureModal = ({
     const fetchClasses = async () => {
       try {
         setIsClassLoading(true); // ✅ Spinner ON
-        const data = await getAllClasses();
+        const { data } = await getAllClasses();
         setClasses(data);
       } catch (err) {
         console.error("Failed to fetch classes:", err);
