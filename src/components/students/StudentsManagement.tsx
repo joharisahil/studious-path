@@ -57,7 +57,11 @@ import { useToast } from "@/hooks/use-toast";
 import CreateStudentModal from "./CreateStudentModal";
 import EditStudentModal from "./EditStudentModal";
 import ImportStudentModal from "./ImportStudentModal";
-import { getAllStudents, deleteStudent, getStudentById } from "@/services/StudentsApi";
+import {
+  getAllStudents,
+  deleteStudent,
+  getStudentById,
+} from "@/services/StudentsApi";
 import { getAllClasses } from "@/services/ClassesApi";
 import StudentDetailsModal from "./StudentDetailsModal";
 
@@ -211,26 +215,26 @@ const StudentsManagement: React.FC = () => {
     setEditModalOpen(true);
   };
 
-const handleViewStudent = async (student: any) => {
-  try {
-    // Optional: show loader or toast
-    const res: any = await getStudentById(student._id);
-    if (res?.student) {
-      setSelectedStudent(res.student);
-    } else {
-      setSelectedStudent(student); // fallback to existing data
+  const handleViewStudent = async (student: any) => {
+    try {
+      // Optional: show loader or toast
+      const res: any = await getStudentById(student._id);
+      if (res?.student) {
+        setSelectedStudent(res.student);
+      } else {
+        setSelectedStudent(student); // fallback to existing data
+      }
+      setDetailsModalOpen(true);
+    } catch (error: any) {
+      console.error("Failed to fetch student details:", error);
+      toast({
+        title: "Error",
+        description:
+          error.message || "Could not load student details. Please try again.",
+        variant: "destructive",
+      });
     }
-    setDetailsModalOpen(true);
-  } catch (error: any) {
-    console.error("Failed to fetch student details:", error);
-    toast({
-      title: "Error",
-      description:
-        error.message || "Could not load student details. Please try again.",
-      variant: "destructive",
-    });
-  }
-};
+  };
 
   const handleDeleteStudent = async (studentId: string) => {
     try {
@@ -602,6 +606,7 @@ const handleViewStudent = async (student: any) => {
                   <TableHead>Registration Number</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Section</TableHead>
                   <TableHead>DOB</TableHead>
@@ -655,6 +660,10 @@ const handleViewStudent = async (student: any) => {
 
                     <TableCell className="text-sm">
                       {student.email || "-"}
+                    </TableCell>
+
+                    <TableCell className="text-sm">
+                      {student.phone || "-"}
                     </TableCell>
 
                     <TableCell>
