@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Upload, Users, Search, Filter, Download } from "lucide-react";
+import { Plus, Upload, Users, Search, Filter, Download, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,6 +28,8 @@ import {
 import { getAllClasses } from "@/services/ClassesApi";
 import { CreateClassModal } from "./CreateClassModal";
 import { UploadStudentsModal } from "./UploadStudentsModal";
+import { CreateStudentForm } from "@/components/students/CreateStudentForm";
+import { CreateStudentModal } from "../students";
 
 export const ClassManagement = () => {
   const [classes, setClasses] = useState<any[]>([]);
@@ -40,6 +42,9 @@ export const ClassManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+
+  // Create Student modal open state
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   // Session dropdowns
   const [fromYear, setFromYear] = useState("2025");
@@ -77,6 +82,7 @@ export const ClassManagement = () => {
       setPagination((prev) => ({ ...prev, page: newPage }));
     }
   };
+
   const totalStudents = classes.reduce(
     (sum, cls) => sum + (cls.studentCount || 0),
     0
@@ -86,6 +92,12 @@ export const ClassManagement = () => {
   const handleUploadStudents = (classId: string) => {
     setSelectedClass(classId);
     setShowUploadModal(true);
+  };
+
+  // OPEN create student modal for a particular class
+  const handleAddStudent = (classId: string) => {
+    setSelectedClass(classId);
+    setCreateModalOpen(true);
   };
 
   // Filter classes
@@ -328,12 +340,25 @@ export const ClassManagement = () => {
                                 style={{ width: `${(studentCount / 50) * 100}%` }}
                               />
                             </div>
+
+                            {/* Add Student button - opens CreateStudentModal */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAddStudent(cls._id)}
+                              className="ml-auto"
+                            >
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Add Student
+                            </Button>
+
+                            {/* Upload Students */}
                             <Button
                               size="sm"
                               variant="outline"
                               disabled={!fromYear || !toYear}
                               onClick={() => handleUploadStudents(cls._id)}
-                              className="ml-auto"
+                              className="ml-2"
                             >
                               <Upload className="w-4 h-4 mr-2" />
                               Upload Students
@@ -383,6 +408,14 @@ export const ClassManagement = () => {
         onOpenChange={setShowUploadModal}
         classId={selectedClass}
         session={`${fromYear}-${toYear}`}
+      />
+
+      {/* Create Student Modal */}
+      <CreateStudentModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        classId={selectedClass}
+        onSuccess={() => fetchClasses(pagination.page)}
       />
     </div>
   );
