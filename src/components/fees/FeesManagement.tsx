@@ -1,6 +1,7 @@
 // src/components/fees/FeesManagement.tsx
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { Copy, Check } from "lucide-react";
 import axios from "axios";
 import {
   Plus,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -70,7 +72,7 @@ interface FeeRecord {
   dueAmount?: number;
   status: string;
   nextDueDate?: string;
-  scholarshipType?: "full" | "half" | "none" | "None";
+  scholarshipType?: "custom"  | "none" | "None";
   payments?: { id: string; amount: number; date?: string; mode?: string }[];
 }
 
@@ -89,6 +91,7 @@ export const FeesManagement = () => {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("all");
   const [selectedScholarship, setSelectedScholarship] = useState("all");
+  const { toast } = useToast();
 
   const [classes, setClasses] = useState<ClassType[]>([]);
   const [feeRecords, setFeeRecords] = useState<FeeRecord[]>([]);
@@ -244,6 +247,36 @@ export const FeesManagement = () => {
   const handleSearch = () => fetchFeeRecords(1);
   const handlePageChange = (page: number) => fetchFeeRecords(page);
 
+  // ---------- COPY / TICK STATE & HANDLER (TYPE SAFE) ----------
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = async (value: string, key?: string) => {
+    if (!value) return;
+    const uniqueKey = key ?? `val-${value}`;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedId(uniqueKey);
+
+      // clear after 1.5s
+      window.setTimeout(() => {
+        setCopiedId((prev) => (prev === uniqueKey ? null : prev));
+      }, 1500);
+
+      toast({
+        title: "Copied",
+        description: "Registration Number copied to clipboard.",
+      });
+    } catch (err) {
+      console.error("Clipboard error:", err);
+      toast({
+        title: "Failed",
+        description: "Could not copy to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
+  // ------------------------------------------------------------
+
   return (
     <div className="space-y-8 relative">
       {/* Header */}
@@ -257,9 +290,9 @@ export const FeesManagement = () => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button onClick={() => alert("Export feature")} variant="outline">
+          {/* <Button onClick={() => alert("Export feature")} variant="outline">
             <Download className="w-4 h-4 mr-2" /> Export Report
-          </Button>
+          </Button> */}
           <Button
             onClick={() => setClassFeeStructureModalOpen(true)}
             variant="outline"
@@ -403,8 +436,8 @@ export const FeesManagement = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="full">Full</SelectItem>
-            <SelectItem value="half">Half</SelectItem>
+            <SelectItem value="custom">Custom</SelectItem>
+           
             <SelectItem value="none">None</SelectItem>
           </SelectContent>
         </Select>
@@ -464,11 +497,23 @@ export const FeesManagement = () => {
                       <TableCell>
                         <div>
                           <div className="font-medium">{record.studentName}</div>
-                          <div className="text-sm text-muted-foreground">
-                            ID: {record.studentId}
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <span>ID: {record.studentId}</span>
+                            <button
+                              onClick={() => handleCopy(record.studentId, record.id)}
+                              className="relative p-1 rounded hover:bg-muted transition-colors"
+                              title="Copy Registration Number"
+                            >
+                              {copiedId === record.id ? (
+                                <Check className="h-4 w-4 text-green-500 animate-scale-in" />
+                              ) : (
+                                <Copy className="h-4 w-4 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" />
+                              )}
+                            </button>
                           </div>
                         </div>
                       </TableCell>
+
                       <TableCell>{record.grade}</TableCell>
                       <TableCell>{record.academicYear}</TableCell>
                       <TableCell>

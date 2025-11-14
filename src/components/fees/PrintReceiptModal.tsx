@@ -1,236 +1,263 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { Payment } from "@/types";
 import { useEffect, useState } from "react";
 
 interface PrintReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
-  payment: Payment | null;
-  studentName: string;
-  className: string;
-  receiptNumber: string;
-  session: string;
-  installment: string;
-  feeDetails?: {
-    description: string;
-    due: number;
-    con?: number;
-    paid: number;
-  }[];
-  payModeInfo: { mode: string; date: string; bank?: string; number?: string };
+  basicInfo?: any;
+  excelData?: any;
   note?: string;
+  warning?: string | null;
 }
 
 export function PrintReceiptModal({
   isOpen,
   onClose,
-  payment,
-  studentName,
-  className,
-  receiptNumber,
-  session,
-  installment,
-  feeDetails = [],
-  payModeInfo,
-  note = "N/A",
+  basicInfo,
+  excelData,
+  note = "Payment recorded successfully",
+  warning = null,
 }: PrintReceiptModalProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      const t = setTimeout(() => setLoading(false), 500);
+      const t = setTimeout(() => setLoading(false), 300);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
 
-  if (!payment) return null;
+  if (!basicInfo || !excelData) return null;
 
-  const totalPaidToday = payment?.amount || 0;
-  const totalDue = feeDetails.reduce((sum, f) => sum + (f.due || 0), 0);
-  const remainingBalance = totalDue - totalPaidToday;
+  const studentName = basicInfo.studentName || "-";
+  const registrationNumber = basicInfo.registrationNumber || "-";
+  const schoolName = basicInfo.schoolName || "School Name";
 
-  const numberToWords = (num: number) => {
-    if (num === undefined || num === null) return "0 only";
-    return num.toLocaleString("en-IN") + " only";
-  };
+  const latestPayment = basicInfo.feeRecord?.payments?.slice(-1)[0] || {};
+  const className =
+    basicInfo.feeRecord?.classId
+      ? `${basicInfo.feeRecord.classId.grade} - ${basicInfo.feeRecord.classId.section}`
+      : basicInfo.feeRecord?.className || "-";
+
+  // ------------------- Installments with Payment & Scholarships -------------------
+  const installmentsWithPayment = excelData.installments?.map((inst: any) => {
+    const paymentsForMonth = excelData.payments
+      ?.filter((p: any) => p.month === inst.month)
+      .map((p: any) => p.amount) || [];
+
+    const totalPaid = paymentsForMonth.reduce((sum, x) => sum + x, 0);
+
+    // --- Calculate scholarship for this month ---
+    const scholarshipAmount = excelData.scholarships?.reduce((sum: number, s: any) => {
+      if (s.months.includes(inst.month)) {
+        if (s.valueType === "fixed") return sum + s.value;
+        if (s.valueType === "percentage") return sum + (inst.amount * s.value) / 100;
+      }
+      return sum;
+    }, 0) || 0;
+
+    const adjustedAmount = inst.amount - scholarshipAmount;
+    const isPaid = totalPaid >= adjustedAmount;
+    const isPartial = totalPaid > 0 && totalPaid < adjustedAmount;
+
+    return {
+      ...inst,
+      amount: adjustedAmount,
+      scholarship: scholarshipAmount,
+      amountPaid: isPaid ? totalPaid : isPartial ? totalPaid : 0,
+      partial: isPartial ? paymentsForMonth.join("+") : "",
+      displayMonth: isPartial || scholarshipAmount > 0 ? inst.month + "*" : inst.month,
+      hasPayment: totalPaid > 0,
+    };
+  });
+
+  const totalPaid = installmentsWithPayment?.reduce(
+    (sum, i) => sum + (typeof i.amountPaid === "number" ? i.amountPaid : 0),
+    0
+  );
+  const totalScholarship = installmentsWithPayment?.reduce((sum, i) => sum + i.scholarship, 0);
+  const remainingBalance = excelData.totalAmount - totalScholarship - totalPaid;
+
+  // Payments made today
+  const today = new Date().toISOString().split("T")[0];
+  const paymentsToday = excelData.payments?.filter(
+    (p) => p.paidAt?.split("T")[0] === today
+  );
+  const paymentMadeTodayAmount =
+    paymentsToday?.reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
+
+  const scholarships = excelData.scholarships || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="
-          max-w-3xl 
-          w-full 
-          p-4 sm:p-6 
-          print:p-0 
-          max-h-[90vh] 
-          overflow-y-auto 
-          rounded-md
-        "
+        className="max-w-4xl w-full p-0 print:p-0 max-h-[90vh] overflow-y-auto rounded-md"
+        aria-describedby="receipt-content"
       >
+        {/* Custom Buttons */}
+        <div className="flex justify-end gap-2 p-4 print:hidden">
+          <Button size="sm" onClick={() => window.print()}>Print Receipt</Button>
+          <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
+        </div>
+
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-black"></div>
           </div>
         ) : (
-          <div className="font-sans text-sm print:text-xs w-full">
-            {/* Header */}
-            <div className="text-center mb-4 w-full">
-              <img
-                src="/logo.png"
-                alt="School Logo"
-                className="mx-auto w-16 h-16 object-contain mb-2"
-              />
-              <h1 className="text-xl sm:text-2xl font-bold">
-                Delhi Public School
-              </h1>
-              <p className="text-xs sm:text-sm">
-                Site No.1, Sector-45, Urban Estate, Gurgaon, Haryana
-              </p>
+          <div
+            id="receipt-content"
+            className="font-sans text-sm print:text-xs w-full"
+            style={{ width: "210mm", minHeight: "297mm", padding: "20mm", boxSizing: "border-box" }}
+          >
+            <div className="text-center mb-2">
+              <h1 className="text-xl sm:text-2xl font-bold">{schoolName}</h1>
             </div>
 
-            {/* Fee Receipt Title */}
-            <div className="bg-gray-200 text-center py-1 font-semibold mb-4 text-sm sm:text-base w-full">
-              FEE RECEIPT
-            </div>
+            <div className="bg-gray-100 text-center py-1 font-semibold mb-4">FEE RECEIPT</div>
 
             {/* Student Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-xs sm:text-sm w-full">
-              <div>
-                <p>
-                  <strong>Receipt No :</strong> {receiptNumber}
-                </p>
-                <p>
-                  <strong>Adm No :</strong> {payment.transactionId || "N/A"}
-                </p>
-                <p>
-                  <strong>Name :</strong> {studentName}
-                </p>
-                <p>
-                  <strong>Installment :</strong> {installment}
-                </p>
-              </div>
-
-              <div>
-                <p>
-                  <strong>Date :</strong>{" "}
-                  {payment.paymentDate
-                    ? new Date(payment.paymentDate).toLocaleDateString()
-                    : "N/A"}
-                </p>
-                <p>
-                  <strong>Session :</strong> {session}
-                </p>
-                <p>
-                  <strong>Class :</strong> {className}
-                </p>
-                <p>
-                  <strong>Counter No :</strong> DPS-RECEIPT
-                </p>
-              </div>
-            </div>
+            <table className="w-full text-sm mb-4 border border-gray-400">
+              <tbody>
+                <tr>
+                  <td className="border px-2 py-1"><strong>Registration No</strong></td>
+                  <td className="border px-2 py-1">{registrationNumber}</td>
+                  <td className="border px-2 py-1"><strong>Name</strong></td>
+                  <td className="border px-2 py-1">{studentName}</td>
+                </tr>
+                <tr>
+                  <td className="border px-2 py-1"><strong>Class</strong></td>
+                  <td className="border px-2 py-1">{className}</td>
+                  <td className="border px-2 py-1"><strong>Session</strong></td>
+                  <td className="border px-2 py-1">{basicInfo.feeRecord?.session || "-"}</td>
+                </tr>
+              </tbody>
+            </table>
 
             {/* Fee Table */}
-            <div className="overflow-x-auto w-full">
-              <table className="w-full border border-gray-500 mb-4 text-xs sm:text-sm">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border px-2 py-1 text-left">Sl.No</th>
-                    <th className="border px-2 py-1 text-left">Description</th>
-                    <th className="border px-2 py-1 text-right">Due</th>
-                    <th className="border px-2 py-1 text-right">Con</th>
-                    <th className="border px-2 py-1 text-right">Paid Today</th>
+            <table className="w-full border border-gray-400 text-xs sm:text-sm table-fixed mb-4">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border px-2 py-1 text-left">S.No</th>
+                  <th className="border px-2 py-1 text-left">Installment Month</th>
+                  <th className="border px-2 py-1 text-right">Amount</th>
+                  <th className="border px-2 py-1 text-right">Paid</th>
+                  <th className="border px-2 py-1 text-right">Partial</th>
+                </tr>
+              </thead>
+              <tbody>
+                {installmentsWithPayment?.map((inst: any, idx: number) => (
+                  <tr key={idx} className={inst.hasPayment ? "font-semibold" : ""}>
+                    <td className="border px-2 py-1">{idx + 1}</td>
+                    <td className="border px-2 py-1">{inst.displayMonth}</td>
+                    <td className="border px-2 py-1 text-right">{inst.amount}</td>
+                    <td className="border px-2 py-1 text-right">{inst.amountPaid}</td>
+                    <td className="border px-2 py-1 text-right">{inst.partial}</td>
                   </tr>
-                </thead>
+                ))}
+                {totalScholarship > 0 && (
+                  <tr className="font-semibold bg-gray-50">
+                    <td colSpan={2} className="border px-2 py-1 text-right">Scholarship Deducted</td>
+                    <td colSpan={3} className="border px-2 py-1 text-right">-{totalScholarship}</td>
+                  </tr>
+                )}
+                <tr className="font-semibold bg-gray-50">
+                  <td colSpan={2} className="border px-2 py-1 text-right">Total</td>
+                  <td className="border px-2 py-1 text-right">{excelData.totalAmount}</td>
+                  <td className="border px-2 py-1 text-right">{totalPaid}</td>
+                  <td className="border px-2 py-1"></td>
+                </tr>
+                <tr className="font-semibold bg-gray-50">
+                  <td colSpan={4} className="border px-2 py-1 text-right">Remaining Balance</td>
+                  <td className="border px-2 py-1 text-right">{remainingBalance}</td>
+                </tr>
+                {paymentMadeTodayAmount > 0 && (
+                  <tr className="bg-yellow-100 font-semibold">
+                    <td colSpan={2} className="border px-2 py-1 text-left">Payment made today</td>
+                    <td colSpan={3} className="border px-2 py-1 text-right">{paymentMadeTodayAmount}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-                <tbody>
-                  {feeDetails.map((f, idx) => (
-                    <tr key={idx}>
-                      <td className="border px-2 py-1">{idx + 1}</td>
-                      <td className="border px-2 py-1">{f.description}</td>
-                      <td className="border px-2 py-1 text-right">{f.due || 0}</td>
-                      <td className="border px-2 py-1 text-right">{f.con || 0}</td>
-                      <td className="border px-2 py-1 text-right">
-                        {totalPaidToday}
-                      </td>
+            {/* Scholarship Table */}
+            {scholarships.length > 0 && (
+              <div className="mb-4">
+                <div className="bg-gray-100 text-left py-1 px-2 mb-2 font-semibold">
+                  Scholarship Details
+                </div>
+                <table className="w-full border border-gray-400 text-xs sm:text-sm table-fixed">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="border px-2 py-1 text-left">S.No</th>
+                      <th className="border px-2 py-1 text-left">Scholarship Name</th>
+                      <th className="border px-2 py-1 text-left">Month(s)</th>
+                      <th className="border px-2 py-1 text-right">Amount</th>
                     </tr>
-                  ))}
-                </tbody>
+                  </thead>
+                  <tbody>
+                    {scholarships.map((s: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="border px-2 py-1">{idx + 1}</td>
+                        <td className="border px-2 py-1">{s.name}</td>
+                        <td className="border px-2 py-1">{s.months.join(", ")}</td>
+                        <td className="border px-2 py-1 text-right">
+                          {s.valueType === "fixed" ? s.value : `${s.value}%`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-                <tfoot className="bg-gray-100 font-semibold">
+            {/* Payment Info */}
+            <div className="bg-gray-100 text-center py-1 px-2 mb-2 font-semibold">
+              Payment Mode Info
+            </div>
+            <table className="w-full text-sm mb-4 border border-gray-400">
+              <tbody>
+                {latestPayment && (
                   <tr>
-                    <td colSpan={4} className="border px-2 py-1 text-right">
-                      Total Paid Today
-                    </td>
-                    <td className="border px-2 py-1 text-right">
-                      {totalPaidToday}
+                    <td className="border px-2 py-1"><strong>Mode</strong></td>
+                    <td className="border px-2 py-1">{latestPayment.mode || "-"}</td>
+                    <td className="border px-2 py-1"><strong>Date</strong></td>
+                    <td className="border px-2 py-1">
+                      {latestPayment.paidAt ? new Date(latestPayment.paidAt).toLocaleDateString() : "-"}
                     </td>
                   </tr>
+                )}
+                {latestPayment?.transactionId && (
                   <tr>
-                    <td colSpan={4} className="border px-2 py-1 text-right">
-                      Remaining Balance
-                    </td>
-                    <td className="border px-2 py-1 text-right">
-                      {remainingBalance}
+                    <td className="border px-2 py-1"><strong>Transaction ID</strong></td>
+                    <td className="border px-2 py-1" colSpan={3}>
+                      {latestPayment.transactionId}
                     </td>
                   </tr>
-                </tfoot>
-              </table>
+                )}
+              </tbody>
+            </table>
+
+            {basicInfo.warning && (
+              <div className="mb-2 text-red-600 font-semibold">⚠ {basicInfo.warning}</div>
+            )}
+            {note && <div className="mb-4"><strong>Note:</strong> {note}</div>}
+
+            <div className="mt-8 flex justify-between text-xs sm:text-sm">
+              <div>
+                <p>Received By:</p>
+                <p className="border-b w-32 mt-8"></p>
+              </div>
+              <div className="text-right">
+                <p>Authorized Signatory</p>
+                <p className="border-b w-32 mt-8 ml-auto"></p>
+              </div>
             </div>
 
-            {/* Pay Mode Info */}
-            <div className="mb-4 text-xs sm:text-sm w-full">
-              <h4 className="font-semibold">PAY MODE INFORMATION</h4>
-              <p>
-                <strong>Pay Mode:</strong> {payModeInfo.mode}
-              </p>
-              <p>
-                <strong>Date:</strong> {payModeInfo.date}
-              </p>
-              {payModeInfo.bank && (
-                <p>
-                  <strong>Bank:</strong> {payModeInfo.bank}
-                </p>
-              )}
-              {payModeInfo.number && (
-                <p>
-                  <strong>Number:</strong> {payModeInfo.number}
-                </p>
-              )}
-              <p>
-                <strong>Total Paid Today:</strong> {totalPaidToday}
-              </p>
-            </div>
-
-            {/* Total in Words */}
-            <p className="mb-4 font-semibold text-xs sm:text-sm w-full">
-              Total Paid Today in Words: {numberToWords(totalPaidToday)}
-            </p>
-
-            {/* Note */}
-            <div className="mb-4 text-xs sm:text-sm w-full">
-              <p>
-                <strong>Note :</strong> {note}
-              </p>
-            </div>
-
-            {/* Footer */}
-            <div className="text-center text-[10px] sm:text-xs w-full">
-              <p>
-                This is a computer generated Receipt. Does not require signature.
-              </p>
-              <p className="mt-2 font-semibold">PARENT COPY</p>
-            </div>
-
-            {/* Print */}
-            <div className="mt-4 flex justify-center print:hidden w-full">
-              <Button onClick={() => window.print()}>Print Receipt</Button>
+            <div className="text-center text-xs text-gray-500 mt-4">
+              This is a computer-generated receipt.
             </div>
           </div>
         )}
