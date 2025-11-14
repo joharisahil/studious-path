@@ -4,6 +4,8 @@ import { CreateStudentForm } from './CreateStudentForm';
 interface CreateStudentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+    classId?: string | null;
+  session?: string;
   onSuccess?: () => void;
 }
 
