@@ -72,7 +72,7 @@ interface FeeRecord {
   dueAmount?: number;
   status: string;
   nextDueDate?: string;
-  scholarshipType?: "custom"  | "none" | "None";
+  scholarshipType?: "custom" | "none" | "None";
   payments?: { id: string; amount: number; date?: string; mode?: string }[];
 }
 
@@ -180,7 +180,9 @@ export const FeesManagement = () => {
 
       const mappedFees: FeeRecord[] = (res.fees || []).map((fee: any) => ({
         id: fee._id,
-        studentName: `${fee.studentId.firstName} ${fee.studentId.lastName || ""}`.trim(),
+        studentName: `${fee.studentId.firstName} ${
+          fee.studentId.lastName || ""
+        }`.trim(),
         studentId: fee.studentId.registrationNumber,
         grade: `${fee.classId.grade} ${fee.classId.section}`,
         academicYear: fee.session,
@@ -197,8 +199,9 @@ export const FeesManagement = () => {
         scholarshipType: fee.scholarships?.length
           ? fee.scholarships[0].type || "None"
           : "None",
-        nextDueDate: fee.installments?.find((inst: any) => inst.status !== "Paid")
-          ?.dueDate,
+        nextDueDate: fee.installments?.find(
+          (inst: any) => inst.status !== "Paid"
+        )?.dueDate,
         payments: (fee.payments || []).map((p: any) => ({ ...p, id: p._id })),
       }));
 
@@ -336,7 +339,9 @@ export const FeesManagement = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Collected
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -349,7 +354,9 @@ export const FeesManagement = () => {
 
         <Card>
           <CardHeader className="flex justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pending Amount</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Pending Amount
+            </CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -362,7 +369,9 @@ export const FeesManagement = () => {
 
         <Card>
           <CardHeader className="flex justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -373,7 +382,9 @@ export const FeesManagement = () => {
 
         <Card>
           <CardHeader className="flex justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Late Submitters</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Late Submitters
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -437,16 +448,12 @@ export const FeesManagement = () => {
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="custom">Custom</SelectItem>
-           
+
             <SelectItem value="none">None</SelectItem>
           </SelectContent>
         </Select>
 
-        <Button
-          className="h-10"
-          onClick={handleSearch}
-          disabled={loadingFees}
-        >
+        <Button className="h-10" onClick={handleSearch} disabled={loadingFees}>
           {loadingFees ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -496,11 +503,15 @@ export const FeesManagement = () => {
                     <TableRow key={record.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{record.studentName}</div>
+                          <div className="font-medium">
+                            {record.studentName}
+                          </div>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <span>ID: {record.studentId}</span>
                             <button
-                              onClick={() => handleCopy(record.studentId, record.id)}
+                              onClick={() =>
+                                handleCopy(record.studentId, record.id)
+                              }
                               className="relative p-1 rounded hover:bg-muted transition-colors"
                               title="Copy Registration Number"
                             >
@@ -517,7 +528,9 @@ export const FeesManagement = () => {
                       <TableCell>{record.grade}</TableCell>
                       <TableCell>{record.academicYear}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{record.collectionPeriod}</Badge>
+                        <Badge variant="outline">
+                          {record.collectionPeriod}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         ₹{record.totalFee?.toLocaleString() || 0}
@@ -559,7 +572,10 @@ export const FeesManagement = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={11}
+                      className="py-8 text-center text-muted-foreground"
+                    >
                       No fee records found matching your criteria.
                     </TableCell>
                   </TableRow>

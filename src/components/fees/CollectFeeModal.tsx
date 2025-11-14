@@ -34,7 +34,7 @@ interface CollectFeeFormData {
   registrationNumber: string;
   month: string;
   amount: number;
-  paymentMethod: "Cash" | "Card" | "Bank Transfer" ;
+  paymentMethod: "Cash" | "Card" | "Bank Transfer";
   transactionId?: string;
   notes?: string;
   paymentDate?: string;
@@ -82,8 +82,7 @@ export const CollectFeeModal = ({
 
   const selectedMonth = form.watch("month");
   const selectedPaymentMethod = form.watch("paymentMethod");
-  const needsTransactionId =
-    selectedPaymentMethod === "Bank Transfer" ;
+  const needsTransactionId = selectedPaymentMethod === "Bank Transfer";
 
   const fetchStudentFee = async () => {
     if (!registrationInput) return;
@@ -132,114 +131,113 @@ export const CollectFeeModal = ({
     form.setValue("amount", inst ? inst.amount - inst.amountPaid : 0);
   }, [selectedMonth, studentFee, form]);
 
- const handleCollectFee = async () => {
-  if (buttonFrozen) return;
-  setButtonFrozen(true);
-  setIsLoading(true);
+  const handleCollectFee = async () => {
+    if (buttonFrozen) return;
+    setButtonFrozen(true);
+    setIsLoading(true);
 
-  const data = form.getValues();
-  if (!studentFee) return;
+    const data = form.getValues();
+    if (!studentFee) return;
 
-  const inst = studentFee.installments.find(i => i.month === data.month);
-  if (inst && data.amount > inst.amount - inst.amountPaid) {
-    toast({
-      title: "Invalid Amount",
-      description: `You cannot pay more than ₹${inst.amount - inst.amountPaid}`,
-      variant: "destructive",
-    });
-    setIsLoading(false);
-    setButtonFrozen(false);
-    return;
-  }
-
-  try {
-  const res = await collectFee(data.registrationNumber, {
-    month: data.month,
-    amount: data.amount,
-    mode: data.paymentMethod,
-    transactionId: data.transactionId,
-    notes: data.notes,
-    paymentDate: data.paymentDate,
-  });
-
-  // 1️⃣ Update payments array with the new payment
-  const updatedPayments = [
-    ...studentFee.payments,
-    {
-      amount: data.amount,
-      mode: data.paymentMethod,
-      transactionId: res.transactionId,
-      month: data.month,
-      paidAt: data.paymentDate || new Date().toISOString(),
-    },
-  ];
-
-  // 2️⃣ Update installments array to reflect new payment
-  const updatedInstallments = studentFee.installments.map((inst: any) => {
-    if (inst.month === data.month) {
-      const totalPaid = updatedPayments
-        .filter((p: any) => p.month === inst.month)
-        .reduce((sum: number, p: any) => sum + p.amount, 0);
-      return {
-        ...inst,
-        amountPaid: totalPaid,
-        status:
-          totalPaid >= inst.amount
-            ? "Paid"
-            : totalPaid > 0
-            ? "Partial"
-            : "Pending",
-      };
+    const inst = studentFee.installments.find((i) => i.month === data.month);
+    if (inst && data.amount > inst.amount - inst.amountPaid) {
+      toast({
+        title: "Invalid Amount",
+        description: `You cannot pay more than ₹${
+          inst.amount - inst.amountPaid
+        }`,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      setButtonFrozen(false);
+      return;
     }
-    return inst;
-  });
 
-  // 3️⃣ Force React re-render by updating studentFee with a new object
-  const updatedFeeRecord = {
-    ...studentFee,
-    installments: updatedInstallments,
-    payments: updatedPayments,
+    try {
+      const res = await collectFee(data.registrationNumber, {
+        month: data.month,
+        amount: data.amount,
+        mode: data.paymentMethod,
+        transactionId: data.transactionId,
+        notes: data.notes,
+        paymentDate: data.paymentDate,
+      });
+
+      // 1️⃣ Update payments array with the new payment
+      const updatedPayments = [
+        ...studentFee.payments,
+        {
+          amount: data.amount,
+          mode: data.paymentMethod,
+          transactionId: res.transactionId,
+          month: data.month,
+          paidAt: data.paymentDate || new Date().toISOString(),
+        },
+      ];
+
+      // 2️⃣ Update installments array to reflect new payment
+      const updatedInstallments = studentFee.installments.map((inst: any) => {
+        if (inst.month === data.month) {
+          const totalPaid = updatedPayments
+            .filter((p: any) => p.month === inst.month)
+            .reduce((sum: number, p: any) => sum + p.amount, 0);
+          return {
+            ...inst,
+            amountPaid: totalPaid,
+            status:
+              totalPaid >= inst.amount
+                ? "Paid"
+                : totalPaid > 0
+                ? "Partial"
+                : "Pending",
+          };
+        }
+        return inst;
+      });
+
+      // 3️⃣ Force React re-render by updating studentFee with a new object
+      const updatedFeeRecord = {
+        ...studentFee,
+        installments: updatedInstallments,
+        payments: updatedPayments,
+      };
+      setStudentFee({ ...updatedFeeRecord }); // ✅ This is the crucial part
+
+      // 4️⃣ Update lastPayment for receipt
+      const paymentInfo = {
+        registrationNumber: studentFee.registrationNumber,
+        studentName: studentFee.studentName,
+        className: studentFee.className,
+        schoolName: studentFee.schoolName || "School Name",
+        feeRecord: updatedFeeRecord,
+        amount: data.amount,
+        month: data.month,
+        transactionId: res.transactionId,
+        paymentMethod: data.paymentMethod,
+        notes: data.notes,
+        paymentDate: data.paymentDate || new Date().toISOString(),
+      };
+      setLastPayment(paymentInfo);
+
+      setShowConfirmDialog(false);
+      setShowReceipt(true);
+
+      toast({
+        title: "Success",
+        description: `${res.message}. Txn ID: ${res.transactionId}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description:
+          err.response?.data?.error || err.message || "Failed to collect fee",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setButtonFrozen(false);
+    }
   };
-  setStudentFee({ ...updatedFeeRecord }); // ✅ This is the crucial part
-
-  // 4️⃣ Update lastPayment for receipt
-  const paymentInfo = {
-    registrationNumber: studentFee.registrationNumber,
-    studentName: studentFee.studentName,
-    className: studentFee.className,
-    schoolName: studentFee.schoolName || "School Name",
-    feeRecord: updatedFeeRecord,
-    amount: data.amount,
-    month: data.month,
-    transactionId: res.transactionId,
-    paymentMethod: data.paymentMethod,
-    notes: data.notes,
-    paymentDate: data.paymentDate || new Date().toISOString(),
-  };
-  setLastPayment(paymentInfo);
-
-  setShowConfirmDialog(false);
-  setShowReceipt(true);
-
-  toast({
-    title: "Success",
-    description: `${res.message}. Txn ID: ${res.transactionId}`,
-  });
-} catch (err: any) {
-  toast({
-    title: "Error",
-    description:
-      err.response?.data?.error || err.message || "Failed to collect fee",
-    variant: "destructive",
-  });
-} finally {
-  setIsLoading(false);
-  setButtonFrozen(false);
-}
-
-};
-
-
 
   const handleFullClose = () => {
     form.reset({ paymentDate: new Date().toISOString().slice(0, 10) });
@@ -261,17 +259,19 @@ export const CollectFeeModal = ({
       });
       return;
     }
-     const inst = studentFee.installments.find(i => i.month === data.month);
-  if (inst && data.amount > inst.amount - inst.amountPaid) {
-    toast({
-      title: "Invalid Amount",
-      description: `You cannot pay more than ₹${inst.amount - inst.amountPaid}`,
-      variant: "destructive",
-    });
-    setIsLoading(false);
-    setButtonFrozen(false);
-    return;
-  }
+    const inst = studentFee.installments.find((i) => i.month === data.month);
+    if (inst && data.amount > inst.amount - inst.amountPaid) {
+      toast({
+        title: "Invalid Amount",
+        description: `You cannot pay more than ₹${
+          inst.amount - inst.amountPaid
+        }`,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      setButtonFrozen(false);
+      return;
+    }
     setShowConfirmDialog(true);
   };
 
@@ -308,9 +308,7 @@ export const CollectFeeModal = ({
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Student Info */}
               <div className="w-full lg:w-1/3 p-4 border rounded-md bg-gray-50 shadow-sm">
-                <h3 className="text-lg font-semibold mb-2">
-                  Student Details
-                </h3>
+                <h3 className="text-lg font-semibold mb-2">Student Details</h3>
                 <p>
                   <strong>Name:</strong> {studentFee.studentName || "N/A"}
                 </p>
@@ -404,7 +402,6 @@ export const CollectFeeModal = ({
                             <SelectItem value="Bank Transfer">
                               Bank Transfer
                             </SelectItem>
-                          
                           </SelectContent>
                         </Select>
                       </FormControl>
