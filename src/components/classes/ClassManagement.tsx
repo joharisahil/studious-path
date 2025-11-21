@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { Plus, Upload, Users, Search, Filter, Download, UserPlus } from "lucide-react";
+import {
+  Plus,
+  Upload,
+  Users,
+  Search,
+  Filter,
+  Download,
+  UserPlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,11 +38,14 @@ import { CreateClassModal } from "./CreateClassModal";
 import { UploadStudentsModal } from "./UploadStudentsModal";
 import { CreateStudentForm } from "@/components/students/CreateStudentForm";
 import { CreateStudentModal } from "../students";
+import  {TestUploadModal} from "@/components/classes/TestUploadModal";
 
 export const ClassManagement = () => {
   const [classes, setClasses] = useState<any[]>([]);
   const [getAllClassList, setGetAllClassList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadMode, setUploadMode] = useState<"upload" | "test">("upload");
+  const [showTestModal, setShowTestModal] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGrade, setFilterGrade] = useState("");
@@ -60,7 +71,11 @@ export const ClassManagement = () => {
   const fetchClasses = async (page = 1) => {
     try {
       setIsLoading(true);
-      const { classes, pagination: pageInfo, data } = await getAllClasses(page, pagination.limit);
+      const {
+        classes,
+        pagination: pageInfo,
+        data,
+      } = await getAllClasses(page, pagination.limit);
       setGetAllClassList(data);
       setClasses(classes);
       setPagination(pageInfo);
@@ -87,7 +102,8 @@ export const ClassManagement = () => {
     (sum, cls) => sum + (cls.studentCount || 0),
     0
   );
-  const avgClassSize = classes.length > 0 ? Math.round(totalStudents / classes.length) : 0;
+  const avgClassSize =
+    classes.length > 0 ? Math.round(totalStudents / classes.length) : 0;
 
   const handleUploadStudents = (classId: string) => {
     setSelectedClass(classId);
@@ -100,17 +116,24 @@ export const ClassManagement = () => {
     setCreateModalOpen(true);
   };
 
+  //test excel button
+  const handleTestExcel = (classId: string) => {
+    setSelectedClass(classId);
+    setShowUploadModal(true);
+    setUploadMode("test");
+  };
+
   // Filter classes
   const filteredClasses =
     filterGrade || filterSection || searchTerm
       ? getAllClassList.filter(
-        (cls) =>
-          (!filterGrade || cls.grade === filterGrade) &&
-          (!filterSection || cls.section === filterSection) &&
-          (`${cls.grade}${cls.section}`
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()))
-      )
+          (cls) =>
+            (!filterGrade || cls.grade === filterGrade) &&
+            (!filterSection || cls.section === filterSection) &&
+            `${cls.grade}${cls.section}`
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+        )
       : classes;
 
   // Get unique grades
@@ -119,8 +142,12 @@ export const ClassManagement = () => {
   // Get sections for selected grade
   const sections = filterGrade
     ? Array.from(
-      new Set(getAllClassList.filter((cls) => cls.grade === filterGrade).map((cls) => cls.section))
-    )
+        new Set(
+          getAllClassList
+            .filter((cls) => cls.grade === filterGrade)
+            .map((cls) => cls.section)
+        )
+      )
     : [];
 
   return (
@@ -128,8 +155,12 @@ export const ClassManagement = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gradient-primary">Class Management</h1>
-          <p className="text-muted-foreground">Manage classes and student enrollments</p>
+          <h1 className="text-3xl font-bold text-gradient-primary">
+            Class Management
+          </h1>
+          <p className="text-muted-foreground">
+            Manage classes and student enrollments
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
@@ -151,9 +182,15 @@ export const ClassManagement = () => {
             <div className="bg-indigo-100 rounded-full p-3 mb-3">
               <Users className="h-6 w-6 text-indigo-600" />
             </div>
-            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Total Classes</CardTitle>
-            <div className="text-4xl font-extrabold text-indigo-600">{classes.length}</div>
-            <p className="text-xs text-gray-400 mt-1">Active classes this year</p>
+            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">
+              Total Classes
+            </CardTitle>
+            <div className="text-4xl font-extrabold text-indigo-600">
+              {classes.length}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Active classes this year
+            </p>
           </CardContent>
         </Card>
 
@@ -163,8 +200,12 @@ export const ClassManagement = () => {
             <div className="bg-green-100 rounded-full p-3 mb-3">
               <Users className="h-6 w-6 text-green-600" />
             </div>
-            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Total Students</CardTitle>
-            <div className="text-4xl font-extrabold text-green-600">{totalStudents}</div>
+            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">
+              Total Students
+            </CardTitle>
+            <div className="text-4xl font-extrabold text-green-600">
+              {totalStudents}
+            </div>
             <p className="text-xs text-gray-400 mt-1">Students enrolled</p>
           </CardContent>
         </Card>
@@ -175,13 +216,18 @@ export const ClassManagement = () => {
             <div className="bg-purple-100 rounded-full p-3 mb-3">
               <Users className="h-6 w-6 text-purple-600" />
             </div>
-            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">Avg Class Size</CardTitle>
-            <div className="text-4xl font-extrabold text-purple-600">{avgClassSize}</div>
-            <p className="text-xs text-gray-400 mt-1">Average students per class</p>
+            <CardTitle className="text-sm font-semibold text-gray-600 mb-1">
+              Avg Class Size
+            </CardTitle>
+            <div className="text-4xl font-extrabold text-purple-600">
+              {avgClassSize}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Average students per class
+            </p>
           </CardContent>
         </Card>
       </div>
-
 
       {/* Filters */}
       <Card>
@@ -286,7 +332,9 @@ export const ClassManagement = () => {
       <Card>
         <CardHeader>
           <CardTitle>Classes</CardTitle>
-          <CardDescription>Manage all classes and their student enrollments</CardDescription>
+          <CardDescription>
+            Manage all classes and their student enrollments
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -322,14 +370,21 @@ export const ClassManagement = () => {
                     return a.section.localeCompare(b.section);
                   })
                   .map((cls) => {
-                    const studentCount = cls.studentCount ?? cls.students?.length ?? 0; // <-- fix student count
+                    const studentCount =
+                      cls.studentCount ?? cls.students?.length ?? 0; // <-- fix student count
                     return (
                       <TableRow key={cls._id}>
-                        <TableCell className="font-medium">{cls.grade}-{cls.section}</TableCell>
+                        <TableCell className="font-medium">
+                          {cls.grade}-{cls.section}
+                        </TableCell>
                         <TableCell>{cls.grade}</TableCell>
-                        <TableCell>{fromYear}-{toYear}</TableCell>
                         <TableCell>
-                          <span className="text-muted-foreground">Not assigned</span>
+                          {fromYear}-{toYear}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-muted-foreground">
+                            Not assigned
+                          </span>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -337,7 +392,9 @@ export const ClassManagement = () => {
                             <div className="w-16 bg-gray-200 rounded-full h-2">
                               <div
                                 className="bg-primary rounded-full h-2"
-                                style={{ width: `${(studentCount / 50) * 100}%` }}
+                                style={{
+                                  width: `${(studentCount / 50) * 100}%`,
+                                }}
                               />
                             </div>
 
@@ -351,6 +408,21 @@ export const ClassManagement = () => {
                               <UserPlus className="w-4 h-4 mr-2" />
                               Add Student
                             </Button>
+                            {/* test excel button */}
+                            <Button
+  size="sm"
+  variant="outline"
+  disabled={!fromYear || !toYear}
+  onClick={() => {
+    setSelectedClass(cls._id);
+    setShowTestModal(true);
+  }}
+  className="ml-auto"
+>
+  <Upload className="w-4 h-4 mr-2" />
+  Test Excel
+</Button>
+
 
                             {/* Upload Students */}
                             <Button
@@ -387,7 +459,8 @@ export const ClassManagement = () => {
           <div className="text-sm text-muted-foreground">
             Page <span className="font-medium">{pagination.page}</span> of{" "}
             <span className="font-medium">{pagination.totalPages}</span> | Total{" "}
-            <span className="font-medium">{pagination.totalResults}</span> classes
+            <span className="font-medium">{pagination.totalResults}</span>{" "}
+            classes
           </div>
           <Button
             variant="outline"
@@ -400,14 +473,17 @@ export const ClassManagement = () => {
         </div>
       )}
 
-
       {/* Modals */}
-      <CreateClassModal open={showCreateModal} onOpenChange={setShowCreateModal} />
+      <CreateClassModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+      />
       <UploadStudentsModal
         open={showUploadModal}
         onOpenChange={setShowUploadModal}
         classId={selectedClass}
         session={`${fromYear}-${toYear}`}
+        
       />
 
       {/* Create Student Modal */}
@@ -417,6 +493,14 @@ export const ClassManagement = () => {
         classId={selectedClass}
         onSuccess={() => fetchClasses(pagination.page)}
       />
+      {/*test upload modal */}
+      <TestUploadModal
+  open={showTestModal}
+  onOpenChange={setShowTestModal}
+  classId={selectedClass}
+  session={`${fromYear}-${toYear}`}
+/>
+
     </div>
   );
 };
