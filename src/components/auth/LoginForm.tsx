@@ -87,7 +87,7 @@ export const LoginForm = () => {
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Role Selection */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="role">Select Role</Label>
               <Select value={formData.role} onValueChange={handleRoleChange}>
                 <SelectTrigger className="focus-visible-ring">
@@ -100,7 +100,7 @@ export const LoginForm = () => {
                   <SelectItem value="parent">Parent</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
 
             {/* Email Input */}
             <div className="space-y-2">
