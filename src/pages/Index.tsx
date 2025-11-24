@@ -29,7 +29,7 @@ const Index = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10">
       <div className="text-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">Loading EduManage Pro...</p>
+        <p className="text-muted-foreground">Loading JamSchool Pro...</p>
       </div>
     </div>
   );

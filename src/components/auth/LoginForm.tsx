@@ -77,7 +77,7 @@ export const LoginForm = () => {
             <GraduationCap className="w-8 h-8 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold text-gradient-primary">
-            EduManage Pro
+            JamSchool Pro
           </CardTitle>
           <CardDescription className="text-muted-foreground">
             Sign in to your account
@@ -151,14 +151,14 @@ export const LoginForm = () => {
           </form>
 
           {/* Register Link */}
-          <div className="text-center">
+          {/* <div className="text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link to="/register" className="font-medium text-primary hover:text-primary-hover">
                 Register here
               </Link>
             </p>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>

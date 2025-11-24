@@ -104,7 +104,7 @@ export const RegisterForm = () => {
             <GraduationCap className="w-8 h-8 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold text-gradient-primary">
-            EduManage Pro
+            JamSchool Pro
           </CardTitle>
           <CardDescription className="text-muted-foreground">
             Create a new account

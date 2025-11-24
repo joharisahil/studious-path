@@ -78,20 +78,20 @@ const sidebarItems: SidebarItem[] = [
   },
   // { id: 'attendance', label: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin','teacher','student','parent'] },
   //{ id: 'assignments', label: 'Assignments', icon: FileText, path: '/assignments', roles: ['admin','teacher','student'] },
-  {
-    id: "exams",
-    label: "Exams",
-    icon: FileText,
-    path: "/exams",
-    roles: ["admin", "teacher", "student", "parent"],
-  },
-  {
-    id: "reportcard",
-    label: "Report Card",
-    icon: FileText,
-    path: "/reportcard",
-    roles: ["admin", "teacher", "student", "parent"],
-  },
+  // {
+  //   id: "exams",
+  //   label: "Exams",
+  //   icon: FileText,
+  //   path: "/exams",
+  //   roles: ["admin", "teacher", "student", "parent"],
+  // },
+  // {
+  //   id: "reportcard",
+  //   label: "Report Card",
+  //   icon: FileText,
+  //   path: "/reportcard",
+  //   roles: ["admin", "teacher", "student", "parent"],
+  // },
   {
     id: "fees",
     label: "Fees",
@@ -99,13 +99,13 @@ const sidebarItems: SidebarItem[] = [
     path: "/fees",
     roles: ["admin", "student", "parent"],
   },
-  {
-    id: "messages",
-    label: "Messages",
-    icon: MessageSquare,
-    path: "/messages",
-    roles: ["admin", "teacher", "student", "parent"],
-  },
+  // {
+  //   id: "messages",
+  //   label: "Messages",
+  //   icon: MessageSquare,
+  //   path: "/messages",
+  //   roles: ["admin", "teacher", "student", "parent"],
+  // },
 ];
 
 export const Sidebar = () => {
@@ -155,7 +155,7 @@ export const Sidebar = () => {
           {!sidebarCollapsed && (
             <div className="min-w-0">
               <h1 className="font-bold text-base md:text-lg text-gradient-primary truncate">
-                EduManage
+                JamSchool
               </h1>
               <p className="text-xs text-muted-foreground capitalize truncate">
                 {user?.role} Portal
