@@ -471,6 +471,7 @@ export interface ClassInfo {
 }
 
 export interface StudentFormData {
+  session: any;
   _id?: string;
 
   firstName?: string;
