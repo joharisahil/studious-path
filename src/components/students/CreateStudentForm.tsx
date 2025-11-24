@@ -28,18 +28,28 @@ import { useToast } from "@/hooks/use-toast";
 import { getAllClasses } from "@/services/ClassesApi";
 import { createStudentApi } from "@/services/StudentsApi";
 
-// ✅ LAST NAME MADE OPTIONAL HERE
+// ✅ FIRST NAME, PHONE, SESSION & CLASS MANDATORY
 const studentSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().optional(), // ✅ updated
+  lastName: z.string().optional(),
 
-  dob: z.string().min(1, "Date of birth is required"),
-  classId: z.string().min(1, "Class is required"),
+  dob: z.string().optional(),
+
+  // ✅ NOW MANDATORY
   session: z.string().min(1, "Session is required"),
 
-  address: z.string().min(5, "Address must be at least 5 characters"),
-  aadhaarNumber: z.string().min(5, "AdhaarNumber must be of 12 digits"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  // ✅ NOW MANDATORY
+  classId: z.string().min(1, "Class is required"),
+
+  address: z.string().optional(),
+  aadhaarNumber: z.string().optional(),
+
+  phone: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits")
+    .max(10, "Phone number cannot exceed 10 digits"),
+
+  caste: z.string().optional(),
 
   fatherName: z.string().optional(),
   fatherphone: z.string().optional(),
@@ -76,25 +86,22 @@ export function CreateStudentForm({
     resolver: zodResolver(studentSchema),
     defaultValues: {
       firstName: "",
-      lastName: "", // ✅ remains empty but now optional
+      lastName: "",
       dob: "",
       classId: "",
       session: "",
-
       phone: "",
       address: "",
       aadhaarNumber: "",
-
+      caste: "",
       fatherName: "",
       fatherphone: "",
       fatherEmail: "",
       fatherOccupation: "",
-
       motherName: "",
       motherphone: "",
       motherEmail: "",
       motherOccupation: "",
-
       contactName: "",
       contactPhone: "",
       relation: "",
@@ -155,7 +162,7 @@ export function CreateStudentForm({
             <h3 className="text-lg font-semibold">Student Information</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* FIRST NAME */}
+              {/* ✅ FIRST NAME (MANDATORY) */}
               <FormField
                 control={form.control}
                 name="firstName"
@@ -172,7 +179,7 @@ export function CreateStudentForm({
                 )}
               />
 
-              {/* ✅ LAST NAME NOW OPTIONAL */}
+              {/* ✅ LAST NAME OPTIONAL */}
               <FormField
                 control={form.control}
                 name="lastName"
@@ -182,29 +189,25 @@ export function CreateStudentForm({
                     <FormControl>
                       <Input placeholder="Enter last name" {...field} />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* DOB */}
+              {/* ✅ DOB OPTIONAL */}
               <FormField
                 control={form.control}
                 name="dob"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Date of Birth <span className="text-red-600">*</span>
-                    </FormLabel>
+                    <FormLabel>Date of Birth (Optional)</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* SESSION */}
+              {/* ✅ SESSION NOW MANDATORY */}
               <FormField
                 control={form.control}
                 name="session"
@@ -221,7 +224,7 @@ export function CreateStudentForm({
                 )}
               />
 
-              {/* CLASS SELECT */}
+              {/* ✅ CLASS NOW MANDATORY */}
               <FormField
                 control={form.control}
                 name="classId"
@@ -239,7 +242,7 @@ export function CreateStudentForm({
                           <SelectValue placeholder="Select class" />
                         </SelectTrigger>
                         <SelectContent>
-                          {classes.map((cls) => (
+                          {classes.map((cls: any) => (
                             <SelectItem key={cls._id} value={cls._id}>
                               {cls.grade} - {cls.section}
                             </SelectItem>
@@ -252,7 +255,7 @@ export function CreateStudentForm({
                 )}
               />
 
-              {/* PHONE */}
+              {/* ✅ PHONE MANDATORY */}
               <FormField
                 control={form.control}
                 name="phone"
@@ -269,35 +272,44 @@ export function CreateStudentForm({
                 )}
               />
 
-              {/* ADDRESS */}
+              {/* ✅ ADDRESS OPTIONAL */}
               <FormField
                 control={form.control}
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Address <span className="text-red-600">*</span>
-                    </FormLabel>
+                    <FormLabel>Address (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter full address" {...field} />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* ✅ AADHAAR OPTIONAL */}
               <FormField
                 control={form.control}
                 name="aadhaarNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Adhaar Number
-                    </FormLabel>
+                    <FormLabel>Aadhaar Number (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter adhaar number" {...field} />
+                      <Input placeholder="Enter aadhaar number" {...field} />
                     </FormControl>
-                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* ✅ CASTE OPTIONAL */}
+              <FormField
+                control={form.control}
+                name="caste"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Caste (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter caste" {...field} />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -311,7 +323,7 @@ export function CreateStudentForm({
                 name="fatherName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Father Name</FormLabel>
+                    <FormLabel>Father Name (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter father's name" {...field} />
                     </FormControl>
@@ -324,7 +336,7 @@ export function CreateStudentForm({
                 name="fatherphone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Father Phone</FormLabel>
+                    <FormLabel>Father Phone (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter father's phone" {...field} />
                     </FormControl>
@@ -337,7 +349,7 @@ export function CreateStudentForm({
                 name="fatherEmail"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Father Email</FormLabel>
+                    <FormLabel>Father Email (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter father's email" {...field} />
                     </FormControl>
@@ -350,7 +362,7 @@ export function CreateStudentForm({
                 name="fatherOccupation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Father Occupation</FormLabel>
+                    <FormLabel>Father Occupation (Optional)</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter father's occupation"
@@ -364,14 +376,13 @@ export function CreateStudentForm({
 
             {/* ✅ MOTHER INFO */}
             <h3 className="text-lg font-semibold mt-6">Mother Information</h3>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="motherName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mother Name</FormLabel>
+                    <FormLabel>Mother Name (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter mother's name" {...field} />
                     </FormControl>
@@ -384,7 +395,7 @@ export function CreateStudentForm({
                 name="motherphone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mother Phone</FormLabel>
+                    <FormLabel>Mother Phone (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter mother's phone" {...field} />
                     </FormControl>
@@ -397,7 +408,7 @@ export function CreateStudentForm({
                 name="motherEmail"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mother Email</FormLabel>
+                    <FormLabel>Mother Email (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter mother's email" {...field} />
                     </FormControl>
@@ -410,7 +421,7 @@ export function CreateStudentForm({
                 name="motherOccupation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mother Occupation</FormLabel>
+                    <FormLabel>Mother Occupation (Optional)</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter mother's occupation"
@@ -424,14 +435,13 @@ export function CreateStudentForm({
 
             {/* ✅ EMERGENCY CONTACT */}
             <h3 className="text-lg font-semibold mt-6">Emergency Contact</h3>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="contactName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contact Name</FormLabel>
+                    <FormLabel>Contact Name (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter contact name" {...field} />
                     </FormControl>
@@ -444,7 +454,7 @@ export function CreateStudentForm({
                 name="contactPhone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contact Phone</FormLabel>
+                    <FormLabel>Contact Phone (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter contact phone" {...field} />
                     </FormControl>
@@ -457,7 +467,7 @@ export function CreateStudentForm({
                 name="relation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Relation</FormLabel>
+                    <FormLabel>Relation (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Relation with student" {...field} />
                     </FormControl>
@@ -470,7 +480,7 @@ export function CreateStudentForm({
                 name="contactEmail"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contact Email</FormLabel>
+                    <FormLabel>Contact Email (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter contact email" {...field} />
                     </FormControl>
@@ -479,6 +489,7 @@ export function CreateStudentForm({
               />
             </div>
 
+            {/* ✅ BUTTONS */}
             <div className="flex justify-end mt-6 space-x-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel

@@ -28,26 +28,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { getStudentFee, collectFee } from "@/services/FeesApi";
-import { PrintReceiptModal } from "./PrintReceiptModal";
-
-// ✅ Payment type update
-export interface Payment {
-  id: string;
-  amount: number;
-  paymentMethod: "Cash" | "Card" | "Bank Transfer" | "Online";
-  transactionId: string;
-  month: string;
-  paymentDate: string;
-  notes?: string;
-  collectedBy: string;
-  receiptNumber: string;
-}
+import { PrintReceiptModal } from "@/components/fees/PrintReceiptModal";
 
 interface CollectFeeFormData {
   registrationNumber: string;
   month: string;
   amount: number;
-  paymentMethod: "Cash" | "Card" | "Bank Transfer" | "Online";
+  paymentMethod: "Cash" | "Card" | "Bank Transfer";
   transactionId?: string;
   notes?: string;
   paymentDate?: string;
@@ -56,7 +43,6 @@ interface CollectFeeFormData {
 export const CollectFeeModal = ({
   isOpen,
   onClose,
-  
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -66,8 +52,10 @@ export const CollectFeeModal = ({
   const [studentFee, setStudentFee] = useState<any>(null);
   const [studentFetched, setStudentFetched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [lastPayment, setLastPayment] = useState<Payment | null>(null);
+  const [buttonFrozen, setButtonFrozen] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [lastPayment, setLastPayment] = useState<any>(null);
 
   const form = useForm<CollectFeeFormData>({
     resolver: zodResolver(
@@ -75,7 +63,7 @@ export const CollectFeeModal = ({
         registrationNumber: z.string().min(1, "Registration Number required"),
         month: z.string().min(1, "Month required"),
         amount: z.number().min(1, "Amount must be > 0"),
-        paymentMethod: z.enum(["Cash", "Card", "Bank Transfer", "Online"]),
+        paymentMethod: z.enum(["Cash", "Card", "Bank Transfer"]),
         transactionId: z.string().optional(),
         notes: z.string().optional(),
         paymentDate: z.string().optional(),
@@ -94,18 +82,14 @@ export const CollectFeeModal = ({
 
   const selectedMonth = form.watch("month");
   const selectedPaymentMethod = form.watch("paymentMethod");
-  const needsTransactionId =
-    selectedPaymentMethod === "Bank Transfer" ||
-    selectedPaymentMethod === "Online";
+  const needsTransactionId = selectedPaymentMethod === "Bank Transfer";
 
-  // Fetch student fee
   const fetchStudentFee = async () => {
     if (!registrationInput) return;
     setIsLoading(true);
     try {
       const data = await getStudentFee(registrationInput);
       const feeRecord = Array.isArray(data) ? data[0] : data;
-
       if (!feeRecord) throw new Error("No fee record found");
 
       const installmentsWithPaid = feeRecord.installments.map((inst: any) => {
@@ -139,7 +123,6 @@ export const CollectFeeModal = ({
     }
   };
 
-  // Auto-fill amount on month change
   useEffect(() => {
     if (!studentFee || !selectedMonth) return;
     const inst = studentFee.installments.find(
@@ -148,10 +131,28 @@ export const CollectFeeModal = ({
     form.setValue("amount", inst ? inst.amount - inst.amountPaid : 0);
   }, [selectedMonth, studentFee, form]);
 
-  // Collect Fee submission
-  const handleCollectFee = async (data: CollectFeeFormData) => {
-    if (!studentFee) return;
+  const handleCollectFee = async () => {
+    if (buttonFrozen) return;
+    setButtonFrozen(true);
     setIsLoading(true);
+
+    const data = form.getValues();
+    if (!studentFee) return;
+
+    const inst = studentFee.installments.find((i) => i.month === data.month);
+    if (inst && data.amount > inst.amount - inst.amountPaid) {
+      toast({
+        title: "Invalid Amount",
+        description: `You cannot pay more than ₹${
+          inst.amount - inst.amountPaid
+        }`,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      setButtonFrozen(false);
+      return;
+    }
+
     try {
       const res = await collectFee(data.registrationNumber, {
         month: data.month,
@@ -162,9 +163,22 @@ export const CollectFeeModal = ({
         paymentDate: data.paymentDate,
       });
 
-      const updatedInstallments = res.feeRecord.installments.map(
-        (inst: any) => {
-          const totalPaid = res.feeRecord.payments
+      // 1️⃣ Update payments array with the new payment
+      const updatedPayments = [
+        ...studentFee.payments,
+        {
+          amount: data.amount,
+          mode: data.paymentMethod,
+          transactionId: res.transactionId,
+          month: data.month,
+          paidAt: data.paymentDate || new Date().toISOString(),
+        },
+      ];
+
+      // 2️⃣ Update installments array to reflect new payment
+      const updatedInstallments = studentFee.installments.map((inst: any) => {
+        if (inst.month === data.month) {
+          const totalPaid = updatedPayments
             .filter((p: any) => p.month === inst.month)
             .reduce((sum: number, p: any) => sum + p.amount, 0);
           return {
@@ -178,31 +192,41 @@ export const CollectFeeModal = ({
                 : "Pending",
           };
         }
-      );
-
-      setStudentFee({ ...res.feeRecord, installments: updatedInstallments });
-
-      // ✅ Use backend returned transactionId
-      setLastPayment({
-        id: res.transactionId,
-        amount: data.amount,
-        paymentMethod: data.paymentMethod,
-        transactionId: res.transactionId,
-        month: data.month,
-        paymentDate: data.paymentDate || new Date().toISOString(),
-        notes: data.notes,
-        collectedBy: "Admin", // adjust if needed
-        receiptNumber: res.transactionId,
+        return inst;
       });
+
+      // 3️⃣ Force React re-render by updating studentFee with a new object
+      const updatedFeeRecord = {
+        ...studentFee,
+        installments: updatedInstallments,
+        payments: updatedPayments,
+      };
+      setStudentFee({ ...updatedFeeRecord }); // ✅ This is the crucial part
+
+      // 4️⃣ Update lastPayment for receipt
+      const paymentInfo = {
+        registrationNumber: studentFee.registrationNumber,
+        studentName: studentFee.studentName,
+        className: studentFee.className,
+        schoolName: studentFee.schoolName || "School Name",
+        feeRecord: updatedFeeRecord,
+        amount: data.amount,
+        month: data.month,
+        transactionId: res.transactionId,
+        paymentMethod: data.paymentMethod,
+        notes: data.notes,
+        paymentDate: data.paymentDate || new Date().toISOString(),
+      };
+      setLastPayment(paymentInfo);
+
+      setShowConfirmDialog(false);
+      setShowReceipt(true);
 
       toast({
-        title: res.warning ? "Success with Warning" : "Success",
-        description: res.warning
-          ? `${res.message}. Warning: ${res.warning}`
-          : `${res.message}. Txn ID: ${res.transactionId}`,
+        title: "Success",
+        description: `${res.message}. Txn ID: ${res.transactionId}`,
       });
     } catch (err: any) {
-      console.error("CollectFee API error:", err);
       toast({
         title: "Error",
         description:
@@ -211,250 +235,264 @@ export const CollectFeeModal = ({
       });
     } finally {
       setIsLoading(false);
+      setButtonFrozen(false);
     }
   };
 
-  const handleClose = () => {
+  const handleFullClose = () => {
     form.reset({ paymentDate: new Date().toISOString().slice(0, 10) });
     setStudentFee(null);
     setStudentFetched(false);
     setRegistrationInput("");
-    setLastPayment(null);
+    setShowConfirmDialog(false);
     setShowReceipt(false);
+    setLastPayment(null);
     onClose();
   };
 
+  const handleSubmitClick = () => {
+    const data = form.getValues();
+    if (!data.month || !data.amount) {
+      toast({
+        title: "Missing Info",
+        description: "Please fill all required fields before confirming.",
+      });
+      return;
+    }
+    const inst = studentFee.installments.find((i) => i.month === data.month);
+    if (inst && data.amount > inst.amount - inst.amountPaid) {
+      toast({
+        title: "Invalid Amount",
+        description: `You cannot pay more than ₹${
+          inst.amount - inst.amountPaid
+        }`,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      setButtonFrozen(false);
+      return;
+    }
+    setShowConfirmDialog(true);
+  };
+
   return (
-  <Dialog open={isOpen} onOpenChange={handleClose}>
-    {/* 🧩 Add max-h & scrolling inside modal */}
-    <DialogContent
-      className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto rounded-xl"
-    >
-      <DialogHeader>
-        <DialogTitle className="text-lg sm:text-xl font-semibold">Collect Fee</DialogTitle>
-        <DialogDescription className="text-sm sm:text-base">
-          {studentFetched
-            ? "Record fee payment"
-            : "Enter Registration Number to fetch fee record"}
-        </DialogDescription>
-      </DialogHeader>
+    <>
+      {/* Collect Fee Modal */}
+      <Dialog open={isOpen} onOpenChange={handleFullClose}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Collect Fee</DialogTitle>
+            <DialogDescription>
+              {studentFetched
+                ? "Review and collect payment"
+                : "Enter Registration Number to fetch fee record"}
+            </DialogDescription>
+          </DialogHeader>
 
-      <div className="space-y-4 pb-4">
-        {!studentFetched ? (
-          <div className="space-y-4">
-            <Input
-              placeholder="Enter Registration Number"
-              value={registrationInput}
-              onChange={(e) => setRegistrationInput(e.target.value)}
-            />
-            <Button
-              onClick={fetchStudentFee}
-              disabled={isLoading}
-              className="w-full sm:w-auto"
-            >
-              {isLoading ? "Fetching..." : "Fetch Fee"}
-            </Button>
-          </div>
-        ) : (
-          // 💡 Make this flex container scroll-safe & responsive
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Student Info */}
-            <div className="w-full lg:w-1/3 p-4 border rounded-md bg-gray-50 shadow-sm">
-              <h3 className="text-lg font-semibold mb-2 text-center lg:text-left">
-                Student Details
-              </h3>
-              <p><strong>Name:</strong> {studentFee.studentName || "N/A"}</p>
-              <p><strong>Class:</strong> {studentFee.className || "N/A"}</p>
-              <p><strong>Registration:</strong> {studentFee.registrationNumber || "N/A"}</p>
+          {!studentFetched ? (
+            <div className="space-y-4">
+              <Input
+                placeholder="Enter Registration Number"
+                value={registrationInput}
+                onChange={(e) => setRegistrationInput(e.target.value)}
+              />
+              <Button
+                onClick={fetchStudentFee}
+                disabled={isLoading}
+                className="w-full sm:w-auto"
+              >
+                {isLoading ? "Fetching..." : "Fetch Fee"}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Student Info */}
+              <div className="w-full lg:w-1/3 p-4 border rounded-md bg-gray-50 shadow-sm">
+                <h3 className="text-lg font-semibold mb-2">Student Details</h3>
+                <p>
+                  <strong>Name:</strong> {studentFee.studentName || "N/A"}
+                </p>
+                <p>
+                  <strong>Class:</strong> {studentFee.className || "N/A"}
+                </p>
+                <p>
+                  <strong>Reg. No:</strong> {studentFee.registrationNumber}
+                </p>
 
-              <div className="mt-4">
-                <h4 className="font-medium mb-2">Fee Status</h4>
-                <div className="flex flex-wrap gap-2">
-                  {studentFee.installments.map((inst: any) => (
-                    <div
-                      key={inst.month}
-                      className={`px-3 py-1 rounded-md text-white font-semibold cursor-pointer transition-all duration-200
-                        ${
+                <div className="mt-4">
+                  <h4 className="font-medium mb-2">Installments</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {studentFee.installments.map((inst: any) => (
+                      <div
+                        key={inst.month}
+                        className={`px-3 py-1 rounded-md text-white font-semibold cursor-pointer transition-all duration-200 ${
                           inst.status === "Paid"
                             ? "bg-green-500"
                             : inst.status === "Partial"
                             ? "bg-yellow-400 text-black"
                             : "bg-red-500"
-                        }
-                        hover:scale-105`}
-                      onClick={() => form.setValue("month", inst.month)}
-                    >
-                      {inst.month} — ₹
-                      {inst.amount - inst.amountPaid > 0
-                        ? inst.amount - inst.amountPaid
-                        : 0}
-                      {inst.status !== "Pending" ? ` (${inst.status})` : ""}
-                    </div>
-                  ))}
+                        } hover:scale-105`}
+                        onClick={() => form.setValue("month", inst.month)}
+                      >
+                        {inst.month} — ₹
+                        {Math.max(inst.amount - inst.amountPaid, 0)}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Fee Collection Form */}
-            <div className="w-full lg:w-2/3">
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(handleCollectFee)}
-                  className="space-y-4"
-                >
-                  {/* Month Select */}
-                  <FormItem>
-                    <FormLabel>Month</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={form.getValues("month")}
-                        onValueChange={(val) => form.setValue("month", val as any)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select month" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {studentFee.installments.map((i: any) => (
-                            <SelectItem
-                              key={i.month}
-                              value={i.month}
-                              disabled={i.status === "Paid"}
-                            >
-                              {i.month} — ₹
-                              {i.amount - i.amountPaid > 0
-                                ? i.amount - i.amountPaid
-                                : 0}{" "}
-                              due
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-
-                  {/* Amount */}
-                  <FormItem>
-                    <FormLabel>Amount (₹)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...form.register("amount", { valueAsNumber: true })}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-
-                  {/* Payment Method */}
-                  <FormItem>
-                    <FormLabel>Payment Method</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={form.getValues("paymentMethod")}
-                        onValueChange={(val) => form.setValue("paymentMethod", val as any)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Cash">Cash</SelectItem>
-                          <SelectItem value="Card">Card</SelectItem>
-                          <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                          <SelectItem value="Online">Online</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-
-                  {/* Transaction ID */}
-                  {needsTransactionId && (
+              {/* Fee Form */}
+              <div className="w-full lg:w-2/3">
+                <Form {...form}>
+                  <form className="space-y-4">
                     <FormItem>
-                      <FormLabel>Transaction ID</FormLabel>
+                      <FormLabel>Month</FormLabel>
                       <FormControl>
-                        <Input {...form.register("transactionId")} />
+                        <Select
+                          value={form.getValues("month")}
+                          onValueChange={(val) =>
+                            form.setValue("month", val as any)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select month" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {studentFee.installments.map((i: any) => (
+                              <SelectItem
+                                key={i.month}
+                                value={i.month}
+                                disabled={i.status === "Paid"}
+                              >
+                                {i.month}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
 
-                  {/* Payment Date */}
-                  <FormItem>
-                    <FormLabel>Payment Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...form.register("paymentDate")} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                    <FormItem>
+                      <FormLabel>Amount (₹)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...form.register("amount", { valueAsNumber: true })}
+                        />
+                      </FormControl>
+                    </FormItem>
 
-                  {/* Notes */}
-                  <FormItem>
-                    <FormLabel>Notes</FormLabel>
-                    <FormControl>
-                      <Textarea {...form.register("notes")} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                    <FormItem>
+                      <FormLabel>Payment Method</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={form.getValues("paymentMethod")}
+                          onValueChange={(val) =>
+                            form.setValue("paymentMethod", val as any)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Cash">Cash</SelectItem>
+                            <SelectItem value="Card">Card</SelectItem>
+                            <SelectItem value="Bank Transfer">
+                              Bank Transfer
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
 
-                  {/* Buttons */}
-                  <div className="flex justify-end gap-3 sticky bottom-0 bg-white py-2">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={handleClose}
-                      disabled={isLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isLoading}>
-                      {isLoading ? "Processing..." : "Collect Fee"}
-                    </Button>
-                  </div>
-                </form>
+                    {needsTransactionId && (
+                      <FormItem>
+                        <FormLabel>Transaction ID</FormLabel>
+                        <FormControl>
+                          <Input {...form.register("transactionId")} />
+                        </FormControl>
+                      </FormItem>
+                    )}
 
-                {/* Print Receipt */}
-                {lastPayment && (
-                  <div className="mt-4 flex justify-center">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setShowReceipt(true)}
-                    >
-                      Print Receipt (Txn: {lastPayment.transactionId})
-                    </Button>
-                  </div>
-                )}
-              </Form>
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea {...form.register("notes")} />
+                      </FormControl>
+                    </FormItem>
+
+                    <div className="flex justify-end gap-3">
+                      <Button variant="outline" onClick={handleFullClose}>
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleSubmitClick}
+                        disabled={buttonFrozen}
+                      >
+                        Collect Fee
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
-      {/* Receipt modal */}
-      {lastPayment && studentFee && (
+      {/* Confirm Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Fee Collection</DialogTitle>
+            <DialogDescription>
+              Review details before confirming.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm mt-3">
+            <p>
+              <strong>Student:</strong> {studentFee?.studentName || "N/A"}
+            </p>
+            <p>
+              <strong>Month:</strong> {form.getValues("month")}
+            </p>
+            <p>
+              <strong>Amount:</strong> ₹{form.getValues("amount")}
+            </p>
+            <p>
+              <strong>Method:</strong> {form.getValues("paymentMethod")}
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 mt-5">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCollectFee}
+              disabled={isLoading || buttonFrozen}
+            >
+              {isLoading ? "Processing..." : "Confirm & Collect"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Receipt Modal */}
+      {lastPayment && (
         <PrintReceiptModal
           isOpen={showReceipt}
           onClose={() => setShowReceipt(false)}
-          payment={lastPayment}
-          studentName={studentFee.studentName || "N/A"}
-          className={studentFee.className || "N/A"}
-          receiptNumber={lastPayment.transactionId || "N/A"}
-          session={studentFee.structureId?.session || "N/A"}
-          installment={form.getValues("month") || "N/A"}
-          feeDetails={studentFee.installments.map((inst: any) => ({
-            description: inst.month,
-            due: inst.amount,
-            con: inst.amountPaid,
-            paid: inst.amountPaid,
-          }))}
-          payModeInfo={{
-            mode: lastPayment.paymentMethod || "Cash",
-            date: lastPayment.paymentDate || new Date().toISOString(),
-            number: lastPayment.transactionId,
-          }}
-          note={form.getValues("notes") || "N/A"}
+          basicInfo={lastPayment}
+          excelData={lastPayment.feeRecord}
+          note="Payment recorded successfully"
         />
       )}
-    </DialogContent>
-  </Dialog>
-);
+    </>
+  );
 };

@@ -464,38 +464,45 @@ export interface Guardian {
   relation: string;
 }
 
+export interface ClassInfo {
+  _id?: string;
+  grade?: string;
+  section?: string;
+}
+
 export interface StudentFormData {
-  id?: string;
+  _id?: string;
+
   firstName?: string;
   lastName?: string;
   email?: string;
   phone?: string;
-  dateOfBirth?: string;
   dob?: string;
+  caste?: string;
+  aadhaarNumber?: string;
   address?: string;
-  parentEmail?: string;
   grade?: string;
   section?: string;
   rollNumber?: string;
   admissionDate?: string;
-  classId?: string;
-  session?: string;
-  guardian?: Guardian;
+  classId?: ClassInfo;
+
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  relation?: string;
+
   fatherName?: string;
   fatherEmail?: string;
   fatherContact?: string;
   fatherphone?: string;
   fatherOccupation?: string;
+
   motherName?: string;
   motherEmail?: string;
   motherContact?: string;
   motherphone?: string;
   motherOccupation?: string;
-  contactName?: string;
-  contactPhone?: string;
-  contactEmail?: string;
-  relation?: string;
-  _id?: string;
 }
 
 export interface ScholarshipFormData {
@@ -603,7 +610,7 @@ export interface Subject {
   teacherName?: string; // For compatibility with mock data
   department?: string;
   type?: string;
-  grade:string;
+  grade: string;
   credits?: number;
   description?: string;
   syllabus?: string[];
