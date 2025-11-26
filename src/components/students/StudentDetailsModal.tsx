@@ -31,9 +31,12 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const scholarshipMeta = student.scholarshipInfo ?? {};
-  const scholarships = Array.isArray(scholarshipMeta.scholarships)
-    ? scholarshipMeta.scholarships
+const scholarships = Array.isArray(student.scholarshipInfo?.scholarships)
+  ? student.scholarshipInfo.scholarships
+  : Array.isArray(student.feeDetails?.scholarships)
+    ? student.feeDetails.scholarships
     : [];
+
 
   const formatDate = (date: string | undefined | null) =>
     date

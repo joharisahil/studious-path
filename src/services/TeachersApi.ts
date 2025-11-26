@@ -83,7 +83,7 @@ export const deleteTeacher = async (id: string) => {
 export const getTeachersBySubject = async (subjectId: string) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await axios.get(`${API_BASE_URL}/teachers/by-subject/${subjectId}`, {
+    const response = await axios.get(`${API_BASE_URL}/teachers/subject/${subjectId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

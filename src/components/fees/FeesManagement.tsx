@@ -9,7 +9,7 @@ import {
   Filter,
   Download,
   AlertTriangle,
-  DollarSign,
+  IndianRupee,
   Users,
   TrendingUp,
   CreditCard,
@@ -42,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { RootState } from "@/store";
 import { fetchFilteredFees, SearchFilters } from "@/services/FeesApi";
 import { ApplyScholarshipModal } from "./ApplyScholarshipModal";
@@ -49,11 +50,11 @@ import { CollectFeeModal } from "./CollectFeeModal";
 import { FeeStructureModal } from "./FeeStructureModal";
 import { ClassFeeStructureModal } from "./ClassFeeStructureModal";
 import { ChildPrintReceiptModal } from "./ChildPrintReceiptModal";
-import { PendingReceiptModal } from "./PendingReceiptModal";
+//import { PendingReceiptModal } from "./PendingReceiptModal";
 import { ViewFeeStructure } from "./ViewFeeStructure";
 import { getAllClasses } from "@/services/ClassesApi";
 import { getAllFeeStructures } from "@/services/FeesApi";
-
+import { getKpiData } from "@/services/kpiApi";
 interface ClassType {
   _id: string;
   grade: string;
@@ -125,6 +126,27 @@ export const FeesManagement = () => {
 
   const { user } = useSelector((state: RootState) => state.auth);
   const isAdmin = user?.role === "admin";
+
+  /* fetch kpi pending collected  */
+
+  useEffect(() => {
+    const fetchKpiStats = async () => {
+      try {
+        const res = await getKpiData();
+        if (res.success) {
+          const { feesCollected, feesPending, studentsCount } = res.data;
+          setTotalCollected(feesCollected || 0);
+          setTotalPending(feesPending || 0);
+          setTotalStudents(studentsCount || 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch KPI stats:", err);
+      }
+    };
+
+    fetchKpiStats();
+  }, []);
+
 
   /** Fetch Classes */
   useEffect(() => {
@@ -209,15 +231,15 @@ export const FeesManagement = () => {
       setCurrentPage(res.page || 1);
       setTotalPages(Math.max(1, Math.ceil((res.totalStudents || 0) / 10)));
 
-      setTotalCollected(res.totalCollected || 0);
-      setTotalPending(res.totalPending || 0);
-      setTotalStudents(res.totalStudents || 0);
+      //setTotalCollected(res.totalCollected || 0);
+      //setTotalPending(res.totalPending || 0);
+      //setTotalStudents(res.totalStudents || 0);
     } catch (err) {
       console.error(err);
       setFeeRecords([]);
-      setTotalCollected(0);
-      setTotalPending(0);
-      setTotalStudents(0);
+      //setTotalCollected(0);
+      //setTotalPending(0);
+      //setTotalStudents(0);
       setTotalPages(1);
     } finally {
       setLoadingFees(false);
@@ -342,7 +364,7 @@ export const FeesManagement = () => {
             <CardTitle className="text-sm font-medium">
               Total Collected
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -668,7 +690,7 @@ export const FeesManagement = () => {
           }
         />
       )}
-      {pendingReceiptModalOpen && selectedPaymentForReceipt && (
+      {/* {pendingReceiptModalOpen && selectedPaymentForReceipt && (
         <PendingReceiptModal
           isOpen={pendingReceiptModalOpen}
           onClose={() => {
@@ -678,7 +700,7 @@ export const FeesManagement = () => {
           }}
           payment={selectedPaymentForReceipt} // <-- changed from student to payment
         />
-      )}
+      )} */}
 
       {/* Full-screen overlay loader (non-blocking visuals for background loads)
       {(loadingFees || loadingClasses || loadingStudents) && (

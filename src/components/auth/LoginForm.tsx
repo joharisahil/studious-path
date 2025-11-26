@@ -21,7 +21,7 @@ export const LoginForm = () => {
   const [formData, setFormData] = useState<LoginCredentials>({
     email: '',
     password: '',
-    role: 'student',
+    role: 'admin',
   });
   const [showPassword, setShowPassword] = useState(false);
 
