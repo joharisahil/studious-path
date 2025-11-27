@@ -62,7 +62,7 @@ interface ClassType {
 }
 
 interface FeeRecord {
-   admin?: {
+  admin?: {
     _id: string;
     schoolName: string;
   };
@@ -682,20 +682,23 @@ export const FeesManagement = () => {
             // printing doesn't change data normally, but refresh anyway to be safe
             fetchFeeRecords(currentPage);
           }}
-          
           payment={selectedPaymentForReceipt}
-          
           studentName={
             feeRecords.find((r) =>
               r.payments?.some((p) => p.id === selectedPaymentForReceipt?.id)
             )?.studentName || ""
           }
+          registrationNumber={
+      feeRecords.find((r) =>
+        r.payments?.some((p) => p.id === selectedPaymentForReceipt?.id)
+      )?.studentId || "" // <- feeRecords already has registration number in studentId
+    }
           className={
             feeRecords.find((r) =>
               r.payments?.some((p) => p.id === selectedPaymentForReceipt?.id)
             )?.grade || ""
           }
-            schoolName={schoolName}
+          schoolName={schoolName}
         />
       )}
       {/* {pendingReceiptModalOpen && selectedPaymentForReceipt && (
