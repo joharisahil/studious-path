@@ -1,5 +1,5 @@
 // StudentsManagement.tsx
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Search,
@@ -12,6 +12,7 @@ import {
   Copy,
   CheckCircle,
 } from "lucide-react";
+
 import {
   Card,
   CardContent,
@@ -53,90 +54,104 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 import { useToast } from "@/hooks/use-toast";
+
 import CreateStudentModal from "./CreateStudentModal";
 import EditStudentModal from "./EditStudentModal";
 import ImportStudentModal from "./ImportStudentModal";
+import StudentDetailsModal from "./StudentDetailsModal";
+
 import {
   getAllStudents,
   deleteStudent,
   getStudentById,
 } from "@/services/StudentsApi";
 import { getAllClasses } from "@/services/ClassesApi";
-import StudentDetailsModal from "./StudentDetailsModal";
+
+type Student = any;
 
 const StudentsManagement: React.FC = () => {
-  const [students, setStudents] = useState<any[]>([]);
+  // data and loading
+  const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedGrade, setSelectedGrade] = useState<string>("all");
-  const [selectedSection, setSelectedSection] = useState<string>("all");
-  const [scholarshipFilter, setScholarshipFilter] = useState<string>("all"); // 'all' | 'yes'
-  const [currentPage, setCurrentPage] = useState(1);
+
+  // UI state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const studentsPerPage = 10;
+
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
 
-  const [classList, setClassList] = useState<any[]>([]);
-  const [loadingClasses, setLoadingClasses] = useState(false);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   const { toast } = useToast();
 
-  const studentsPerPage = 10;
+  // classes
+  const [classList, setClassList] = useState<any[]>([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
 
+  // pagination & KPIs (comes from backend)
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     total: 0,
   });
 
-  // KPI values (populated from getAllStudents response)
   const [totalStudentCount, setTotalStudentCount] = useState<number>(0);
-  const [totalScholarshipCount, setTotalScholarshipCount] = useState<number>(0);
+  const [totalScholarshipCount, setTotalScholarshipCount] =
+    useState<number>(0);
   const [scholarshipPercentage, setScholarshipPercentage] =
     useState<string>("0%");
 
+  // copied key for registration number copy feedback
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Filters state sent directly to backend
+  const [filters, setFilters] = useState<{
+    grade: string;
+    section: string;
+    scholarship: string; // "" | "yes"
+    search: string;
+  }>({
+    grade: "",
+    section: "",
+    scholarship: "",
+    search: "",
+  });
+
   // ------------------------------
-  // Fetch students from API (single source of truth)
+  // Fetch students (backend filtering + backend pagination)
   // ------------------------------
   const fetchStudents = async (page = 1) => {
     setIsLoading(true);
     try {
-      const res: any = await getAllStudents(page, studentsPerPage);
-      // expecting response to match the JSON you showed:
-      // { success, totalStudents, totalScholarshipStudents, scholarshipPercentage, students, pagination }
+      const res: any = await getAllStudents(page, studentsPerPage, {
+        grade: filters.grade || undefined,
+        section: filters.section || undefined,
+        scholarship: filters.scholarship || undefined,
+        search: filters.search || undefined,
+      });
+
+      // backend response (as implemented):
+      // { success, students, pagination, totalStudents, totalScholarshipStudents, scholarshipPercentage }
       const resp = res || {};
+
       setStudents(resp.students || []);
       setPagination(
         resp.pagination || {
           currentPage: page,
           totalPages: 1,
-          total: resp.totalStudents || (resp.students?.length ?? 0),
+          total: resp.totalStudents ?? 0,
         }
       );
 
-      // KPIs from server (fallbacks to computed)
-      setTotalStudentCount(
-        resp.totalStudents ??
-          resp.pagination?.total ??
-          resp.students?.length ??
-          0
-      );
-      setTotalScholarshipCount(
-        resp.totalScholarshipStudents ??
-          computeTotalScholarshipFromList(resp.students || [])
-      );
-      setScholarshipPercentage(
-        resp.scholarshipPercentage ??
-          computeScholarshipPercent(
-            resp.totalScholarshipStudents ?? undefined,
-            resp.totalStudents ?? undefined,
-            resp.students || []
-          )
-      );
+      setTotalStudentCount(resp.totalStudents ?? 0);
+      setTotalScholarshipCount(resp.totalScholarshipStudents ?? 0);
+      setScholarshipPercentage(resp.scholarshipPercentage ?? "0%");
+      setCurrentPage(resp.pagination?.currentPage ?? page);
     } catch (err: any) {
       console.error("Error fetching students", err);
       toast({
@@ -149,38 +164,14 @@ const StudentsManagement: React.FC = () => {
     }
   };
 
-  // compute helpers in case server doesn't provide KPIs
-  const computeTotalScholarshipFromList = (list: any[]) =>
-    list.filter((s) => s.scholarshipInfo != null).length;
-  const computeScholarshipPercent = (
-    serverScholarshipCount?: number,
-    serverTotal?: number,
-    list: any[] = []
-  ) => {
-    const total = serverTotal ?? list.length;
-    const scholarshipCount =
-      typeof serverScholarshipCount === "number"
-        ? serverScholarshipCount
-        : computeTotalScholarshipFromList(list);
-    if (!total) return "0%";
-    return `${((scholarshipCount / total) * 100).toFixed(2)}%`;
-  };
-
   // ------------------------------
-  // Initial fetch & fetch classes
+  // Fetch classes for filter dropdown
   // ------------------------------
   useEffect(() => {
-    fetchStudents(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
-
-  useEffect(() => {
-    // fetch classes and sort them before showing
     const fetchClasses = async () => {
       setLoadingClasses(true);
       try {
         const { data } = await getAllClasses();
-        // sort by numeric grade when possible, then section
         const sorted = (data || []).slice().sort((a: any, b: any) => {
           const ag = isFinite(Number(a.grade))
             ? Number(a.grade)
@@ -194,7 +185,6 @@ const StudentsManagement: React.FC = () => {
               .localeCompare((b.grade ?? "").toString());
             if (cmp !== 0) return cmp;
           }
-          // fallback to section sort
           return (a.section ?? "").toString().localeCompare(b.section ?? "");
         });
         setClassList(sorted);
@@ -208,6 +198,21 @@ const StudentsManagement: React.FC = () => {
   }, []);
 
   // ------------------------------
+  // Fetch when page or filters change
+  // ------------------------------
+  useEffect(() => {
+    fetchStudents(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
+
+  // When filters change, reset to page 1 and fetch
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchStudents(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.grade, filters.section, filters.scholarship, filters.search]);
+
+  // ------------------------------
   // Handlers
   // ------------------------------
   const handleEditStudent = (student: any) => {
@@ -217,12 +222,11 @@ const StudentsManagement: React.FC = () => {
 
   const handleViewStudent = async (student: any) => {
     try {
-      // Optional: show loader or toast
       const res: any = await getStudentById(student._id);
       if (res?.student) {
         setSelectedStudent(res.student);
       } else {
-        setSelectedStudent(student); // fallback to existing data
+        setSelectedStudent(student);
       }
       setDetailsModalOpen(true);
     } catch (error: any) {
@@ -230,7 +234,7 @@ const StudentsManagement: React.FC = () => {
       toast({
         title: "Error",
         description:
-          error.message || "Could not load student details. Please try again.",
+          error?.message || "Could not load student details. Please try again.",
         variant: "destructive",
       });
     }
@@ -239,20 +243,8 @@ const StudentsManagement: React.FC = () => {
   const handleDeleteStudent = async (studentId: string) => {
     try {
       await deleteStudent(studentId);
-      setStudents((prev) => prev.filter((s) => s._id !== studentId));
-      // update KPIs locally
-      const newTotal = Math.max(0, totalStudentCount - 1);
-      const hadScholarship =
-        students.find((s) => s._id === studentId)?.scholarshipInfo != null;
-      setTotalStudentCount(newTotal);
-      if (hadScholarship) setTotalScholarshipCount((p) => Math.max(0, p - 1));
-      setScholarshipPercentage(
-        computeScholarshipPercent(
-          undefined,
-          newTotal,
-          students.filter((s) => s._id !== studentId)
-        )
-      );
+      // After deletion, refetch current page (server will return correct pagination)
+      fetchStudents(currentPage);
       toast({
         title: "Student Deleted",
         description: "Student has been successfully deleted.",
@@ -261,20 +253,18 @@ const StudentsManagement: React.FC = () => {
       toast({
         title: "Error",
         description:
-          error.message || "Failed to delete student. Please try again.",
+          error?.message || "Failed to delete student. Please try again.",
         variant: "destructive",
       });
     }
   };
 
-  // copy registration number
   const handleCopy = async (value: string, key?: string) => {
     if (!value) return;
     const uniqueKey = key ?? `val-${value}`;
     try {
       await navigator.clipboard.writeText(value);
       setCopiedKey(uniqueKey);
-      // clear after 1.5s
       window.setTimeout(() => {
         setCopiedKey((prev) => (prev === uniqueKey ? null : prev));
       }, 1500);
@@ -292,52 +282,8 @@ const StudentsManagement: React.FC = () => {
   };
 
   // ------------------------------
-  // Derived / filtered students
+  // Derived helpers (purely UI: topPerformingClass, grades / sections from classes)
   // ------------------------------
-  const filteredStudents = useMemo(() => {
-    const base = students || [];
-    // apply scholarship filter first
-    const scholarshipFiltered =
-      scholarshipFilter === "yes"
-        ? base.filter((s) => s.scholarshipInfo != null)
-        : base;
-
-    // apply grade filter (separate from section)
-    const gradeFiltered =
-      selectedGrade === "all"
-        ? scholarshipFiltered
-        : scholarshipFiltered.filter((s) => {
-            const clsGrade = s.classId?.grade ?? s.grade ?? "";
-            return clsGrade?.toString() === selectedGrade?.toString();
-          });
-
-    // apply section filter
-    const sectionFiltered =
-      selectedSection === "all"
-        ? gradeFiltered
-        : gradeFiltered.filter((s) => {
-            const clsSection = s.classId?.section ?? s.section ?? "";
-            return clsSection?.toString() === selectedSection?.toString();
-          });
-
-    // apply search
-    const search = searchTerm.trim().toLowerCase();
-    if (!search) return sectionFiltered;
-
-    return sectionFiltered.filter((student) => {
-      return (
-        (student.firstName ?? "").toString().toLowerCase().includes(search) ||
-        (student.lastName ?? "").toString().toLowerCase().includes(search) ||
-        (student.registrationNumber ?? "")
-          .toString()
-          .toLowerCase()
-          .includes(search) ||
-        (student.email ?? "").toString().toLowerCase().includes(search)
-      );
-    });
-  }, [students, scholarshipFilter, selectedGrade, selectedSection, searchTerm]);
-
-  // top performing class (by scholarship students count)
   const topPerformingClass = useMemo(() => {
     const map: Record<string, { name: string; count: number }> = {};
     students.forEach((s) => {
@@ -353,7 +299,6 @@ const StudentsManagement: React.FC = () => {
     return arr.length ? arr[0] : { name: "None", count: 0 };
   }, [students]);
 
-  // helper: unique grades (sorted) from classList
   const uniqueGrades = useMemo(() => {
     const set = new Set<string>();
     classList.forEach((c) => {
@@ -361,7 +306,6 @@ const StudentsManagement: React.FC = () => {
         set.add(String(c.grade));
       }
     });
-    // convert to array and try to sort numerically when possible
     const arr = Array.from(set);
     arr.sort((a, b) => {
       const na = Number(a);
@@ -372,12 +316,11 @@ const StudentsManagement: React.FC = () => {
     return arr;
   }, [classList]);
 
-  // helper: sections for selected grade
   const sectionsForSelectedGrade = useMemo(() => {
-    if (selectedGrade === "all") return [];
+    if (!filters.grade) return [];
     const set = new Set<string>();
     classList.forEach((c) => {
-      if (String(c.grade) === String(selectedGrade)) {
+      if (String(c.grade) === String(filters.grade)) {
         if (c?.section !== undefined && c?.section !== null) {
           set.add(String(c.section));
         }
@@ -386,7 +329,7 @@ const StudentsManagement: React.FC = () => {
     const arr = Array.from(set);
     arr.sort((a, b) => a.localeCompare(b));
     return arr;
-  }, [classList, selectedGrade]);
+  }, [classList, filters.grade]);
 
   // ------------------------------
   // Render
@@ -405,13 +348,6 @@ const StudentsManagement: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          {/* <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => setImportModalOpen(true)}
-          >
-            <Upload className="w-4 h-4" /> Import
-          </Button> */}
           <Button variant="outline" className="gap-2">
             <Download className="w-4 h-4" /> Export
           </Button>
@@ -497,18 +433,23 @@ const StudentsManagement: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search by name, email, or student ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, search: e.target.value }))
+                }
                 className="pl-10"
               />
             </div>
 
             {/* Grade select */}
             <Select
-              value={selectedGrade}
+              value={filters.grade || "all"}
               onValueChange={(value) => {
-                setSelectedGrade(value);
-                setSelectedSection("all"); // reset section when grade changes
+                setFilters((prev) => ({
+                  ...prev,
+                  grade: value === "all" ? "" : value,
+                  section: "",
+                }));
               }}
             >
               <SelectTrigger className="w-48">
@@ -536,20 +477,23 @@ const StudentsManagement: React.FC = () => {
 
             {/* Section select (dependent on grade) */}
             <Select
-              value={selectedSection}
-              onValueChange={setSelectedSection}
-              // disable until a grade is chosen
-              // keep width same as other selects
+              value={filters.section || "all"}
+              onValueChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  section: value === "all" ? "" : value,
+                }))
+              }
             >
               <SelectTrigger
                 className="w-48"
-                disabled={selectedGrade === "all"}
+                disabled={!filters.grade}
               >
                 <SelectValue placeholder="Select Section" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sections</SelectItem>
-                {selectedGrade === "all" ? (
+                {!filters.grade ? (
                   <SelectItem value="na" disabled>
                     Select a grade first
                   </SelectItem>
@@ -568,8 +512,13 @@ const StudentsManagement: React.FC = () => {
             </Select>
 
             <Select
-              value={scholarshipFilter}
-              onValueChange={setScholarshipFilter}
+              value={filters.scholarship || "all"}
+              onValueChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  scholarship: value === "all" ? "" : value,
+                }))
+              }
             >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Scholarship Students" />
@@ -615,7 +564,7 @@ const StudentsManagement: React.FC = () => {
               </TableHeader>
 
               <TableBody>
-                {filteredStudents.map((student) => (
+                {students.map((student) => (
                   <TableRow key={student._id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -749,7 +698,7 @@ const StudentsManagement: React.FC = () => {
             </Table>
           )}
 
-          {filteredStudents.length === 0 && !isLoading && (
+          {students.length === 0 && !isLoading && (
             <div className="text-center py-8">
               <div className="text-muted-foreground mb-2">
                 No students found
@@ -774,8 +723,9 @@ const StudentsManagement: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => Math.max(1, p - 1));
-                fetchStudents(Math.max(1, currentPage - 1));
+                const prev = Math.max(1, pagination.currentPage - 1);
+                setCurrentPage(prev);
+                fetchStudents(prev);
               }}
               disabled={pagination.currentPage === 1}
             >
@@ -785,8 +735,12 @@ const StudentsManagement: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => {
-                setCurrentPage((p) => Math.min(pagination.totalPages, p + 1));
-                fetchStudents(Math.min(pagination.totalPages, currentPage + 1));
+                const next = Math.min(
+                  pagination.totalPages,
+                  pagination.currentPage + 1
+                );
+                setCurrentPage(next);
+                fetchStudents(next);
               }}
               disabled={pagination.currentPage === pagination.totalPages}
             >
@@ -806,7 +760,10 @@ const StudentsManagement: React.FC = () => {
         <>
           <EditStudentModal
             open={editModalOpen}
-            onOpenChange={setEditModalOpen}
+            onOpenChange={(open) => {
+              setEditModalOpen(open);
+              if (!open) setSelectedStudent(null);
+            }}
             student={selectedStudent}
             onSuccess={() => {
               fetchStudents(pagination.currentPage);
@@ -815,7 +772,10 @@ const StudentsManagement: React.FC = () => {
           />
           <StudentDetailsModal
             open={detailsModalOpen}
-            onOpenChange={setDetailsModalOpen}
+            onOpenChange={(open) => {
+              setDetailsModalOpen(open);
+              if (!open) setSelectedStudent(null);
+            }}
             student={selectedStudent}
           />
         </>

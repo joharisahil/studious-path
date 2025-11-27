@@ -5,34 +5,15 @@ import { Student, StudentFormData } from "@/types";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Fetch all students
-export const getAllStudents = async (
-  page = 1,
-  limit = 10
-): Promise<{
-  students: Student[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    total: number;
-  };
-}> => {
-  try {
+  export const getAllStudents = async (page, limit, filters) => {
     const response = await axios.get(`${API_BASE_URL}/students/getall`, {
-      params: { page, limit },
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
+      params: { page, limit, ...filters },
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
 
-    return {
-      students: response.data.students,
-      pagination: response.data.pagination,
-    };
-  } catch (error: any) {
-    console.error("Error fetching students:", error);
-    throw error;
-  }
-};
+    return response.data;
+  };
+
 
 // Create a new student
 export const createStudentApi = async (studentData: StudentFormData) => {
