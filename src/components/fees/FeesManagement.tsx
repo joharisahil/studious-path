@@ -62,6 +62,10 @@ interface ClassType {
 }
 
 interface FeeRecord {
+   admin?: {
+    _id: string;
+    schoolName: string;
+  };
   id: string;
   studentName: string;
   studentId: string;
@@ -147,7 +151,6 @@ export const FeesManagement = () => {
     fetchKpiStats();
   }, []);
 
-
   /** Fetch Classes */
   useEffect(() => {
     const fetchClasses = async () => {
@@ -225,6 +228,7 @@ export const FeesManagement = () => {
           (inst: any) => inst.status !== "Paid"
         )?.dueDate,
         payments: (fee.payments || []).map((p: any) => ({ ...p, id: p._id })),
+        admin: fee.admin,
       }));
 
       setFeeRecords(mappedFees);
@@ -301,6 +305,7 @@ export const FeesManagement = () => {
     }
   };
   // ------------------------------------------------------------
+  const schoolName = feeRecords[0]?.admin?.schoolName || "Unknown School";
 
   return (
     <div className="space-y-8 relative">
@@ -677,7 +682,9 @@ export const FeesManagement = () => {
             // printing doesn't change data normally, but refresh anyway to be safe
             fetchFeeRecords(currentPage);
           }}
+          
           payment={selectedPaymentForReceipt}
+          
           studentName={
             feeRecords.find((r) =>
               r.payments?.some((p) => p.id === selectedPaymentForReceipt?.id)
@@ -688,6 +695,7 @@ export const FeesManagement = () => {
               r.payments?.some((p) => p.id === selectedPaymentForReceipt?.id)
             )?.grade || ""
           }
+            schoolName={schoolName}
         />
       )}
       {/* {pendingReceiptModalOpen && selectedPaymentForReceipt && (

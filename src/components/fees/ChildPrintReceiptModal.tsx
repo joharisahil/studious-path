@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import {
   Dialog,
@@ -6,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { log } from "console";
 
 export const ChildPrintReceiptModal = ({
   isOpen,
@@ -13,22 +15,28 @@ export const ChildPrintReceiptModal = ({
   payment,
   studentName = "",
   className = "",
+  schoolName = "",
 }: {
   isOpen: boolean;
   onClose: () => void;
   payment: any | null;
   studentName?: string;
   className?: string;
+    schoolName: string;
 }) => {
   const [isPrinting, setIsPrinting] = useState(false);
   const printRef = useRef<HTMLDivElement | null>(null);
+  console.log("ChildPrintReceiptModal props:", { studentName, className, schoolName, payment });
+
 
   // Safety: if no payment, render minimal UI (prevents undefined access errors)
   if (!isOpen) return null;
 
+  
   // helper formatting
   const fmt = (n?: number) =>
     typeof n === "number" ? `₹${n.toLocaleString()}` : "₹0";
+
 
   const paidAmount = payment?.amount ?? payment?.paidAmount ?? 0;
   const mode = payment?.mode ?? payment?.paymentMode ?? "N/A";
@@ -84,101 +92,101 @@ export const ChildPrintReceiptModal = ({
   };
 
   // Build the printable markup: two receipts — ORIGINAL and COPY
-  const PrintableContent = () => (
-    <div ref={printRef as any}>
-      {/* ORIGINAL */}
-      <div className="receipt" style={{ position: "relative" }}>
-        <h3 style={{ marginBottom: 6 }}>SCHOOL NAME / Receipt (ORIGINAL)</h3>
-        <div className="meta">For office records</div>
+ // Build the printable markup: two receipts — ORIGINAL and COPY
+const PrintableContent = ({ schoolName }: { schoolName: string }) => (
+  <div ref={printRef as any}>
+    {/* ORIGINAL */}
+    <div className="receipt" style={{ position: "relative" }}>
+     <h3>{schoolName} / Receipt (ORIGINAL)</h3>
+    
+      <div className="meta">For office records</div>
 
-        <div className="row">
-          <div>Student</div>
-          <div>{studentName}</div>
-        </div>
-        <div className="row">
-          <div>Class</div>
-          <div>{className}</div>
-        </div>
-        <div className="row">
-          <div>Payment For</div>
-          <div>{month || "Tuition"}</div>
-        </div>
-        <div className="row">
-          <div>Amount</div>
-          <div>{fmt(paidAmount)}</div>
-        </div>
-        <div className="row">
-          <div>Mode</div>
-          <div>{mode}</div>
-        </div>
-        <div className="row">
-          <div>Transaction ID</div>
-          <div>{txn}</div>
-        </div>
-        <div className="row">
-          <div>Date</div>
-          <div>
-            {paidAt
-              ? new Date(paidAt).toLocaleString()
-              : new Date().toLocaleString()}
-          </div>
-        </div>
-
-        <div className="total">Received Amount: {fmt(paidAmount)}</div>
-        <div className="copy-note">
-          This is the ORIGINAL receipt. Keep for your records.
+      <div className="row">
+        <div>Student</div>
+        <div>{studentName}</div>
+      </div>
+      <div className="row">
+        <div>Class</div>
+        <div>{className}</div>
+      </div>
+      <div className="row">
+        <div>Payment For</div>
+        <div>{month || "Tuition"}</div>
+      </div>
+      <div className="row">
+        <div>Amount</div>
+        <div>{fmt(paidAmount)}</div>
+      </div>
+      <div className="row">
+        <div>Mode</div>
+        <div>{mode}</div>
+      </div>
+      <div className="row">
+        <div>Transaction ID</div>
+        <div>{txn}</div>
+      </div>
+      <div className="row">
+        <div>Date</div>
+        <div>
+          {paidAt ? new Date(paidAt).toLocaleString() : new Date().toLocaleString()}
         </div>
       </div>
 
-      {/* COPY (slightly different: watermark + "Customer Copy") */}
-      <div className="receipt" style={{ position: "relative" }}>
-        <div style={{ position: "absolute", inset: 0 }}>
-          <div className="watermark">CUSTOMER COPY</div>
-        </div>
-
-        <h3 style={{ marginBottom: 6 }}>SCHOOL NAME / Receipt (COPY)</h3>
-        <div className="meta">Customer copy</div>
-
-        <div className="row">
-          <div>Student</div>
-          <div>{studentName}</div>
-        </div>
-        <div className="row">
-          <div>Class</div>
-          <div>{className}</div>
-        </div>
-        <div className="row">
-          <div>Payment For</div>
-          <div>{month || "Tuition"}</div>
-        </div>
-        <div className="row">
-          <div>Amount</div>
-          <div>{fmt(paidAmount)}</div>
-        </div>
-        <div className="row">
-          <div>Mode</div>
-          <div>{mode}</div>
-        </div>
-        <div className="row">
-          <div>Transaction ID</div>
-          <div>{txn}</div>
-        </div>
-        <div className="row">
-          <div>Date</div>
-          <div>
-            {paidAt
-              ? new Date(paidAt).toLocaleString()
-              : new Date().toLocaleString()}
-          </div>
-        </div>
-
-        <div className="total">Received Amount: {fmt(paidAmount)}</div>
-        <div className="copy-note">
-          This is the CUSTOMER COPY. Please retain for your reference.
-        </div>
+      <div className="total">Received Amount: {fmt(paidAmount)}</div>
+      <div className="copy-note">
+        This is the ORIGINAL receipt. Keep for your records.
       </div>
     </div>
-  );
+
+    {/* COPY */}
+    <div className="receipt" style={{ position: "relative" }}>
+      <div style={{ position: "absolute", inset: 0 }}>
+        <div className="watermark">CUSTOMER COPY</div>
+      </div>
+
+      <h3>{schoolName} / Receipt (COPY)</h3>
+
+      <div className="meta">Customer copy</div>
+
+      <div className="row">
+        <div>Student</div>
+        <div>{studentName}</div>
+      </div>
+      <div className="row">
+        <div>Class</div>
+        <div>{className}</div>
+      </div>
+      <div className="row">
+        <div>Payment For</div>
+        <div>{month || "Tuition"}</div>
+      </div>
+      <div className="row">
+        <div>Amount</div>
+        <div>{fmt(paidAmount)}</div>
+      </div>
+      <div className="row">
+        <div>Mode</div>
+        <div>{mode}</div>
+      </div>
+      <div className="row">
+        <div>Transaction ID</div>
+        <div>{txn}</div>
+      </div>
+      <div className="row">
+        <div>Date</div>
+        <div>
+          {paidAt ? new Date(paidAt).toLocaleString() : new Date().toLocaleString()}
+        </div>
+      </div>
+
+      <div className="total">Received Amount: {fmt(paidAmount)}</div>
+      <div className="copy-note">
+        This is the CUSTOMER COPY. Please retain for your reference.
+      </div>
+    </div>
+  </div>
+);
+
 
   // The modal visual (non-print) - small preview + print/close buttons
   return (
@@ -227,7 +235,7 @@ export const ChildPrintReceiptModal = ({
           {/* Hidden large printable content is the same element we send to popup (printRef).*/}
           {/* We still render it in DOM (so styles apply) but it doesn't need to be visible. */}
           <div style={{ display: "none" }}>
-            <PrintableContent />
+            <PrintableContent schoolName={schoolName}/>
           </div>
 
           <div className="flex justify-end gap-2">
